@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Card as CardType } from '@spades/shared';
-import { Card } from '../ui/Card';
+import { Card, CardBack } from '../ui/Card';
 
 interface PlayerHandProps {
   cards: CardType[];
@@ -8,6 +8,7 @@ interface PlayerHandProps {
   isMyTurn: boolean;
   selectedCard: CardType | null;
   onSelectCard: (card: CardType | null) => void;
+  faceDown?: boolean;
 }
 
 export function PlayerHand({
@@ -15,7 +16,8 @@ export function PlayerHand({
   onPlayCard,
   isMyTurn,
   selectedCard,
-  onSelectCard
+  onSelectCard,
+  faceDown = false
 }: PlayerHandProps) {
   const handleCardClick = (card: CardType) => {
     if (!isMyTurn) return;
@@ -50,12 +52,16 @@ export function PlayerHand({
               zIndex: isSelected ? 100 : idx
             }}
           >
-            <Card
-              card={card}
-              onClick={() => handleCardClick(card)}
-              disabled={!isMyTurn}
-              selected={isSelected}
-            />
+            {faceDown ? (
+              <CardBack />
+            ) : (
+              <Card
+                card={card}
+                onClick={() => handleCardClick(card)}
+                disabled={!isMyTurn}
+                selected={isSelected}
+              />
+            )}
           </div>
         );
       })}
