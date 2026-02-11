@@ -56,4 +56,7 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 
 ## Workflow
 
-After every bug fix or feature implementation, commit the changes to git with a descriptive message and push to the main branch.
+After every bug fix or feature implementation:
+1. Create a new branch with a descriptive name for the work (e.g., `fix/bidding-validation`, `feat/dark-mode`).
+2. Commit the changes using the [Conventional Commits](https://www.conventionalcommits.org/) standard. Format: `<type>(<optional scope>): <description>`. Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`, `build`. Use `!` after the type/scope for breaking changes (e.g., `feat!: ...`). Include a body for additional context when needed.
+3. Push the branch and open a PR to merge into `main`. Do **not** push directly to `main`.
