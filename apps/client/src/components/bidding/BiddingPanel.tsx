@@ -87,22 +87,22 @@ export function BiddingPanel({ gameState, myPosition, onBid }: BiddingPanelProps
                 gap: '8px'
               }}
             >
-              {Array.from({ length: 14 }, (_, i) => (
+              {Array.from({ length: 13 }, (_, i) => i + 1).map(bid => (
                 <button
-                  key={i}
-                  onClick={() => setSelectedBid(i)}
+                  key={bid}
+                  onClick={() => setSelectedBid(bid)}
                   style={{
                     padding: '12px',
                     fontSize: '16px',
                     fontWeight: 600,
-                    backgroundColor: selectedBid === i ? '#3b82f6' : '#f3f4f6',
-                    color: selectedBid === i ? '#fff' : '#374151',
+                    backgroundColor: selectedBid === bid ? '#3b82f6' : '#f3f4f6',
+                    color: selectedBid === bid ? '#fff' : '#374151',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer'
                   }}
                 >
-                  {i}
+                  {bid}
                 </button>
               ))}
             </div>

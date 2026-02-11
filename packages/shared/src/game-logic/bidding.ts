@@ -55,8 +55,8 @@ export function validateBid(
       return { valid: false, errorMessage: 'Nil bid must be 0' };
     }
   } else {
-    if (bid < 0 || bid > 13) {
-      return { valid: false, errorMessage: 'Bid must be between 0 and 13' };
+    if (bid < 1 || bid > 13) {
+      return { valid: false, errorMessage: 'Bid must be between 1 and 13' };
     }
   }
 
