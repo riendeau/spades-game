@@ -53,3 +53,7 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 - `apps/server/src/socket/handler.ts` - All socket event handlers
 - `apps/server/src/rooms/room-manager.ts` - Room and session management
 - `apps/client/src/hooks/use-game.ts` - Main client-side game hook
+
+## Workflow
+
+After every bug fix or feature implementation, commit the changes to git with a descriptive message and push to the main branch.
