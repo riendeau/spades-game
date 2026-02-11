@@ -35,10 +35,10 @@ export function dealCards(deck: Card[], numPlayers: number = 4): Card[][] {
 
 export function sortHand(hand: Card[]): Card[] {
   const suitOrder: Record<Suit, number> = {
-    diamonds: 0,
-    clubs: 1,
-    hearts: 2,
-    spades: 3
+    spades: 0,
+    hearts: 1,
+    clubs: 2,
+    diamonds: 3
   };
 
   const rankOrder: Record<Rank, number> = {
