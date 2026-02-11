@@ -45,6 +45,7 @@ export function useGame() {
     socket.on('reconnect:success', ({ state, hand }) => {
       store.setGameState(state);
       store.setHand(hand);
+      store.revealCards();
     });
 
     socket.on('reconnect:failed', ({ reason }) => {

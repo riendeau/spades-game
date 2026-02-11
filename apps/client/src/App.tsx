@@ -13,6 +13,7 @@ export function App() {
     myPosition,
     gameState,
     myHand,
+    cardsRevealed,
     roundSummary,
     gameEnded,
     error,
@@ -23,6 +24,7 @@ export function App() {
     playCard,
     leaveRoom,
     clearRoundSummary,
+    revealCards,
     reset
   } = useGame();
 
@@ -111,8 +113,10 @@ export function App() {
           gameState={gameState}
           myPosition={myPosition}
           myHand={myHand}
+          cardsRevealed={cardsRevealed}
           onPlayCard={playCard}
           onBid={makeBid}
+          onRevealCards={revealCards}
         />
 
         {roundSummary && (

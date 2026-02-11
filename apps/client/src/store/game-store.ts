@@ -17,6 +17,7 @@ interface GameStore {
   roundSummary: RoundSummary | null;
   error: string | null;
   gameEnded: { winner: 'team1' | 'team2'; scores: ClientGameState['scores'] } | null;
+  cardsRevealed: boolean;
 
   // Actions
   setSession: (roomId: string, sessionToken: string, position: Position) => void;
@@ -30,6 +31,7 @@ interface GameStore {
   clearRoundSummary: () => void;
   setError: (error: string | null) => void;
   setGameEnded: (data: { winner: 'team1' | 'team2'; scores: ClientGameState['scores'] }) => void;
+  revealCards: () => void;
   reset: () => void;
 }
 
@@ -43,7 +45,8 @@ const initialState = {
   lastTrickWinner: null,
   roundSummary: null,
   error: null,
-  gameEnded: null
+  gameEnded: null,
+  cardsRevealed: false
 };
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -56,7 +59,7 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setGameState: (state) => set({ gameState: state }),
 
-  setHand: (hand) => set({ myHand: hand }),
+  setHand: (hand) => set({ myHand: hand, cardsRevealed: false }),
 
   removeCard: (card) =>
     set((state) => ({
@@ -76,6 +79,8 @@ export const useGameStore = create<GameStore>((set) => ({
   setError: (error) => set({ error }),
 
   setGameEnded: (data) => set({ gameEnded: data }),
+
+  revealCards: () => set({ cardsRevealed: true }),
 
   reset: () => set(initialState)
 }));

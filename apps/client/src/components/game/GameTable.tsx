@@ -11,16 +11,20 @@ interface GameTableProps {
   gameState: ClientGameState;
   myPosition: Position;
   myHand: CardType[];
+  cardsRevealed: boolean;
   onPlayCard: (card: CardType) => void;
   onBid: (bid: number, isNil?: boolean, isBlindNil?: boolean) => void;
+  onRevealCards: () => void;
 }
 
 export function GameTable({
   gameState,
   myPosition,
   myHand,
+  cardsRevealed,
   onPlayCard,
-  onBid
+  onBid,
+  onRevealCards
 }: GameTableProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
@@ -93,7 +97,9 @@ export function GameTable({
                 <BiddingPanel
                   gameState={gameState}
                   myPosition={myPosition}
+                  cardsRevealed={cardsRevealed}
                   onBid={onBid}
+                  onRevealCards={onRevealCards}
                 />
               </div>
             ) : (
@@ -134,6 +140,7 @@ export function GameTable({
             isMyTurn={isPlaying && isMyTurn}
             selectedCard={selectedCard}
             onSelectCard={setSelectedCard}
+            faceDown={isBidding && !cardsRevealed}
           />
 
           {selectedCard && isMyTurn && (
@@ -164,7 +171,7 @@ export function GameTable({
                     const myBid = gameState.currentRound?.bids.find(
                       b => b.playerId === gameState.players.find(p => p.position === myPosition)?.id
                     );
-                    return myBid?.isNil ? 'Nil' : myBid?.bid;
+                    return myBid?.isBlindNil ? 'Blind Nil' : myBid?.isNil ? 'Nil' : myBid?.bid;
                   })()}
                 </span>
                 <span>

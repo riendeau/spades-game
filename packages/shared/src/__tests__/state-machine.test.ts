@@ -241,5 +241,61 @@ describe('Game State Machine', () => {
       expect(state.phase).toBe('playing');
       expect(state.currentRound?.bids).toHaveLength(4);
     });
+
+    it('should allow blind nil bid from current player', () => {
+      const state = setupBiddingGame();
+      const currentPlayer = state.players.find(
+        p => p.position === state.currentPlayerPosition
+      );
+
+      const result = processAction(state, {
+        type: 'MAKE_BID',
+        playerId: currentPlayer!.id,
+        bid: 0,
+        isNil: false,
+        isBlindNil: true
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.state.currentRound?.bids).toHaveLength(1);
+      expect(result.state.currentRound?.bids[0].isBlindNil).toBe(true);
+      expect(result.state.currentRound?.bids[0].bid).toBe(0);
+    });
+
+    it('should transition to playing after mix of blind nil and regular bids', () => {
+      let state = setupBiddingGame();
+
+      // First player bids blind nil
+      const firstPlayer = state.players.find(
+        p => p.position === state.currentPlayerPosition
+      );
+      state = processAction(state, {
+        type: 'MAKE_BID',
+        playerId: firstPlayer!.id,
+        bid: 0,
+        isNil: false,
+        isBlindNil: true
+      }).state;
+
+      expect(state.phase).toBe('bidding');
+
+      // Remaining 3 players bid normally
+      for (let i = 0; i < 3; i++) {
+        const currentPlayer = state.players.find(
+          p => p.position === state.currentPlayerPosition
+        );
+        state = processAction(state, {
+          type: 'MAKE_BID',
+          playerId: currentPlayer!.id,
+          bid: 3,
+          isNil: false,
+          isBlindNil: false
+        }).state;
+      }
+
+      expect(state.phase).toBe('playing');
+      expect(state.currentRound?.bids).toHaveLength(4);
+      expect(state.currentRound?.bids[0].isBlindNil).toBe(true);
+    });
   });
 });
