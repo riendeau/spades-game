@@ -92,10 +92,12 @@ describe('Deck', () => {
 
       const sorted = sortHand(hand);
 
-      expect(sorted[0]).toEqual({ suit: 'spades', rank: 'A' });
-      expect(sorted[1]).toEqual({ suit: 'spades', rank: '2' });
-      expect(sorted[2]).toEqual({ suit: 'hearts', rank: '5' });
-      expect(sorted[3]).toEqual({ suit: 'clubs', rank: 'K' });
+      // Suit order: diamonds, clubs, hearts, spades
+      // Rank order within suit: high to low (A, K, Q, ..., 2)
+      expect(sorted[0]).toEqual({ suit: 'clubs', rank: 'K' });
+      expect(sorted[1]).toEqual({ suit: 'hearts', rank: '5' });
+      expect(sorted[2]).toEqual({ suit: 'spades', rank: 'A' });
+      expect(sorted[3]).toEqual({ suit: 'spades', rank: '2' });
     });
   });
 
