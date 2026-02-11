@@ -1,0 +1,91 @@
+import type {
+  RuleMod,
+  ScoreContext,
+  BidValidationContext,
+  PlayValidationContext,
+  CardPlayedContext,
+  TrickCompleteContext,
+  GameConfig
+} from '@spades/shared';
+
+export class HookExecutor {
+  private mods: RuleMod[] = [];
+
+  setMods(mods: RuleMod[]): void {
+    this.mods = mods;
+  }
+
+  addMod(mod: RuleMod): void {
+    this.mods.push(mod);
+  }
+
+  clearMods(): void {
+    this.mods = [];
+  }
+
+  executeCalculateScore(context: ScoreContext): ScoreContext {
+    let result = context;
+    for (const mod of this.mods) {
+      if (mod.hooks.onCalculateScore) {
+        result = mod.hooks.onCalculateScore(result);
+      }
+    }
+    return result;
+  }
+
+  executeValidateBid(context: BidValidationContext): BidValidationContext {
+    let result = context;
+    for (const mod of this.mods) {
+      if (mod.hooks.onValidateBid) {
+        result = mod.hooks.onValidateBid(result);
+        // Stop if validation fails
+        if (!result.isValid) break;
+      }
+    }
+    return result;
+  }
+
+  executeValidatePlay(context: PlayValidationContext): PlayValidationContext {
+    let result = context;
+    for (const mod of this.mods) {
+      if (mod.hooks.onValidatePlay) {
+        result = mod.hooks.onValidatePlay(result);
+        // Stop if validation fails
+        if (!result.isValid) break;
+      }
+    }
+    return result;
+  }
+
+  executeCardPlayed(context: CardPlayedContext): CardPlayedContext {
+    let result = context;
+    for (const mod of this.mods) {
+      if (mod.hooks.onCardPlayed) {
+        result = mod.hooks.onCardPlayed(result);
+      }
+    }
+    return result;
+  }
+
+  executeTrickComplete(context: TrickCompleteContext): TrickCompleteContext {
+    let result = context;
+    for (const mod of this.mods) {
+      if (mod.hooks.onTrickComplete) {
+        result = mod.hooks.onTrickComplete(result);
+      }
+    }
+    return result;
+  }
+
+  modifyConfig(config: GameConfig): GameConfig {
+    let result = config;
+    for (const mod of this.mods) {
+      if (mod.hooks.modifyConfig) {
+        result = mod.hooks.modifyConfig(result);
+      }
+    }
+    return result;
+  }
+}
+
+export const hookExecutor = new HookExecutor();
