@@ -4,19 +4,23 @@ import { completeTrick } from '../helpers/playing-helpers';
 
 test.describe('Full Game', () => {
   /**
-   * SKIPPED: Card playing through all 13 tricks works correctly, but the
-   * RoundSummaryModal never appears afterward. The modal renders when
-   * `roundSummary` is set in the store, which happens via the `game:round-end`
-   * socket event. After the 13th trick the game transitions through
-   * trick-end → round-end on the server, but the client does not receive or
-   * display the round summary. Likely causes:
-   * - The server's round-end flow may not emit `game:round-end` after scoring
-   * - The event may be emitted but the client's state is already torn down
-   * - The modal text "Round {n} Complete" (RoundSummaryModal.tsx:35) may not
-   *   match the regex used here
+   * STATUS: Server-side round-end fix is confirmed working (manual testing shows
+   * the RoundSummaryModal after 13 tricks). The remaining failure is in the E2E
+   * test helper `playFirstCard` in playing-helpers.ts:
    *
-   * To investigate: add logging around the `game:round-end` handler in
-   * use-game.ts and the round-end emission in handler.ts / game-instance.ts.
+   * 1. FIXED: Leading with spades — the helper now prefers non-spade cards to
+   *    avoid "Cannot lead with spades until broken" rejections.
+   *
+   * 2. TODO: Follow-suit rule — when following (not leading), the player MUST
+   *    play a card matching the lead suit if they have one. The helper currently
+   *    picks the first non-spade card regardless of the lead suit, which the
+   *    server rejects. The waitForFunction (card count decrease) then times out.
+   *    Screenshot evidence: T5/13 reached (4 tricks completed) before a
+   *    follow-suit violation causes the timeout.
+   *
+   * Fix approach: `playFirstCard` needs to read the lead suit from the trick
+   * area and prefer cards of that suit. When leading (empty trick area), prefer
+   * non-spades. When following, prefer cards matching the lead suit.
    */
   test.skip('complete a round and see round summary', async ({ fourPlayerBidding }) => {
     test.setTimeout(180_000);

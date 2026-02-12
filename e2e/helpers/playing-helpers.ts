@@ -1,20 +1,40 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Plays the first available (non-disabled) card on the given page.
- * The page must be showing "Your turn!".
+ * Plays an available (non-disabled) card on the given page.
+ * Prefers non-spade cards to avoid "Cannot lead with spades until broken".
+ * Waits for the card to be removed from the hand (server acknowledgement).
  */
 export async function playFirstCard(page: Page): Promise<void> {
   await page.getByText('Your turn!').waitFor({ timeout: 15_000 });
 
-  // Use data-testid to reliably target hand cards (not trick area cards)
-  const card = page.locator('[data-testid="hand-card"]:not([disabled])').first();
-  await card.click();
+  const handCards = page.locator('[data-testid="hand-card"]:not([disabled])');
+  const cardCount = await handCards.count();
+
+  // Prefer non-spade cards to avoid leading-with-spades violation
+  let cardToClick = handCards.first();
+  for (let i = 0; i < cardCount; i++) {
+    const text = await handCards.nth(i).textContent() || '';
+    if (!text.includes('\u2660')) {
+      cardToClick = handCards.nth(i);
+      break;
+    }
+  }
+
+  await cardToClick.click();
 
   // Wait for the Play button to appear and click it
   const playButton = page.getByRole('button', { name: /^Play .+ of .+$/ });
   await playButton.waitFor({ timeout: 5_000 });
   await playButton.click();
+
+  // Wait for server acknowledgement — card count should decrease
+  const expectedCount = cardCount - 1;
+  await page.waitForFunction(
+    (expected) => document.querySelectorAll('[data-testid="hand-card"]').length === expected,
+    expectedCount,
+    { timeout: 10_000 }
+  );
 }
 
 /**

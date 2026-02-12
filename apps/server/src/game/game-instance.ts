@@ -185,14 +185,20 @@ export class GameInstance {
 
         // If round ended, process scoring
         const phaseAfterCollect = this.getState().phase;
+        let endRoundSideEffects: SideEffect[] = [];
         if (phaseAfterCollect === 'round-end') {
-          this.dispatch({ type: 'END_ROUND' });
+          const endRoundResult = this.dispatch({ type: 'END_ROUND' });
+          endRoundSideEffects = endRoundResult.sideEffects || [];
         }
 
         return {
           ...result,
           state: this.state,
-          sideEffects: [...(result.sideEffects || []), ...(collectResult.sideEffects || [])]
+          sideEffects: [
+            ...(result.sideEffects || []),
+            ...(collectResult.sideEffects || []),
+            ...endRoundSideEffects
+          ]
         };
       }
     }
