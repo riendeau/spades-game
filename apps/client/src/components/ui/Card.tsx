@@ -7,6 +7,7 @@ interface CardProps {
   disabled?: boolean;
   selected?: boolean;
   small?: boolean;
+  testId?: string;
 }
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -23,7 +24,7 @@ const SUIT_COLORS: Record<Suit, string> = {
   clubs: '#1a1a2e'
 };
 
-export function Card({ card, onClick, disabled, selected, small }: CardProps) {
+export function Card({ card, onClick, disabled, selected, small, testId }: CardProps) {
   const symbol = SUIT_SYMBOLS[card.suit];
   const color = SUIT_COLORS[card.suit];
 
@@ -31,6 +32,7 @@ export function Card({ card, onClick, disabled, selected, small }: CardProps) {
     <button
       onClick={onClick}
       disabled={disabled}
+      data-testid={testId}
       style={{
         width: small ? '50px' : '70px',
         height: small ? '75px' : '100px',

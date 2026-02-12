@@ -29,6 +29,10 @@ export function useGame() {
       store.setHand(hand);
     });
 
+    socket.on('game:card-played', ({ card }) => {
+      store.removeCard(card);
+    });
+
     socket.on('game:trick-won', ({ winnerId }) => {
       store.setTrickWinner(winnerId);
       setTimeout(() => store.clearTrickWinner(), 2000);
@@ -63,6 +67,7 @@ export function useGame() {
       socket.off('room:joined');
       socket.off('game:state-update');
       socket.off('game:cards-dealt');
+      socket.off('game:card-played');
       socket.off('game:trick-won');
       socket.off('game:round-end');
       socket.off('game:ended');
@@ -110,7 +115,6 @@ export function useGame() {
   const playCard = useCallback((card: Card) => {
     if (!socket) return;
     socket.emit('game:play-card', { card });
-    store.removeCard(card);
   }, [socket]);
 
   const leaveRoom = useCallback(() => {

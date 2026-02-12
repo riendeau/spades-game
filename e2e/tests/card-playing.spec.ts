@@ -16,14 +16,7 @@ test.describe('Card Playing', () => {
     await expect(activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })).not.toBeVisible({ timeout: 5_000 });
   });
 
-  /**
-   * SKIPPED: Same race condition as full-game tests — see full-game.spec.ts for details.
-   * The TrickArea renders played cards as non-disabled <Card> buttons. After the first
-   * play, playFirstCard() can match a TrickArea card instead of a hand card, causing
-   * the Play confirmation button to never appear. Needs data-testid attributes or
-   * a scoped locator approach to reliably distinguish hand cards from trick area cards.
-   */
-  test.skip('complete a full trick with 4 card plays', async ({ fourPlayerBidding }) => {
+  test('complete a full trick with 4 card plays', async ({ fourPlayerBidding }) => {
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);

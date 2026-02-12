@@ -60,6 +60,7 @@ export function PlayerHand({
                 onClick={() => handleCardClick(card)}
                 disabled={!isMyTurn}
                 selected={isSelected}
+                testId="hand-card"
               />
             )}
           </div>
