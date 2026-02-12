@@ -4,37 +4,22 @@ import { completeTrick } from '../helpers/playing-helpers';
 
 test.describe('Full Game', () => {
   /**
-   * SKIPPED: These tests require playing 13 complete tricks (52 card plays).
-   * The playFirstCard() helper has a race condition when playing many tricks:
+   * SKIPPED: Card playing through all 13 tricks works correctly, but the
+   * RoundSummaryModal never appears afterward. The modal renders when
+   * `roundSummary` is set in the store, which happens via the `game:round-end`
+   * socket event. After the 13th trick the game transitions through
+   * trick-end → round-end on the server, but the client does not receive or
+   * display the round summary. Likely causes:
+   * - The server's round-end flow may not emit `game:round-end` after scoring
+   * - The event may be emitted but the client's state is already torn down
+   * - The modal text "Round {n} Complete" (RoundSummaryModal.tsx:35) may not
+   *   match the regex used here
    *
-   * ROOT CAUSE: After each trick completes, the game transitions through
-   * trick-end → playing. During this transition, findCurrentPlayer() may detect
-   * "Your turn!" text on a page, but by the time playFirstCard() tries to click
-   * a card, the state has changed and the cards are disabled/gone.
-   *
-   * ADDITIONALLY: The TrickArea component renders played cards as <Card small>
-   * buttons (50px wide). These are non-disabled button elements that can confuse
-   * card detection. The helper filters them by size (offsetWidth < 60 = small),
-   * but there are timing windows where evaluate() finds enabled hand cards and
-   * then they disappear before the click executes.
-   *
-   * APPROACHES TRIED:
-   * 1. CSS attribute selector [style*="width: 70px"] — didn't match React inline styles
-   * 2. page.evaluate() with native btn.click() — doesn't trigger React synthetic events
-   * 3. page.evaluate() to find + page.mouse.click(x,y) — race between find and click
-   * 4. Retry loop with force:true click — still times out on Play button
-   *
-   * TO FIX: Consider one of these approaches:
-   * - Add data-testid="hand-card" to Card components in PlayerHand for reliable selection
-   * - Add data-testid="hand-area" to the hand container div for scoping locators
-   * - Use Playwright's page.waitForFunction() that both finds AND returns coordinates
-   *   atomically, then mouse.click() immediately
-   * - Use the locator .and() combinator to match buttons that are both non-disabled
-   *   AND inside the hand section (locate by nearby "My Bid:" text)
-   * - Increase waitForTimeout between tricks to let state fully settle
+   * To investigate: add logging around the `game:round-end` handler in
+   * use-game.ts and the round-end emission in handler.ts / game-instance.ts.
    */
   test.skip('complete a round and see round summary', async ({ fourPlayerBidding }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);
@@ -53,7 +38,7 @@ test.describe('Full Game', () => {
   });
 
   test.skip('dismiss round summary and continue to next round', async ({ fourPlayerBidding }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);

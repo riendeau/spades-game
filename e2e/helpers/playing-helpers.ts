@@ -3,30 +3,13 @@ import type { Page } from '@playwright/test';
 /**
  * Plays the first available (non-disabled) card on the given page.
  * The page must be showing "Your turn!".
- *
- * NOTE: This works reliably for the first play in a trick (no TrickArea cards yet).
- * For subsequent plays within a trick, TrickArea also renders non-disabled <Card>
- * buttons that can match the same selector. See full-game.spec.ts comments for details
- * on approaches to fix multi-play scenarios.
  */
 export async function playFirstCard(page: Page): Promise<void> {
   await page.getByText('Your turn!').waitFor({ timeout: 15_000 });
 
-  // Find the first enabled card button in the hand area.
-  // Cards are <button> elements containing rank + suit spans.
-  const cards = page.locator('button:not([disabled])').filter({
-    has: page.locator('span'),
-  });
-
-  // Click the first card that looks like a playing card (has 2 spans: rank + suit)
-  const cardButtons = await cards.all();
-  for (const card of cardButtons) {
-    const spans = await card.locator('span').count();
-    if (spans === 2) {
-      await card.click();
-      break;
-    }
-  }
+  // Use data-testid to reliably target hand cards (not trick area cards)
+  const card = page.locator('[data-testid="hand-card"]:not([disabled])').first();
+  await card.click();
 
   // Wait for the Play button to appear and click it
   const playButton = page.getByRole('button', { name: /^Play .+ of .+$/ });
