@@ -22,6 +22,61 @@ const TEAM_COLORS: Record<'team1' | 'team2', string> = {
   team2: '#10b981'
 };
 
+function PlayerSlot({ position: pos, gameState, myPosition }: { position: Position; gameState: ClientGameState; myPosition: Position }) {
+  const player = gameState.players.find(p => p.position === pos);
+  const isMe = pos === myPosition;
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        padding: '16px',
+        backgroundColor: player ? '#fff' : '#f9fafb',
+        border: `2px solid ${player ? TEAM_COLORS[player.team] : '#e5e7eb'}`,
+        borderRadius: '12px',
+        opacity: player ? 1 : 0.6
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <span style={{ fontSize: '12px', color: '#6b7280' }}>
+          {POSITION_LABELS[pos]}
+        </span>
+        {player && (
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: TEAM_COLORS[player.team]
+            }}
+          >
+            Team {player.team === 'team1' ? '1' : '2'}
+          </span>
+        )}
+      </div>
+      <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+        {player ? (
+          <>
+            {player.nickname}
+            {isMe && <span style={{ color: '#6b7280' }}> (you)</span>}
+          </>
+        ) : (
+          <span style={{ color: '#9ca3af' }}>Waiting...</span>
+        )}
+      </div>
+      {player && (
+        <div
+          style={{
+            fontSize: '12px',
+            color: player.ready ? '#10b981' : '#f59e0b'
+          }}
+        >
+          {player.ready ? 'Ready' : 'Not ready'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function WaitingRoom({ roomId, gameState, myPosition, onReady, onLeave }: WaitingRoomProps) {
   const myPlayer = gameState.players.find(p => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
@@ -72,66 +127,22 @@ export function WaitingRoom({ roomId, gameState, myPosition, onReady, onLeave }:
 
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           gap: '16px',
           marginBottom: '32px'
         }}
       >
-        {([0, 1, 2, 3] as Position[]).map((pos) => {
-          const player = gameState.players.find(p => p.position === pos);
-          const isMe = pos === myPosition;
-
-          return (
-            <div
-              key={pos}
-              style={{
-                padding: '16px',
-                backgroundColor: player ? '#fff' : '#f9fafb',
-                border: `2px solid ${player ? TEAM_COLORS[player.team] : '#e5e7eb'}`,
-                borderRadius: '12px',
-                opacity: player ? 1 : 0.6
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                  {POSITION_LABELS[pos]}
-                </span>
-                {player && (
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: TEAM_COLORS[player.team]
-                    }}
-                  >
-                    Team {player.team === 'team1' ? '1' : '2'}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontWeight: 600, marginBottom: '4px' }}>
-                {player ? (
-                  <>
-                    {player.nickname}
-                    {isMe && <span style={{ color: '#6b7280' }}> (you)</span>}
-                  </>
-                ) : (
-                  <span style={{ color: '#9ca3af' }}>Waiting...</span>
-                )}
-              </div>
-              {player && (
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: player.ready ? '#10b981' : '#f59e0b'
-                  }}
-                >
-                  {player.ready ? 'Ready' : 'Not ready'}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {/* North */}
+        <PlayerSlot position={2} gameState={gameState} myPosition={myPosition} />
+        {/* West and East */}
+        <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+          <PlayerSlot position={1} gameState={gameState} myPosition={myPosition} />
+          <PlayerSlot position={3} gameState={gameState} myPosition={myPosition} />
+        </div>
+        {/* South */}
+        <PlayerSlot position={0} gameState={gameState} myPosition={myPosition} />
       </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
