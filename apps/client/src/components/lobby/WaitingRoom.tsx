@@ -135,14 +135,18 @@ export function WaitingRoom({ roomId, gameState, myPosition, onReady, onLeave }:
         }}
       >
         {/* North */}
-        <PlayerSlot position={2} gameState={gameState} myPosition={myPosition} />
+        <div style={{ width: 'calc(50% - 8px)' }}>
+          <PlayerSlot position={2} gameState={gameState} myPosition={myPosition} />
+        </div>
         {/* West and East */}
         <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
           <PlayerSlot position={1} gameState={gameState} myPosition={myPosition} />
           <PlayerSlot position={3} gameState={gameState} myPosition={myPosition} />
         </div>
         {/* South */}
-        <PlayerSlot position={0} gameState={gameState} myPosition={myPosition} />
+        <div style={{ width: 'calc(50% - 8px)' }}>
+          <PlayerSlot position={0} gameState={gameState} myPosition={myPosition} />
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '12px' }}>
