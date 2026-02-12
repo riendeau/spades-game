@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --filter '!@spades/e2e' test",
+    "test:e2e": "pnpm --filter @spades/e2e test",
+    "test:all": "pnpm test && pnpm test:e2e",
     "lint": "pnpm -r lint"
   },
   "devDependencies": {
