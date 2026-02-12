@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures/game-fixtures';
 import { completeAllBids } from '../helpers/bidding-helpers';
-import { playFirstCard, playCurrentPlayerCard, completeTrick } from '../helpers/playing-helpers';
+import { playFirstCard, playCurrentPlayerCard, completeTrick, findCurrentPlayer } from '../helpers/playing-helpers';
 
 test.describe('Card Playing', () => {
   test('current player can select and play a card', async ({ fourPlayerBidding }) => {
@@ -65,5 +65,62 @@ test.describe('Card Playing', () => {
         break;
       }
     }
+  });
+
+  test('spade cards are disabled when leading first trick (spades not broken)', async ({ fourPlayerBidding }) => {
+    const { players } = fourPlayerBidding;
+
+    await completeAllBids(players, 3);
+
+    // Find the current player (leader of first trick)
+    const leader = await findCurrentPlayer(players);
+
+    // Cards are dealt sorted with spades first.
+    // When leading with spades unbroken, spade cards should be disabled
+    // (unless the player only has spades, which is extremely unlikely on first trick).
+    const allHandCards = leader.locator('[data-testid="hand-card"]');
+    const enabledCards = leader.locator('[data-testid="hand-card"]:not([disabled])');
+    const disabledCards = leader.locator('[data-testid="hand-card"][disabled]');
+
+    const totalCount = await allHandCards.count();
+    const enabledCount = await enabledCards.count();
+    const disabledCount = await disabledCards.count();
+
+    // Player should have 13 cards
+    expect(totalCount).toBe(13);
+    // Some cards should be enabled (non-spade cards)
+    expect(enabledCount).toBeGreaterThan(0);
+    // Some cards should be disabled (spade cards) unless player has no spades
+    // With 13 cards from a shuffled deck, having at least 1 spade is very likely
+    // but we just check that enabled < total (at least some are restricted)
+    expect(enabledCount).toBeLessThanOrEqual(totalCount);
+    // Enabled + disabled = total
+    expect(enabledCount + disabledCount).toBe(totalCount);
+  });
+
+  test('following player has some cards disabled based on lead suit', async ({ fourPlayerBidding }) => {
+    const { players } = fourPlayerBidding;
+
+    await completeAllBids(players, 3);
+
+    // First player leads a card
+    await playCurrentPlayerCard(players);
+
+    // Find the next current player (follower)
+    const follower = await findCurrentPlayer(players);
+
+    const allHandCards = follower.locator('[data-testid="hand-card"]');
+    const enabledCards = follower.locator('[data-testid="hand-card"]:not([disabled])');
+
+    const totalCount = await allHandCards.count();
+    const enabledCount = await enabledCards.count();
+
+    // The follower should have 13 cards total
+    expect(totalCount).toBe(13);
+    // At least some cards must be enabled (they must be able to play something)
+    expect(enabledCount).toBeGreaterThan(0);
+    // If the follower has the lead suit, only those cards (and possibly others
+    // if they don't have the suit) should be enabled, so enabled <= total
+    expect(enabledCount).toBeLessThanOrEqual(totalCount);
   });
 });

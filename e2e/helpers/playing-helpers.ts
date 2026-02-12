@@ -7,7 +7,11 @@ import type { Page } from '@playwright/test';
 export async function playFirstCard(page: Page): Promise<void> {
   await page.getByText('Your turn!').waitFor({ timeout: 15_000 });
 
-  // Use data-testid to reliably target hand cards (not trick area cards)
+  // Count cards before playing so we can verify the play was confirmed
+  const handCards = page.locator('[data-testid="hand-card"]');
+  const countBefore = await handCards.count();
+
+  // Use data-testid + :not([disabled]) to target playable hand cards
   const card = page.locator('[data-testid="hand-card"]:not([disabled])').first();
   await card.click();
 
@@ -15,6 +19,14 @@ export async function playFirstCard(page: Page): Promise<void> {
   const playButton = page.getByRole('button', { name: /^Play .+ of .+$/ });
   await playButton.waitFor({ timeout: 5_000 });
   await playButton.click();
+
+  // Wait for the server to confirm the play (card removed from hand)
+  // This prevents findCurrentPlayer from picking a stale page on the next call
+  await page.waitForFunction(
+    (before: number) => document.querySelectorAll('[data-testid="hand-card"]').length < before,
+    countBefore,
+    { timeout: 10_000 }
+  );
 }
 
 /**
@@ -40,7 +52,7 @@ export async function completeTrick(pages: Page[]): Promise<void> {
 /**
  * Finds which page currently shows "Your turn!".
  */
-async function findCurrentPlayer(pages: Page[]): Promise<Page> {
+export async function findCurrentPlayer(pages: Page[]): Promise<Page> {
   for (let attempt = 0; attempt < 30; attempt++) {
     for (const page of pages) {
       const turnIndicator = page.getByText('Your turn!');

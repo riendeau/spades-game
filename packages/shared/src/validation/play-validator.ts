@@ -1,7 +1,23 @@
 import type { Card } from '../types/card.js';
-import type { GameState } from '../types/game-state.js';
 import type { PlayerId } from '../types/player.js';
 import { hasSuit, hasOnlySpades } from '../game-logic/deck.js';
+
+/**
+ * Minimal game state interface for play validation.
+ * Both server-side GameState and ClientGameState satisfy this structurally.
+ */
+export interface PlayValidationGameState {
+  phase: string;
+  players: Array<{ id: PlayerId; position: number }>;
+  currentPlayerPosition: number;
+  currentRound: {
+    currentTrick: {
+      plays: Array<{ playerId: PlayerId; card: Card }>;
+      leadSuit: Card['suit'] | null;
+    };
+    spadesBroken: boolean;
+  } | null;
+}
 
 export interface PlayValidationResult {
   valid: boolean;
@@ -9,7 +25,7 @@ export interface PlayValidationResult {
 }
 
 export function validatePlay(
-  gameState: GameState,
+  gameState: PlayValidationGameState,
   playerId: PlayerId,
   card: Card,
   playerHand: Card[]
@@ -61,7 +77,7 @@ export function validatePlay(
 }
 
 export function getPlayableCards(
-  gameState: GameState,
+  gameState: PlayValidationGameState,
   playerId: PlayerId,
   playerHand: Card[]
 ): Card[] {

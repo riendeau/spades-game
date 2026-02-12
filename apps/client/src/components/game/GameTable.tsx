@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Card as CardType, ClientGameState, Position } from '@spades/shared';
+import { getPlayableCards } from '@spades/shared';
 import { PlayerHand } from './PlayerHand';
 import { TrickArea } from './TrickArea';
 import { OpponentArea } from './OpponentArea';
@@ -30,6 +31,21 @@ export function GameTable({
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const isBidding = gameState.phase === 'bidding';
   const isPlaying = gameState.phase === 'playing';
+
+  const myPlayerId = gameState.players.find(p => p.position === myPosition)?.id;
+
+  const playableCards = useMemo(() => {
+    if (!isPlaying || !isMyTurn || !myPlayerId) return undefined;
+    return getPlayableCards(gameState, myPlayerId, myHand);
+  }, [isPlaying, isMyTurn, myPlayerId, gameState, myHand]);
+
+  useEffect(() => {
+    if (selectedCard && playableCards && !playableCards.some(
+      c => c.suit === selectedCard.suit && c.rank === selectedCard.rank
+    )) {
+      setSelectedCard(null);
+    }
+  }, [playableCards, selectedCard]);
 
   const handlePlaySelected = () => {
     if (selectedCard) {
@@ -141,6 +157,7 @@ export function GameTable({
             selectedCard={selectedCard}
             onSelectCard={setSelectedCard}
             faceDown={isBidding && !cardsRevealed}
+            playableCards={playableCards}
           />
 
           {selectedCard && isMyTurn && (

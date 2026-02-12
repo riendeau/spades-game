@@ -9,6 +9,7 @@ interface PlayerHandProps {
   selectedCard: CardType | null;
   onSelectCard: (card: CardType | null) => void;
   faceDown?: boolean;
+  playableCards?: CardType[];
 }
 
 export function PlayerHand({
@@ -17,10 +18,17 @@ export function PlayerHand({
   isMyTurn,
   selectedCard,
   onSelectCard,
-  faceDown = false
+  faceDown = false,
+  playableCards
 }: PlayerHandProps) {
+  const isCardPlayable = (card: CardType): boolean => {
+    if (!isMyTurn) return false;
+    if (!playableCards) return true;
+    return playableCards.some(c => c.suit === card.suit && c.rank === card.rank);
+  };
+
   const handleCardClick = (card: CardType) => {
-    if (!isMyTurn) return;
+    if (!isCardPlayable(card)) return;
 
     if (selectedCard && selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
       // Double click to play
@@ -58,7 +66,7 @@ export function PlayerHand({
               <Card
                 card={card}
                 onClick={() => handleCardClick(card)}
-                disabled={!isMyTurn}
+                disabled={!isCardPlayable(card)}
                 selected={isSelected}
                 testId="hand-card"
               />
