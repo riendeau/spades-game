@@ -8,31 +8,24 @@ import type { Page } from '@playwright/test';
 export async function playFirstCard(page: Page): Promise<void> {
   await page.getByText('Your turn!').waitFor({ timeout: 15_000 });
 
-  const handCards = page.locator('[data-testid="hand-card"]:not([disabled])');
-  const cardCount = await handCards.count();
+  // Count cards before playing so we can verify the play was confirmed
+  const handCards = page.locator('[data-testid="hand-card"]');
+  const countBefore = await handCards.count();
 
-  // Prefer non-spade cards to avoid leading-with-spades violation
-  let cardToClick = handCards.first();
-  for (let i = 0; i < cardCount; i++) {
-    const text = await handCards.nth(i).textContent() || '';
-    if (!text.includes('\u2660')) {
-      cardToClick = handCards.nth(i);
-      break;
-    }
-  }
-
-  await cardToClick.click();
+  // Use data-testid + :not([disabled]) to target playable hand cards
+  const card = page.locator('[data-testid="hand-card"]:not([disabled])').first();
+  await card.click();
 
   // Wait for the Play button to appear and click it
   const playButton = page.getByRole('button', { name: /^Play .+ of .+$/ });
   await playButton.waitFor({ timeout: 5_000 });
   await playButton.click();
 
-  // Wait for server acknowledgement — card count should decrease
-  const expectedCount = cardCount - 1;
+  // Wait for the server to confirm the play (card removed from hand)
+  // This prevents findCurrentPlayer from picking a stale page on the next call
   await page.waitForFunction(
-    (expected) => document.querySelectorAll('[data-testid="hand-card"]').length === expected,
-    expectedCount,
+    (before: number) => document.querySelectorAll('[data-testid="hand-card"]').length < before,
+    countBefore,
     { timeout: 10_000 }
   );
 }
@@ -60,7 +53,7 @@ export async function completeTrick(pages: Page[]): Promise<void> {
 /**
  * Finds which page currently shows "Your turn!".
  */
-async function findCurrentPlayer(pages: Page[]): Promise<Page> {
+export async function findCurrentPlayer(pages: Page[]): Promise<Page> {
   for (let attempt = 0; attempt < 30; attempt++) {
     for (const page of pages) {
       const turnIndicator = page.getByText('Your turn!');

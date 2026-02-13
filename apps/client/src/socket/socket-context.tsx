@@ -19,8 +19,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
+    const serverUrl = import.meta.env.VITE_SERVER_URL
+      || (import.meta.env.DEV ? 'http://localhost:3001' : undefined);
     const newSocket: TypedSocket = io(
-      import.meta.env.VITE_SERVER_URL || 'http://localhost:3001',
+      serverUrl ?? window.location.origin,
       {
         autoConnect: true,
         reconnection: true,
