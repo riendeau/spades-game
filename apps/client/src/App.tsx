@@ -28,8 +28,8 @@ export function App() {
     reset
   } = useGame();
 
-  // Get room ID from URL if present
-  const urlRoomId = window.location.pathname.match(/\/room\/([A-Z0-9]+)/i)?.[1];
+  // Get room ID from URL if present (uppercase for consistency)
+  const urlRoomId = window.location.pathname.match(/\/room\/([A-Z0-9]+)/i)?.[1]?.toUpperCase();
 
   if (!connected) {
     return (
