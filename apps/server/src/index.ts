@@ -59,6 +59,38 @@ if (servingClient) {
   console.log(`Serving client from ${clientDistPath}`);
 }
 
+// Handle port conflicts from orphaned tsx watch processes
+httpServer.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. This is likely an orphaned tsx watch process.`);
+    console.error(`Run this command to kill it: lsof -ti :${PORT} | xargs kill`);
+    process.exit(1);
+  }
+  throw err;
+});
+
 httpServer.listen(PORT, () => {
   console.log(`Spades server running on port ${PORT}`);
 });
+
+// Graceful shutdown handling
+const shutdown = (signal: string) => {
+  console.log(`\n${signal} received, shutting down gracefully...`);
+
+  // Forcefully disconnect all Socket.io clients immediately
+  io.disconnectSockets();
+  io.close();
+
+  // Close HTTP server (don't wait for callback)
+  httpServer.close();
+
+  // Exit immediately after initiating shutdown
+  // This prevents tsx watch from force-killing before cleanup completes
+  setTimeout(() => {
+    console.log('Server shutdown complete');
+    process.exit(0);
+  }, 100);
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
