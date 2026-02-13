@@ -81,8 +81,14 @@ export function WaitingRoom({ roomId, gameState, myPosition, onReady, onLeave }:
   const myPlayer = gameState.players.find(p => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
 
+  const shareableUrl = `${window.location.origin}/room/${roomId}`;
+
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomId);
+  };
+
+  const copyShareableUrl = () => {
+    navigator.clipboard.writeText(shareableUrl);
   };
 
   return (
@@ -101,28 +107,87 @@ export function WaitingRoom({ roomId, gameState, myPosition, onReady, onLeave }:
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
+          flexDirection: 'column',
+          gap: '16px',
           marginBottom: '32px'
         }}
       >
-        <span style={{ fontSize: '14px', color: '#6b7280' }}>Room Code:</span>
-        <code
+        <div
           style={{
-            fontSize: '24px',
-            fontWeight: 700,
-            letterSpacing: '3px',
-            padding: '8px 16px',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '8px',
-            cursor: 'pointer'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px'
           }}
-          onClick={copyRoomCode}
-          title="Click to copy"
         >
-          {roomId}
-        </code>
+          <span style={{ fontSize: '14px', color: '#6b7280' }}>Room Code:</span>
+          <code
+            style={{
+              fontSize: '24px',
+              fontWeight: 700,
+              letterSpacing: '3px',
+              padding: '8px 16px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+            onClick={copyRoomCode}
+            title="Click to copy"
+          >
+            {roomId}
+          </code>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <span style={{ fontSize: '14px', color: '#6b7280' }}>Share this link:</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              backgroundColor: '#f3f4f6',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              maxWidth: '100%'
+            }}
+            onClick={copyShareableUrl}
+            title="Click to copy"
+          >
+            <code
+              style={{
+                fontSize: '14px',
+                color: '#3b82f6',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {shareableUrl}
+            </code>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0, color: '#6b7280' }}
+            >
+              <rect x="3" y="3" width="10" height="10" rx="2" />
+              <path d="M7 3V1h6v6h-2" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <div
@@ -171,7 +236,7 @@ export function WaitingRoom({ roomId, gameState, myPosition, onReady, onLeave }:
             marginTop: '16px'
           }}
         >
-          Share the room code with friends to invite them
+          Share the link or room code with friends to invite them
         </p>
       )}
     </div>
