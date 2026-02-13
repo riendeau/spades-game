@@ -3,22 +3,7 @@ import { completeAllBids } from '../helpers/bidding-helpers';
 import { completeTrick } from '../helpers/playing-helpers';
 
 test.describe('Full Game', () => {
-  /**
-   * SKIPPED: Card playing through all 13 tricks works correctly, but the
-   * RoundSummaryModal never appears afterward. The modal renders when
-   * `roundSummary` is set in the store, which happens via the `game:round-end`
-   * socket event. After the 13th trick the game transitions through
-   * trick-end → round-end on the server, but the client does not receive or
-   * display the round summary. Likely causes:
-   * - The server's round-end flow may not emit `game:round-end` after scoring
-   * - The event may be emitted but the client's state is already torn down
-   * - The modal text "Round {n} Complete" (RoundSummaryModal.tsx:35) may not
-   *   match the regex used here
-   *
-   * To investigate: add logging around the `game:round-end` handler in
-   * use-game.ts and the round-end emission in handler.ts / game-instance.ts.
-   */
-  test.skip('complete a round and see round summary', async ({ fourPlayerBidding }) => {
+  test('complete a round and see round summary', async ({ fourPlayerBidding }) => {
     test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
 
@@ -37,7 +22,7 @@ test.describe('Full Game', () => {
     await expect(players[0].getByRole('button', { name: 'Continue' })).toBeVisible();
   });
 
-  test.skip('dismiss round summary and continue to next round', async ({ fourPlayerBidding }) => {
+  test('dismiss round summary and continue to next round', async ({ fourPlayerBidding }) => {
     test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
 
