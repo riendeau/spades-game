@@ -54,6 +54,35 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 - `apps/server/src/rooms/room-manager.ts` - Room and session management
 - `apps/client/src/hooks/use-game.ts` - Main client-side game hook
 
+## Development Environment
+
+### Dev Server Setup
+
+The server uses **nodemon** (not `tsx watch`) for file watching in development. This choice is critical for proper process management:
+
+**Why nodemon:**
+- Properly forwards SIGINT/SIGTERM signals to child processes
+- Waits for graceful shutdown before restarting on file changes
+- Prevents orphaned Node.js processes when stopping with Ctrl+C
+- More reliable when running under `pnpm --parallel`
+
+**Graceful Shutdown:**
+The server implements SIGINT/SIGTERM handlers (`apps/server/src/index.ts`) that:
+- Immediately disconnect all Socket.io clients
+- Close the HTTP server
+- Exit within 100ms to prevent force-kill from process managers
+
+**If you encounter EADDRINUSE errors:**
+```bash
+# Find and kill orphaned process on port 3001
+lsof -ti :3001 | xargs kill
+```
+
+This typically happens if:
+- The dev server was force-killed (kill -9) instead of Ctrl+C
+- System crash or unexpected termination
+- The graceful shutdown handler failed to complete
+
 ## Client Architecture Details
 
 ### Routing
