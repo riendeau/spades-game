@@ -1,9 +1,8 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Plays an available (non-disabled) card on the given page.
- * Prefers non-spade cards to avoid "Cannot lead with spades until broken".
- * Waits for the card to be removed from the hand (server acknowledgement).
+ * Plays the first available (non-disabled) card on the given page.
+ * The page must be showing "Your turn!".
  */
 export async function playFirstCard(page: Page): Promise<void> {
   await page.getByText('Your turn!').waitFor({ timeout: 15_000 });
