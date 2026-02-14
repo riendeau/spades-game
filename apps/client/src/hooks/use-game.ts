@@ -88,10 +88,16 @@ export function useGame() {
 
     const session = loadSession();
     if (session) {
+      console.log(
+        'Attempting reconnect with session:',
+        session.sessionToken.substring(0, 8) + '...'
+      );
       socket.emit('player:reconnect', {
         sessionToken: session.sessionToken,
         roomId: session.roomId,
       });
+    } else {
+      console.log('No session found to reconnect');
     }
   }, [socket, connected]);
 
@@ -115,6 +121,12 @@ export function useGame() {
 
   const setReady = useCallback(() => {
     if (!socket) return;
+    console.log(
+      'Setting ready, socket connected:',
+      socket.connected,
+      'socket id:',
+      socket.id
+    );
     socket.emit('room:ready');
   }, [socket]);
 
