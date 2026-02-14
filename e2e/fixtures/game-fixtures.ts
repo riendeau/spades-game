@@ -92,7 +92,7 @@ export const test = base.extend<GameFixtures>({
 
     // All players ready up
     for (const page of players) {
-      await page.getByRole('button', { name: 'Ready' }).click();
+      await page.getByRole('button', { name: 'Ready', exact: true }).click();
     }
 
     // Wait for bidding phase to appear on any page

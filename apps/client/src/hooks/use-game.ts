@@ -86,6 +86,15 @@ export function useGame() {
   useEffect(() => {
     if (!socket || !connected) return;
 
+    // If this is an auto-join tab, clear any inherited session first
+    const params = new URLSearchParams(window.location.search);
+    const isAutoJoin = params.get('autoName') !== null;
+
+    if (isAutoJoin) {
+      clearSession();
+      return;
+    }
+
     const session = loadSession();
     if (session) {
       socket.emit('player:reconnect', {

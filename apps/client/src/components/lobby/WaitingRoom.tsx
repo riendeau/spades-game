@@ -1,5 +1,5 @@
 import type { ClientGameState, Position } from '@spades/shared';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -21,6 +21,39 @@ const TEAM_COLORS: Record<'team1' | 'team2', string> = {
   team1: '#3b82f6',
   team2: '#10b981',
 };
+
+// Fun name generator for auto-join feature
+const ADJECTIVES = [
+  'Swift',
+  'Happy',
+  'Clever',
+  'Bold',
+  'Bright',
+  'Calm',
+  'Brave',
+  'Quick',
+  'Wise',
+  'Lucky',
+];
+
+const ANIMALS = [
+  'Eagle',
+  'Penguin',
+  'Fox',
+  'Wolf',
+  'Bear',
+  'Tiger',
+  'Lion',
+  'Hawk',
+  'Owl',
+  'Panda',
+];
+
+function generateRandomName(): string {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  return `${adj} ${animal}`;
+}
 
 function PlayerSlot({
   position: pos,
@@ -100,8 +133,38 @@ export function WaitingRoom({
 }: WaitingRoomProps) {
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
+  const autoReadyTabsClicked = useRef(false);
 
   const shareableUrl = `${window.location.origin}/room/${roomId}`;
+
+  // Auto-ready feature: check for autoReady query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shouldAutoReady = params.get('autoReady') === 'true';
+
+    if (shouldAutoReady && !isReady && gameState.players.length === 4) {
+      // Auto-click ready after a short delay to ensure everything is loaded
+      const timer = setTimeout(() => {
+        onReady();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady, gameState.players.length, onReady]);
+
+  // Auto-ready in original tab after clicking "Open 3 Auto-Ready Tabs"
+  useEffect(() => {
+    if (
+      autoReadyTabsClicked.current &&
+      !isReady &&
+      gameState.players.length === 4
+    ) {
+      // All players have joined, auto-ready this tab too
+      const timer = setTimeout(() => {
+        onReady();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady, gameState.players.length, onReady]);
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomId);
@@ -109,6 +172,17 @@ export function WaitingRoom({
 
   const copyShareableUrl = () => {
     navigator.clipboard.writeText(shareableUrl);
+  };
+
+  const openAutoReadyTabs = () => {
+    // Open 3 tabs with unique random names
+    for (let i = 0; i < 3; i++) {
+      const randomName = generateRandomName();
+      const autoReadyUrl = `${shareableUrl}?autoReady=true&autoName=${encodeURIComponent(randomName)}`;
+      window.open(autoReadyUrl, '_blank');
+    }
+    // Mark that we should auto-ready this tab once all players join
+    autoReadyTabsClicked.current = true;
   };
 
   return (
@@ -264,6 +338,21 @@ export function WaitingRoom({
           {isReady ? 'Waiting for others...' : 'Ready'}
         </Button>
       </div>
+
+      {/* Dev button to auto-fill room */}
+      {import.meta.env.DEV && gameState.players.length < 4 && (
+        <Button
+          onClick={openAutoReadyTabs}
+          style={{
+            marginTop: '12px',
+            width: '100%',
+            backgroundColor: '#8b5cf6',
+            fontSize: '13px',
+          }}
+        >
+          🚀 Open 3 Auto-Ready Tabs (Dev)
+        </Button>
+      )}
 
       {gameState.players.length < 4 && (
         <p
