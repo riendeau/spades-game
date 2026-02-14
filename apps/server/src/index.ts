@@ -13,6 +13,7 @@ import { modRegistry } from './mods/mod-registry.js';
 import { setupSocketHandlers } from './socket/handler.js';
 
 const PORT = process.env.PORT || 3001;
+const BASE_PATH = process.env.BASE_PATH || '/';
 
 // Load mods
 loadBuiltInMods();
@@ -38,13 +39,13 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
       },
 });
 
-// Health check
+// Health check (always at root for monitoring)
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
 // Get available mods
-app.get('/api/mods', (_req, res) => {
+app.get(`${BASE_PATH}api/mods`, (_req, res) => {
   res.json(modRegistry.getModList());
 });
 
@@ -53,14 +54,14 @@ setupSocketHandlers(io);
 
 // Serve the built client if it exists
 if (servingClient) {
-  app.use(express.static(clientDistPath));
+  app.use(BASE_PATH, express.static(clientDistPath));
 
-  // SPA fallback: serve index.html for any non-API, non-file request
-  app.get('*', (_req, res) => {
+  // SPA fallback: serve index.html for any non-API, non-file request under BASE_PATH
+  app.get(`${BASE_PATH}*`, (_req, res) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 
-  console.log(`Serving client from ${clientDistPath}`);
+  console.log(`Serving client from ${clientDistPath} at ${BASE_PATH}`);
 }
 
 // Handle port conflicts from orphaned tsx watch processes
