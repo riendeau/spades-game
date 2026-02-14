@@ -6,14 +6,14 @@ This guide covers deploying the Spades game to production.
 
 ### Option 1: Subdomain (Recommended - Simpler)
 
-Deploy at `spades.johnriendeau.com` (or any subdomain)
+Deploy at `spades.yourdomain.com` (or any subdomain)
 
 - ✅ Simpler setup, no reverse proxy needed
 - ✅ Deploy at root path (`BASE_PATH=/`)
 
 ### Option 2: Path on Existing Domain
 
-Deploy at `johnriendeau.com/spades`
+Deploy at `yourdomain.com/spades`
 
 - ⚠️ Requires reverse proxy configuration on your main domain
 - ⚠️ Set `BASE_PATH=/spades`
@@ -60,9 +60,9 @@ Render will build and deploy your app. You'll get a URL like `spades-game.onrend
 
 ### DNS Configuration
 
-#### For Subdomain Deployment (spades.johnriendeau.com):
+#### For Subdomain Deployment (spades.yourdomain.com):
 
-1. In your domain registrar (wherever johnriendeau.com is hosted):
+1. In your domain registrar (wherever yourdomain.com is hosted):
    - Add a CNAME record:
      - Name: `spades`
      - Value: `spades-game.onrender.com` (your Render URL without https://)
@@ -70,12 +70,12 @@ Render will build and deploy your app. You'll get a URL like `spades-game.onrend
 
 2. In Render:
    - Go to your service → "Settings" → "Custom Domain"
-   - Add `spades.johnriendeau.com`
+   - Add `spades.yourdomain.com`
    - Wait for SSL certificate to provision (~5 minutes)
 
-#### For Path Deployment (johnriendeau.com/spades):
+#### For Path Deployment (yourdomain.com/spades):
 
-This requires a reverse proxy at your main domain. If johnriendeau.com is hosted on:
+This requires a reverse proxy at your main domain. If yourdomain.com is hosted on:
 
 **Nginx**:
 
