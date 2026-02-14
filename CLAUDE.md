@@ -104,6 +104,7 @@ This typically happens if:
 - Custom UI components in `apps/client/src/components/ui/` (Button, Input, Card)
 - No CSS preprocessing or CSS-in-JS libraries
 - Design system uses hard-coded colors and spacing values
+- **Overlapping elements**: Avoid using `opacity` on elements that overlap (e.g., cards with negative margins). Use CSS filters (`grayscale`, `brightness`) and solid background colors instead to prevent transparency stacking artifacts
 
 ### State Management
 
