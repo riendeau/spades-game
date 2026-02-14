@@ -34,12 +34,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     newSocket.on('connect', () => {
       setConnected(true);
-      console.log('Connected to server');
+      console.log('Connected to server, socket ID:', newSocket.id);
     });
 
-    newSocket.on('disconnect', () => {
+    newSocket.on('disconnect', (reason) => {
       setConnected(false);
-      console.log('Disconnected from server');
+      console.log('Disconnected from server, reason:', reason);
     });
 
     setSocket(newSocket);
