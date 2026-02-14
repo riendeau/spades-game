@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -18,6 +18,28 @@ export function JoinRoom({
   const [mode, setMode] = useState<'create' | 'join'>(
     initialRoomId ? 'join' : 'create'
   );
+  const autoJoinAttempted = useRef(false);
+
+  // Auto-join feature: check for autoName query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const autoName = params.get('autoName');
+
+    if (autoName && !autoJoinAttempted.current) {
+      // Set the nickname from URL
+      setNickname(autoName);
+
+      // If we have a room ID (from URL) and a name, auto-join
+      if (initialRoomId) {
+        setMode('join');
+        // Auto-submit after a short delay to ensure everything is ready
+        autoJoinAttempted.current = true;
+        setTimeout(() => {
+          onJoinRoom(initialRoomId.toUpperCase(), autoName);
+        }, 500);
+      }
+    }
+  }, [initialRoomId, onJoinRoom]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

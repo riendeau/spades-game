@@ -22,6 +22,39 @@ const TEAM_COLORS: Record<'team1' | 'team2', string> = {
   team2: '#10b981',
 };
 
+// Fun name generator for auto-join feature
+const ADJECTIVES = [
+  'Swift',
+  'Happy',
+  'Clever',
+  'Bold',
+  'Bright',
+  'Calm',
+  'Brave',
+  'Quick',
+  'Wise',
+  'Lucky',
+];
+
+const ANIMALS = [
+  'Eagle',
+  'Penguin',
+  'Fox',
+  'Wolf',
+  'Bear',
+  'Tiger',
+  'Lion',
+  'Hawk',
+  'Owl',
+  'Panda',
+];
+
+function generateRandomName(): string {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  return `${adj} ${animal}`;
+}
+
 function PlayerSlot({
   position: pos,
   gameState,
@@ -126,8 +159,10 @@ export function WaitingRoom({
   };
 
   const openAutoReadyTabs = () => {
-    const autoReadyUrl = `${shareableUrl}?autoReady=true`;
+    // Open 3 tabs with unique random names
     for (let i = 0; i < 3; i++) {
+      const randomName = generateRandomName();
+      const autoReadyUrl = `${shareableUrl}?autoReady=true&autoName=${encodeURIComponent(randomName)}`;
       window.open(autoReadyUrl, '_blank');
     }
   };
