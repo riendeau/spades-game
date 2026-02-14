@@ -2,10 +2,13 @@ import type { Page } from '@playwright/test';
 
 /**
  * Plays the first available (non-disabled) card on the given page.
- * The page must be showing "Your turn!".
+ * The page must be the current player's turn (button showing "Select Card" or starting with "Play").
  */
 export async function playFirstCard(page: Page): Promise<void> {
-  await page.getByText('Your turn!').waitFor({ timeout: 15_000 });
+  // Wait for it to be this player's turn (button not showing "Waiting...")
+  await page
+    .getByRole('button', { name: /^(Select Card|Play .+ of .+)$/ })
+    .waitFor({ timeout: 15_000 });
 
   // Count cards before playing so we can verify the play was confirmed
   const handCards = page.locator('[data-testid="hand-card"]');
@@ -17,7 +20,7 @@ export async function playFirstCard(page: Page): Promise<void> {
     .first();
   await card.click();
 
-  // Wait for the Play button to appear and click it
+  // Wait for the Play button to be enabled and click it
   const playButton = page.getByRole('button', { name: /^Play .+ of .+$/ });
   await playButton.waitFor({ timeout: 5_000 });
   await playButton.click();
@@ -53,13 +56,15 @@ export async function completeTrick(pages: Page[]): Promise<void> {
 }
 
 /**
- * Finds which page currently shows "Your turn!".
+ * Finds which page is the current player (button showing "Select Card" or "Play", not "Waiting...").
  */
 export async function findCurrentPlayer(pages: Page[]): Promise<Page> {
   for (let attempt = 0; attempt < 30; attempt++) {
     for (const page of pages) {
-      const turnIndicator = page.getByText('Your turn!');
-      if (await turnIndicator.isVisible({ timeout: 100 }).catch(() => false)) {
+      const turnButton = page.getByRole('button', {
+        name: /^(Select Card|Play .+ of .+)$/,
+      });
+      if (await turnButton.isVisible({ timeout: 100 }).catch(() => false)) {
         return page;
       }
     }

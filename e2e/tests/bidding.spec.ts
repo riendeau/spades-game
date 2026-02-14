@@ -96,12 +96,14 @@ test.describe('Bidding', () => {
 
     await completeAllBids(players, 3);
 
-    // Should transition to playing phase — "Your turn!" appears on one page
+    // Should transition to playing phase — one player's button shows "Select Card"
     let foundTurn = false;
     for (let attempt = 0; attempt < 20; attempt++) {
       for (const page of players) {
-        const turn = page.getByText('Your turn!');
-        if (await turn.isVisible({ timeout: 200 }).catch(() => false)) {
+        const turnButton = page.getByRole('button', {
+          name: /^(Select Card|Play .+ of .+)$/,
+        });
+        if (await turnButton.isVisible({ timeout: 200 }).catch(() => false)) {
           foundTurn = true;
           break;
         }

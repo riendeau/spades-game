@@ -19,10 +19,10 @@ test.describe('Card Playing', () => {
     // Find whose turn it is and play a card
     const activePlayer = await playCurrentPlayerCard(players);
 
-    // The play button should disappear after playing
+    // The play button should now show "Waiting..." after playing
     await expect(
-      activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })
-    ).not.toBeVisible({ timeout: 5_000 });
+      activePlayer.getByRole('button', { name: 'Waiting...' })
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test('complete a full trick with 4 card plays', async ({
@@ -33,12 +33,14 @@ test.describe('Card Playing', () => {
     await completeAllBids(players, 3);
     await completeTrick(players);
 
-    // After trick is complete, another "Your turn!" should appear for the next trick
+    // After trick is complete, one player should have button showing "Select Card" for the next trick
     let foundNextTurn = false;
     for (let attempt = 0; attempt < 20; attempt++) {
       for (const page of players) {
-        const turn = page.getByText('Your turn!');
-        if (await turn.isVisible({ timeout: 200 }).catch(() => false)) {
+        const turnButton = page.getByRole('button', {
+          name: /^(Select Card|Play .+ of .+)$/,
+        });
+        if (await turnButton.isVisible({ timeout: 200 }).catch(() => false)) {
           foundNextTurn = true;
           break;
         }
@@ -56,10 +58,12 @@ test.describe('Card Playing', () => {
 
     await completeAllBids(players, 3);
 
-    // Find a player whose turn it is NOT
+    // Find a player whose turn it is NOT (button showing "Waiting...")
     for (const page of players) {
-      const turn = page.getByText('Your turn!');
-      if (!(await turn.isVisible({ timeout: 2_000 }).catch(() => false))) {
+      const waitingButton = page.getByRole('button', { name: 'Waiting...' });
+      if (
+        await waitingButton.isVisible({ timeout: 2_000 }).catch(() => false)
+      ) {
         // This player should have disabled cards
         // Card buttons in the hand should be disabled
         const cardButtons = page.locator('button[disabled]').filter({
