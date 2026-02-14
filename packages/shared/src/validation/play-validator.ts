@@ -1,6 +1,6 @@
+import { hasSuit, hasOnlySpades } from '../game-logic/deck.js';
 import type { Card } from '../types/card.js';
 import type { PlayerId } from '../types/player.js';
-import { hasSuit, hasOnlySpades } from '../game-logic/deck.js';
 
 /**
  * Minimal game state interface for play validation.
@@ -8,11 +8,11 @@ import { hasSuit, hasOnlySpades } from '../game-logic/deck.js';
  */
 export interface PlayValidationGameState {
   phase: string;
-  players: Array<{ id: PlayerId; position: number }>;
+  players: { id: PlayerId; position: number }[];
   currentPlayerPosition: number;
   currentRound: {
     currentTrick: {
-      plays: Array<{ playerId: PlayerId; card: Card }>;
+      plays: { playerId: PlayerId; card: Card }[];
       leadSuit: Card['suit'] | null;
     };
     spadesBroken: boolean;
@@ -36,7 +36,7 @@ export function validatePlay(
   }
 
   // Check if player exists and it's their turn
-  const player = gameState.players.find(p => p.id === playerId);
+  const player = gameState.players.find((p) => p.id === playerId);
   if (!player) {
     return { valid: false, errorMessage: 'Player not found' };
   }
@@ -46,7 +46,9 @@ export function validatePlay(
   }
 
   // Check if player has the card
-  const hasCardInHand = playerHand.some(c => c.suit === card.suit && c.rank === card.rank);
+  const hasCardInHand = playerHand.some(
+    (c) => c.suit === card.suit && c.rank === card.rank
+  );
   if (!hasCardInHand) {
     return { valid: false, errorMessage: 'Card not in hand' };
   }
@@ -61,7 +63,10 @@ export function validatePlay(
     // Cannot lead with spades unless spades are broken or only have spades
     if (card.suit === 'spades') {
       if (!gameState.currentRound?.spadesBroken && !hasOnlySpades(playerHand)) {
-        return { valid: false, errorMessage: 'Cannot lead with spades until broken' };
+        return {
+          valid: false,
+          errorMessage: 'Cannot lead with spades until broken',
+        };
       }
     }
     return { valid: true };
@@ -81,7 +86,7 @@ export function getPlayableCards(
   playerId: PlayerId,
   playerHand: Card[]
 ): Card[] {
-  return playerHand.filter(card => {
+  return playerHand.filter((card) => {
     const result = validatePlay(gameState, playerId, card, playerHand);
     return result.valid;
   });

@@ -40,7 +40,10 @@ export async function placeBlindNilBid(page: Page): Promise<void> {
  * Completes all 4 bids by finding the current bidder among the pages.
  * Each player bids the given value.
  */
-export async function completeAllBids(pages: Page[], bidValue: number): Promise<void> {
+export async function completeAllBids(
+  pages: Page[],
+  bidValue: number
+): Promise<void> {
   for (let i = 0; i < 4; i++) {
     const bidder = await findCurrentBidder(pages);
     await placeBid(bidder, bidValue);

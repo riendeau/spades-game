@@ -9,7 +9,8 @@ import type { RuleMod, TrickCompleteContext } from '@spades/shared';
 export const jokerSpadesMod: RuleMod = {
   id: 'joker-spades',
   name: 'Joker Spades',
-  description: 'Adds two jokers that beat all other cards. Big Joker > Little Joker > Ace of Spades.',
+  description:
+    'Adds two jokers that beat all other cards. Big Joker > Little Joker > Ace of Spades.',
   version: '1.0.0',
   type: 'rule',
   author: 'Spades Team',
@@ -22,6 +23,6 @@ export const jokerSpadesMod: RuleMod = {
 
       // For now, this demonstrates the hook pattern
       return context;
-    }
-  }
+    },
+  },
 };

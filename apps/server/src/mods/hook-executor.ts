@@ -5,7 +5,7 @@ import type {
   PlayValidationContext,
   CardPlayedContext,
   TrickCompleteContext,
-  GameConfig
+  GameConfig,
 } from '@spades/shared';
 
 export class HookExecutor {

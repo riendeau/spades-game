@@ -1,10 +1,10 @@
 import React from 'react';
-import { useGame } from './hooks/use-game';
-import { JoinRoom } from './components/lobby/JoinRoom';
-import { WaitingRoom } from './components/lobby/WaitingRoom';
+import { GameEndModal } from './components/game/GameEndModal';
 import { GameTable } from './components/game/GameTable';
 import { RoundSummaryModal } from './components/game/RoundSummaryModal';
-import { GameEndModal } from './components/game/GameEndModal';
+import { JoinRoom } from './components/lobby/JoinRoom';
+import { WaitingRoom } from './components/lobby/WaitingRoom';
+import { useGame } from './hooks/use-game';
 
 export function App() {
   const {
@@ -25,11 +25,13 @@ export function App() {
     leaveRoom,
     clearRoundSummary,
     revealCards,
-    reset
+    reset,
   } = useGame();
 
   // Get room ID from URL if present (uppercase for consistency)
-  const urlRoomId = window.location.pathname.match(/\/room\/([A-Z0-9]+)/i)?.[1]?.toUpperCase();
+  const urlRoomId = /\/room\/([A-Z0-9]+)/i
+    .exec(window.location.pathname)?.[1]
+    ?.toUpperCase();
 
   if (!connected) {
     return (
@@ -39,11 +41,13 @@ export function App() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f3f4f6'
+          backgroundColor: '#f3f4f6',
         }}
       >
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '8px' }}>Connecting...</div>
+          <div style={{ fontSize: '24px', marginBottom: '8px' }}>
+            Connecting...
+          </div>
           <div style={{ color: '#6b7280' }}>Please wait</div>
         </div>
       </div>
@@ -63,7 +67,7 @@ export function App() {
         padding: '12px 24px',
         borderRadius: '8px',
         zIndex: 2000,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
       }}
     >
       {error}
@@ -102,7 +106,7 @@ export function App() {
 
   // Game in progress
   if (myPosition !== null) {
-    const myPlayer = gameState.players.find(p => p.position === myPosition);
+    const myPlayer = gameState.players.find((p) => p.position === myPosition);
     const myTeam = myPlayer?.team || 'team1';
 
     return (
@@ -149,7 +153,7 @@ export function App() {
         height: '100vh',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
       }}
     >
       Loading...

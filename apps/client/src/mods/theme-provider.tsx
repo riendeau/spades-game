@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ThemeDefinition } from '@spades/shared';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const defaultTheme: ThemeDefinition = {
   colors: {
@@ -13,7 +13,7 @@ const defaultTheme: ThemeDefinition = {
     error: '#dc2626',
     success: '#10b981',
     cardBack: '#1e40af',
-    tableGreen: '#1a472a'
+    tableGreen: '#1a472a',
   },
   typography: {
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -21,20 +21,20 @@ const defaultTheme: ThemeDefinition = {
       small: '12px',
       medium: '14px',
       large: '18px',
-      xlarge: '24px'
-    }
+      xlarge: '24px',
+    },
   },
   cardStyle: {
     borderRadius: '8px',
     shadow: '0 2px 4px rgba(0,0,0,0.1)',
     width: '70px',
-    height: '100px'
+    height: '100px',
   },
   animations: {
     dealSpeed: 150,
     playSpeed: 200,
-    trickCollectSpeed: 300
-  }
+    trickCollectSpeed: 300,
+  },
 };
 
 interface ThemeContextType {
@@ -44,7 +44,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: defaultTheme,
-  setTheme: () => {}
+  setTheme: () => {},
 });
 
 function applyThemeToCSSVariables(theme: ThemeDefinition) {
@@ -68,9 +68,18 @@ function applyThemeToCSSVariables(theme: ThemeDefinition) {
   root.style.setProperty('--card-height', theme.cardStyle.height);
 
   // Animations
-  root.style.setProperty('--animation-deal-speed', `${theme.animations.dealSpeed}ms`);
-  root.style.setProperty('--animation-play-speed', `${theme.animations.playSpeed}ms`);
-  root.style.setProperty('--animation-trick-collect-speed', `${theme.animations.trickCollectSpeed}ms`);
+  root.style.setProperty(
+    '--animation-deal-speed',
+    `${theme.animations.dealSpeed}ms`
+  );
+  root.style.setProperty(
+    '--animation-play-speed',
+    `${theme.animations.playSpeed}ms`
+  );
+  root.style.setProperty(
+    '--animation-trick-collect-speed',
+    `${theme.animations.trickCollectSpeed}ms`
+  );
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

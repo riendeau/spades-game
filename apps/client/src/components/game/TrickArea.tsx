@@ -1,5 +1,9 @@
+import type {
+  ClientGameState,
+  Position,
+  Card as CardType,
+} from '@spades/shared';
 import React from 'react';
-import type { ClientGameState, Position, Card as CardType } from '@spades/shared';
 import { Card } from '../ui/Card';
 
 interface TrickAreaProps {
@@ -7,11 +11,14 @@ interface TrickAreaProps {
   myPosition: Position;
 }
 
-const POSITION_OFFSETS: Record<Position, { top?: string; bottom?: string; left?: string; right?: string }> = {
+const POSITION_OFFSETS: Record<
+  Position,
+  { top?: string; bottom?: string; left?: string; right?: string }
+> = {
   0: { bottom: '20px', left: '50%' },
   1: { top: '50%', left: '20px' },
   2: { top: '20px', left: '50%' },
-  3: { top: '50%', right: '20px' }
+  3: { top: '50%', right: '20px' },
 };
 
 export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
@@ -28,7 +35,7 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
       0: { bottom: '10px', left: '50%', transform: 'translateX(-50%)' },
       1: { top: '50%', left: '10px', transform: 'translateY(-50%)' },
       2: { top: '10px', left: '50%', transform: 'translateX(-50%)' },
-      3: { top: '50%', right: '10px', transform: 'translateY(-50%)' }
+      3: { top: '50%', right: '10px', transform: 'translateY(-50%)' },
     };
     return positions[relPos];
   };
@@ -39,11 +46,11 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
         position: 'relative',
         width: '250px',
         height: '200px',
-        margin: '0 auto'
+        margin: '0 auto',
       }}
     >
-      {trick.plays.map(play => {
-        const player = gameState.players.find(p => p.id === play.playerId);
+      {trick.plays.map((play) => {
+        const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
 
         const relPos = getRelativePosition(player.position);
@@ -53,7 +60,7 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
             key={play.playerId}
             style={{
               position: 'absolute',
-              ...getPositionStyle(relPos)
+              ...getPositionStyle(relPos),
             }}
           >
             <Card card={play.card} small />

@@ -1,5 +1,5 @@
-import React from 'react';
 import type { Card as CardType, Suit } from '@spades/shared';
+import React from 'react';
 
 interface CardProps {
   card: CardType;
@@ -14,17 +14,24 @@ const SUIT_SYMBOLS: Record<Suit, string> = {
   spades: '\u2660',
   hearts: '\u2665',
   diamonds: '\u2666',
-  clubs: '\u2663'
+  clubs: '\u2663',
 };
 
 const SUIT_COLORS: Record<Suit, string> = {
   spades: '#1a1a2e',
   hearts: '#dc2626',
   diamonds: '#dc2626',
-  clubs: '#1a1a2e'
+  clubs: '#1a1a2e',
 };
 
-export function Card({ card, onClick, disabled, selected, small, testId }: CardProps) {
+export function Card({
+  card,
+  onClick,
+  disabled,
+  selected,
+  small,
+  testId,
+}: CardProps) {
   const symbol = SUIT_SYMBOLS[card.suit];
   const color = SUIT_COLORS[card.suit];
 
@@ -52,7 +59,7 @@ export function Card({ card, onClick, disabled, selected, small, testId }: CardP
           : '0 2px 4px rgba(0,0,0,0.1)',
         transition: 'all 0.15s ease',
         transform: selected ? 'translateY(-8px)' : 'none',
-        opacity: disabled ? 0.6 : 1
+        opacity: disabled ? 0.6 : 1,
       }}
     >
       <span>{card.rank}</span>
@@ -73,10 +80,13 @@ export function CardBack({ small }: { small?: boolean }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)'
+        backgroundImage:
+          'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)',
       }}
     >
-      <span style={{ color: '#fff', fontSize: small ? '20px' : '28px' }}>{'\u2660'}</span>
+      <span style={{ color: '#fff', fontSize: small ? '20px' : '28px' }}>
+        {'\u2660'}
+      </span>
     </div>
   );
 }

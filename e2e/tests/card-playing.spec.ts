@@ -1,9 +1,16 @@
 import { test, expect } from '../fixtures/game-fixtures';
 import { completeAllBids } from '../helpers/bidding-helpers';
-import { playFirstCard, playCurrentPlayerCard, completeTrick, findCurrentPlayer } from '../helpers/playing-helpers';
+import {
+  playFirstCard,
+  playCurrentPlayerCard,
+  completeTrick,
+  findCurrentPlayer,
+} from '../helpers/playing-helpers';
 
 test.describe('Card Playing', () => {
-  test('current player can select and play a card', async ({ fourPlayerBidding }) => {
+  test('current player can select and play a card', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     // Complete bidding first
@@ -13,10 +20,14 @@ test.describe('Card Playing', () => {
     const activePlayer = await playCurrentPlayerCard(players);
 
     // The play button should disappear after playing
-    await expect(activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })).not.toBeVisible({ timeout: 5_000 });
+    await expect(
+      activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })
+    ).not.toBeVisible({ timeout: 5_000 });
   });
 
-  test('complete a full trick with 4 card plays', async ({ fourPlayerBidding }) => {
+  test('complete a full trick with 4 card plays', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);
@@ -38,7 +49,9 @@ test.describe('Card Playing', () => {
     expect(foundNextTurn).toBe(true);
   });
 
-  test('non-current player cards are disabled', async ({ fourPlayerBidding }) => {
+  test('non-current player cards are disabled', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);
@@ -67,7 +80,9 @@ test.describe('Card Playing', () => {
     }
   });
 
-  test('spade cards are disabled when leading first trick (spades not broken)', async ({ fourPlayerBidding }) => {
+  test('spade cards are disabled when leading first trick (spades not broken)', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);
@@ -79,7 +94,9 @@ test.describe('Card Playing', () => {
     // When leading with spades unbroken, spade cards should be disabled
     // (unless the player only has spades, which is extremely unlikely on first trick).
     const allHandCards = leader.locator('[data-testid="hand-card"]');
-    const enabledCards = leader.locator('[data-testid="hand-card"]:not([disabled])');
+    const enabledCards = leader.locator(
+      '[data-testid="hand-card"]:not([disabled])'
+    );
     const disabledCards = leader.locator('[data-testid="hand-card"][disabled]');
 
     const totalCount = await allHandCards.count();
@@ -98,7 +115,9 @@ test.describe('Card Playing', () => {
     expect(enabledCount + disabledCount).toBe(totalCount);
   });
 
-  test('following player has some cards disabled based on lead suit', async ({ fourPlayerBidding }) => {
+  test('following player has some cards disabled based on lead suit', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);
@@ -110,7 +129,9 @@ test.describe('Card Playing', () => {
     const follower = await findCurrentPlayer(players);
 
     const allHandCards = follower.locator('[data-testid="hand-card"]');
-    const enabledCards = follower.locator('[data-testid="hand-card"]:not([disabled])');
+    const enabledCards = follower.locator(
+      '[data-testid="hand-card"]:not([disabled])'
+    );
 
     const totalCount = await allHandCards.count();
     const enabledCount = await enabledCards.count();

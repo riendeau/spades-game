@@ -3,7 +3,9 @@ import { completeAllBids } from '../helpers/bidding-helpers';
 import { completeTrick } from '../helpers/playing-helpers';
 
 test.describe('Full Game', () => {
-  test('complete a round and see round summary', async ({ fourPlayerBidding }) => {
+  test('complete a round and see round summary', async ({
+    fourPlayerBidding,
+  }) => {
     test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
 
@@ -19,10 +21,14 @@ test.describe('Full Game', () => {
     await expect(roundComplete).toBeVisible({ timeout: 15_000 });
 
     // Should show Continue button
-    await expect(players[0].getByRole('button', { name: 'Continue' })).toBeVisible();
+    await expect(
+      players[0].getByRole('button', { name: 'Continue' })
+    ).toBeVisible();
   });
 
-  test('dismiss round summary and continue to next round', async ({ fourPlayerBidding }) => {
+  test('dismiss round summary and continue to next round', async ({
+    fourPlayerBidding,
+  }) => {
     test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
 
@@ -34,7 +40,9 @@ test.describe('Full Game', () => {
     }
 
     // Wait for round summary
-    await players[0].getByText(/Round \d+ Complete/).waitFor({ timeout: 15_000 });
+    await players[0]
+      .getByText(/Round \d+ Complete/)
+      .waitFor({ timeout: 15_000 });
 
     // All players click Continue
     for (const page of players) {
@@ -45,6 +53,8 @@ test.describe('Full Game', () => {
     }
 
     // Should start next round — bidding appears again
-    await expect(players[0].getByText(/Bidding Round/)).toBeVisible({ timeout: 15_000 });
+    await expect(players[0].getByText(/Bidding Round/)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });

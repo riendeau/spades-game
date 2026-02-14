@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from 'uuid';
 import type { GameState, Card, Position } from '@spades/shared';
 import { createInitialGameState } from '@spades/shared';
+import { v4 as uuidv4 } from 'uuid';
 import { GameInstance } from '../game/game-instance.js';
 
 const ROOM_ID_LENGTH = 6;
@@ -23,9 +23,9 @@ export interface Room {
 }
 
 export class RoomManager {
-  private rooms: Map<string, Room> = new Map();
-  private sessions: Map<string, PlayerSession> = new Map();
-  private socketToSession: Map<string, string> = new Map();
+  private rooms = new Map<string, Room>();
+  private sessions = new Map<string, PlayerSession>();
+  private socketToSession = new Map<string, string>();
 
   constructor() {
     // Cleanup expired rooms periodically
@@ -36,8 +36,9 @@ export class RoomManager {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let id: string;
     do {
-      id = Array.from({ length: ROOM_ID_LENGTH }, () =>
-        chars[Math.floor(Math.random() * chars.length)]
+      id = Array.from(
+        { length: ROOM_ID_LENGTH },
+        () => chars[Math.floor(Math.random() * chars.length)]
       ).join('');
     } while (this.rooms.has(id));
     return id;
@@ -52,7 +53,7 @@ export class RoomManager {
       id: roomId,
       game,
       createdAt: Date.now(),
-      lastActivity: Date.now()
+      lastActivity: Date.now(),
     };
 
     this.rooms.set(roomId, room);
@@ -63,14 +64,18 @@ export class RoomManager {
     return this.rooms.get(roomId.toUpperCase());
   }
 
-  createSession(roomId: string, playerId: string, socketId: string): PlayerSession {
+  createSession(
+    roomId: string,
+    playerId: string,
+    socketId: string
+  ): PlayerSession {
     const sessionToken = uuidv4();
     const session: PlayerSession = {
       sessionToken,
       playerId,
       roomId,
       socketId,
-      disconnectedAt: null
+      disconnectedAt: null,
     };
 
     this.sessions.set(sessionToken, session);
@@ -163,7 +168,10 @@ export class RoomManager {
 
     // Clean up expired disconnected sessions
     for (const [token, session] of this.sessions) {
-      if (session.disconnectedAt && now - session.disconnectedAt > DISCONNECT_GRACE_PERIOD_MS) {
+      if (
+        session.disconnectedAt &&
+        now - session.disconnectedAt > DISCONNECT_GRACE_PERIOD_MS
+      ) {
         if (session.socketId) {
           this.socketToSession.delete(session.socketId);
         }

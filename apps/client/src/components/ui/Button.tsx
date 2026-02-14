@@ -18,28 +18,28 @@ export function Button({
     cursor: props.disabled ? 'not-allowed' : 'pointer',
     fontWeight: 600,
     transition: 'all 0.15s ease',
-    opacity: props.disabled ? 0.6 : 1
+    opacity: props.disabled ? 0.6 : 1,
   };
 
   const variantStyles: Record<string, React.CSSProperties> = {
     primary: {
       backgroundColor: '#3b82f6',
-      color: '#fff'
+      color: '#fff',
     },
     secondary: {
       backgroundColor: '#e5e7eb',
-      color: '#374151'
+      color: '#374151',
     },
     danger: {
       backgroundColor: '#dc2626',
-      color: '#fff'
-    }
+      color: '#fff',
+    },
   };
 
   const sizeStyles: Record<string, React.CSSProperties> = {
     small: { padding: '6px 12px', fontSize: '14px' },
     medium: { padding: '10px 20px', fontSize: '16px' },
-    large: { padding: '14px 28px', fontSize: '18px' }
+    large: { padding: '14px 28px', fontSize: '18px' },
   };
 
   return (
@@ -49,7 +49,7 @@ export function Button({
         ...baseStyle,
         ...variantStyles[variant],
         ...sizeStyles[size],
-        ...style
+        ...style,
       }}
     >
       {children}

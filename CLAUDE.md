@@ -61,6 +61,7 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 The server uses **nodemon** (not `tsx watch`) for file watching in development. This choice is critical for proper process management:
 
 **Why nodemon:**
+
 - Properly forwards SIGINT/SIGTERM signals to child processes
 - Waits for graceful shutdown before restarting on file changes
 - Prevents orphaned Node.js processes when stopping with Ctrl+C
@@ -68,17 +69,20 @@ The server uses **nodemon** (not `tsx watch`) for file watching in development. 
 
 **Graceful Shutdown:**
 The server implements SIGINT/SIGTERM handlers (`apps/server/src/index.ts`) that:
+
 - Immediately disconnect all Socket.io clients
 - Close the HTTP server
 - Exit within 100ms to prevent force-kill from process managers
 
 **If you encounter EADDRINUSE errors:**
+
 ```bash
 # Find and kill orphaned process on port 3001
 lsof -ti :3001 | xargs kill
 ```
 
 This typically happens if:
+
 - The dev server was force-killed (kill -9) instead of Ctrl+C
 - System crash or unexpected termination
 - The graceful shutdown handler failed to complete
@@ -151,6 +155,7 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 ## Workflow
 
 After every bug fix or feature implementation:
+
 1. Create a new branch with a descriptive name for the work (e.g., `fix/bidding-validation`, `feat/dark-mode`).
 2. Commit the changes using the [Conventional Commits](https://www.conventionalcommits.org/) standard. Format: `<type>(<optional scope>): <description>`. Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`, `build`. Use `!` after the type/scope for breaking changes (e.g., `feat!: ...`). Include a body for additional context when needed.
 3. Push the branch and open a PR to merge into `main`. Do **not** push directly to `main`.

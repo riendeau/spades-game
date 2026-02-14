@@ -41,7 +41,10 @@ export interface PlayValidationContext {
   playerId: PlayerId;
   card: Card;
   hand: Card[];
-  currentTrick: { plays: Array<{ playerId: PlayerId; card: Card }>; leadSuit: Card['suit'] | null };
+  currentTrick: {
+    plays: { playerId: PlayerId; card: Card }[];
+    leadSuit: Card['suit'] | null;
+  };
   isValid: boolean;
   errorMessage?: string;
 }
@@ -56,7 +59,10 @@ export interface CardPlayedContext {
 export interface TrickCompleteContext {
   gameState: GameState;
   config: GameConfig;
-  trick: { plays: Array<{ playerId: PlayerId; card: Card }>; leadSuit: Card['suit'] };
+  trick: {
+    plays: { playerId: PlayerId; card: Card }[];
+    leadSuit: Card['suit'];
+  };
   winnerId: PlayerId;
 }
 

@@ -1,5 +1,5 @@
-import React from 'react';
 import type { ClientGameState, Position } from '@spades/shared';
+import React from 'react';
 import { CardBack } from '../ui/Card';
 
 interface OpponentAreaProps {
@@ -8,20 +8,26 @@ interface OpponentAreaProps {
   relativePosition: 'left' | 'top' | 'right';
 }
 
-export function OpponentArea({ gameState, myPosition, relativePosition }: OpponentAreaProps) {
+export function OpponentArea({
+  gameState,
+  myPosition,
+  relativePosition,
+}: OpponentAreaProps) {
   const positionMap: Record<string, Position> = {
     left: ((myPosition + 1) % 4) as Position,
     top: ((myPosition + 2) % 4) as Position,
-    right: ((myPosition + 3) % 4) as Position
+    right: ((myPosition + 3) % 4) as Position,
   };
 
   const targetPosition = positionMap[relativePosition];
-  const player = gameState.players.find(p => p.position === targetPosition);
+  const player = gameState.players.find((p) => p.position === targetPosition);
 
   if (!player) return null;
 
   const isCurrentPlayer = gameState.currentPlayerPosition === player.position;
-  const bid = gameState.currentRound?.bids.find(b => b.playerId === player.id);
+  const bid = gameState.currentRound?.bids.find(
+    (b) => b.playerId === player.id
+  );
   const tricksWon = gameState.currentRound?.tricksWon[player.id] || 0;
 
   const containerStyle: React.CSSProperties = {
@@ -30,14 +36,16 @@ export function OpponentArea({ gameState, myPosition, relativePosition }: Oppone
     alignItems: 'center',
     gap: '12px',
     padding: '12px',
-    backgroundColor: isCurrentPlayer ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+    backgroundColor: isCurrentPlayer
+      ? 'rgba(59, 130, 246, 0.1)'
+      : 'transparent',
     borderRadius: '12px',
-    transition: 'background-color 0.2s'
+    transition: 'background-color 0.2s',
   };
 
   const cardContainerStyle: React.CSSProperties = {
     display: 'flex',
-    gap: '-15px'
+    gap: '-15px',
   };
 
   return (
@@ -47,7 +55,7 @@ export function OpponentArea({ gameState, myPosition, relativePosition }: Oppone
           style={{
             fontWeight: 600,
             fontSize: '14px',
-            color: player.connected ? '#1f2937' : '#9ca3af'
+            color: player.connected ? '#1f2937' : '#9ca3af',
           }}
         >
           {player.nickname}
@@ -84,7 +92,7 @@ export function OpponentArea({ gameState, myPosition, relativePosition }: Oppone
               borderRadius: '8px',
               fontSize: '14px',
               fontWeight: 600,
-              color: '#6b7280'
+              color: '#6b7280',
             }}
           >
             +{player.cardCount - 5}

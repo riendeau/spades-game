@@ -4,7 +4,7 @@ import {
   addPlayToTrick,
   isTrickComplete,
   getHighestCardInTrick,
-  hasSpadeBeenPlayedInTrick
+  hasSpadeBeenPlayedInTrick,
 } from '../game-logic/trick';
 import type { Trick } from '../types/game-state';
 
@@ -14,7 +14,7 @@ describe('Trick', () => {
       const trick: Trick = {
         plays: [{ playerId: 'p1', card: { suit: 'hearts', rank: 'A' } }],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(determineTrickWinner(trick)).toBeNull();
     });
@@ -25,10 +25,10 @@ describe('Trick', () => {
           { playerId: 'p1', card: { suit: 'hearts', rank: '5' } },
           { playerId: 'p2', card: { suit: 'hearts', rank: 'K' } },
           { playerId: 'p3', card: { suit: 'hearts', rank: '2' } },
-          { playerId: 'p4', card: { suit: 'hearts', rank: '10' } }
+          { playerId: 'p4', card: { suit: 'hearts', rank: '10' } },
         ],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(determineTrickWinner(trick)).toBe('p2');
     });
@@ -39,10 +39,10 @@ describe('Trick', () => {
           { playerId: 'p1', card: { suit: 'hearts', rank: 'A' } },
           { playerId: 'p2', card: { suit: 'spades', rank: '2' } },
           { playerId: 'p3', card: { suit: 'hearts', rank: 'K' } },
-          { playerId: 'p4', card: { suit: 'hearts', rank: 'Q' } }
+          { playerId: 'p4', card: { suit: 'hearts', rank: 'Q' } },
         ],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(determineTrickWinner(trick)).toBe('p2');
     });
@@ -53,10 +53,10 @@ describe('Trick', () => {
           { playerId: 'p1', card: { suit: 'hearts', rank: 'A' } },
           { playerId: 'p2', card: { suit: 'spades', rank: '2' } },
           { playerId: 'p3', card: { suit: 'spades', rank: 'K' } },
-          { playerId: 'p4', card: { suit: 'spades', rank: '5' } }
+          { playerId: 'p4', card: { suit: 'spades', rank: '5' } },
         ],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(determineTrickWinner(trick)).toBe('p3');
     });
@@ -67,10 +67,10 @@ describe('Trick', () => {
           { playerId: 'p1', card: { suit: 'hearts', rank: '5' } },
           { playerId: 'p2', card: { suit: 'diamonds', rank: 'A' } },
           { playerId: 'p3', card: { suit: 'hearts', rank: '7' } },
-          { playerId: 'p4', card: { suit: 'clubs', rank: 'K' } }
+          { playerId: 'p4', card: { suit: 'clubs', rank: 'K' } },
         ],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(determineTrickWinner(trick)).toBe('p3');
     });
@@ -81,7 +81,7 @@ describe('Trick', () => {
       const trick: Trick = { plays: [], leadSuit: null, winner: null };
       const result = addPlayToTrick(trick, {
         playerId: 'p1',
-        card: { suit: 'hearts', rank: 'A' }
+        card: { suit: 'hearts', rank: 'A' },
       });
 
       expect(result.plays).toHaveLength(1);
@@ -94,15 +94,15 @@ describe('Trick', () => {
         plays: [
           { playerId: 'p1', card: { suit: 'hearts', rank: '5' } },
           { playerId: 'p2', card: { suit: 'hearts', rank: 'K' } },
-          { playerId: 'p3', card: { suit: 'hearts', rank: '2' } }
+          { playerId: 'p3', card: { suit: 'hearts', rank: '2' } },
         ],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
 
       const result = addPlayToTrick(trick, {
         playerId: 'p4',
-        card: { suit: 'hearts', rank: '10' }
+        card: { suit: 'hearts', rank: '10' },
       });
 
       expect(result.plays).toHaveLength(4);
@@ -115,7 +115,7 @@ describe('Trick', () => {
       const trick: Trick = {
         plays: [{ playerId: 'p1', card: { suit: 'hearts', rank: 'A' } }],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(isTrickComplete(trick)).toBe(false);
     });
@@ -126,10 +126,10 @@ describe('Trick', () => {
           { playerId: 'p1', card: { suit: 'hearts', rank: '5' } },
           { playerId: 'p2', card: { suit: 'hearts', rank: 'K' } },
           { playerId: 'p3', card: { suit: 'hearts', rank: '2' } },
-          { playerId: 'p4', card: { suit: 'hearts', rank: '10' } }
+          { playerId: 'p4', card: { suit: 'hearts', rank: '10' } },
         ],
         leadSuit: 'hearts',
-        winner: 'p2'
+        winner: 'p2',
       };
       expect(isTrickComplete(trick)).toBe(true);
     });
@@ -140,7 +140,7 @@ describe('Trick', () => {
       const trick: Trick = {
         plays: [{ playerId: 'p1', card: { suit: 'hearts', rank: 'A' } }],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(hasSpadeBeenPlayedInTrick(trick)).toBe(false);
     });
@@ -149,10 +149,10 @@ describe('Trick', () => {
       const trick: Trick = {
         plays: [
           { playerId: 'p1', card: { suit: 'hearts', rank: 'A' } },
-          { playerId: 'p2', card: { suit: 'spades', rank: '2' } }
+          { playerId: 'p2', card: { suit: 'spades', rank: '2' } },
         ],
         leadSuit: 'hearts',
-        winner: null
+        winner: null,
       };
       expect(hasSpadeBeenPlayedInTrick(trick)).toBe(true);
     });

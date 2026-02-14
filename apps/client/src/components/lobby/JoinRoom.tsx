@@ -8,10 +8,16 @@ interface JoinRoomProps {
   initialRoomId?: string;
 }
 
-export function JoinRoom({ onCreateRoom, onJoinRoom, initialRoomId }: JoinRoomProps) {
+export function JoinRoom({
+  onCreateRoom,
+  onJoinRoom,
+  initialRoomId,
+}: JoinRoomProps) {
   const [nickname, setNickname] = useState('');
   const [roomId, setRoomId] = useState(initialRoomId || '');
-  const [mode, setMode] = useState<'create' | 'join'>(initialRoomId ? 'join' : 'create');
+  const [mode, setMode] = useState<'create' | 'join'>(
+    initialRoomId ? 'join' : 'create'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +36,7 @@ export function JoinRoom({ onCreateRoom, onJoinRoom, initialRoomId }: JoinRoomPr
       style={{
         maxWidth: '400px',
         margin: '0 auto',
-        padding: '40px 20px'
+        padding: '40px 20px',
       }}
     >
       <h1
@@ -39,7 +45,7 @@ export function JoinRoom({ onCreateRoom, onJoinRoom, initialRoomId }: JoinRoomPr
           fontWeight: 700,
           textAlign: 'center',
           marginBottom: '8px',
-          color: '#1f2937'
+          color: '#1f2937',
         }}
       >
         {'\u2660'} Spades
@@ -48,7 +54,7 @@ export function JoinRoom({ onCreateRoom, onJoinRoom, initialRoomId }: JoinRoomPr
         style={{
           textAlign: 'center',
           color: '#6b7280',
-          marginBottom: '32px'
+          marginBottom: '32px',
         }}
       >
         Play with friends online
@@ -58,7 +64,7 @@ export function JoinRoom({ onCreateRoom, onJoinRoom, initialRoomId }: JoinRoomPr
         style={{
           display: 'flex',
           gap: '8px',
-          marginBottom: '24px'
+          marginBottom: '24px',
         }}
       >
         <Button
@@ -77,7 +83,10 @@ export function JoinRoom({ onCreateRoom, onJoinRoom, initialRoomId }: JoinRoomPr
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+      >
         <Input
           label="Nickname"
           placeholder="Enter your nickname"

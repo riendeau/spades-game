@@ -1,6 +1,6 @@
+import { validateBid as validateBidLogic } from '../game-logic/bidding.js';
 import type { GameState, GameConfig } from '../types/game-state.js';
 import type { PlayerId } from '../types/player.js';
-import { validateBid as validateBidLogic } from '../game-logic/bidding.js';
 
 export interface BidValidationResult {
   valid: boolean;
@@ -27,6 +27,6 @@ export function getValidBids(
     min: 0,
     max: 13,
     nilAllowed: config.allowNil,
-    blindNilAllowed: config.allowBlindNil
+    blindNilAllowed: config.allowBlindNil,
   };
 }
