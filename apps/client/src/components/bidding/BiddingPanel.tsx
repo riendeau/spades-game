@@ -63,15 +63,13 @@ export function BiddingPanel({
 
       {isMyTurn && !hasBid ? (
         !cardsRevealed ? (
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div
-              style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}
-            >
-              <Button variant="secondary" onClick={handleBlindNilBid}>
-                Bid Blind Nil
-              </Button>
-              <Button onClick={handleSeeCards}>See Cards</Button>
-            </div>
+          <div
+            style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}
+          >
+            <Button variant="secondary" onClick={handleBlindNilBid}>
+              Bid Blind Nil
+            </Button>
+            <Button onClick={handleSeeCards}>See Cards</Button>
           </div>
         ) : (
           <>

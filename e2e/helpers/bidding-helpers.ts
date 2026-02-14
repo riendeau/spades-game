@@ -26,7 +26,8 @@ export async function placeNilBid(page: Page): Promise<void> {
     await seeCards.click();
   }
 
-  await page.getByRole('button', { name: 'Bid Nil' }).click();
+  await page.getByRole('button', { name: 'Nil' }).click();
+  await page.getByRole('button', { name: 'Submit Bid' }).click();
 }
 
 /**
@@ -59,7 +60,7 @@ async function findCurrentBidder(pages: Page[]): Promise<Page> {
     for (const page of pages) {
       // Check for "See Cards" button (pre-reveal) or "Submit Bid" button (post-reveal)
       const seeCards = page.getByRole('button', { name: 'See Cards' });
-      const bidNil = page.getByRole('button', { name: 'Bid Nil' });
+      const bidNil = page.getByRole('button', { name: 'Nil' });
       const blindNil = page.getByRole('button', { name: 'Bid Blind Nil' });
 
       if (
