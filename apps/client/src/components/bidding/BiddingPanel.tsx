@@ -28,13 +28,15 @@ export function BiddingPanel({
 
   const handleSubmitBid = () => {
     if (selectedBid !== null) {
-      onBid(selectedBid);
+      // selectedBid === 0 means nil bid
+      const isNil = selectedBid === 0;
+      onBid(selectedBid, isNil);
       setSelectedBid(null);
     }
   };
 
   const handleNilBid = () => {
-    onBid(0, true);
+    setSelectedBid(0);
   };
 
   const handleBlindNilBid = () => {
@@ -55,69 +57,15 @@ export function BiddingPanel({
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       }}
     >
-      <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600 }}>
-        Bidding Round {gameState.currentRound?.roundNumber}
-      </h3>
-
-      {/* Current bids */}
-      <div style={{ marginBottom: '20px' }}>
-        <div
-          style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}
-        >
-          Bids placed:
-        </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {gameState.players.map((player) => {
-            const bid = gameState.currentRound?.bids.find(
-              (b) => b.playerId === player.id
-            );
-            return (
-              <div
-                key={player.id}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: '#f3f4f6',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                }}
-              >
-                <span style={{ fontWeight: 500 }}>{player.nickname}</span>
-                <span style={{ color: '#6b7280', marginLeft: '8px' }}>
-                  {bid
-                    ? bid.isBlindNil
-                      ? 'Blind Nil'
-                      : bid.isNil
-                        ? 'Nil'
-                        : bid.bid
-                    : '...'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {isMyTurn && !hasBid ? (
         !cardsRevealed ? (
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div
-              style={{
-                fontSize: '14px',
-                color: '#6b7280',
-                marginBottom: '16px',
-              }}
-            >
-              Your cards are face down. Would you like to bid blind nil or see
-              your cards first?
-            </div>
-            <div
-              style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}
-            >
-              <Button variant="secondary" onClick={handleBlindNilBid}>
-                Bid Blind Nil
-              </Button>
-              <Button onClick={handleSeeCards}>See Cards</Button>
-            </div>
+          <div
+            style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}
+          >
+            <Button variant="secondary" onClick={handleBlindNilBid}>
+              Bid Blind Nil
+            </Button>
+            <Button onClick={handleSeeCards}>See Cards</Button>
           </div>
         ) : (
           <>
@@ -161,9 +109,21 @@ export function BiddingPanel({
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <Button variant="secondary" onClick={handleNilBid}>
-                Bid Nil
-              </Button>
+              <button
+                onClick={handleNilBid}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  backgroundColor: selectedBid === 0 ? '#3b82f6' : '#f3f4f6',
+                  color: selectedBid === 0 ? '#fff' : '#374151',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                Nil
+              </button>
               <Button
                 onClick={handleSubmitBid}
                 disabled={selectedBid === null}

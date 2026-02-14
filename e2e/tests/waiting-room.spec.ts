@@ -26,10 +26,17 @@ test.describe('Waiting Room', () => {
       await page.getByRole('button', { name: 'Ready' }).click();
     }
 
-    // Should transition to bidding phase
-    await expect(players[0].getByText(/Bidding Round/)).toBeVisible({
-      timeout: 15_000,
-    });
+    // Should transition to bidding phase (check for bidding buttons)
+    // One of the players should see bidding controls
+    let found = false;
+    for (const page of players) {
+      const seeCards = page.getByRole('button', { name: 'See Cards' });
+      if (await seeCards.isVisible({ timeout: 100 }).catch(() => false)) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
   });
 
   test('player can leave the waiting room', async ({ createPlayerPage }) => {

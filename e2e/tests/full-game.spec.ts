@@ -53,8 +53,19 @@ test.describe('Full Game', () => {
     }
 
     // Should start next round — bidding appears again
-    await expect(players[0].getByText(/Bidding Round/)).toBeVisible({
-      timeout: 15_000,
-    });
+    // Check for bidding buttons on at least one player
+    let found = false;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      for (const page of players) {
+        const seeCards = page.getByRole('button', { name: 'See Cards' });
+        if (await seeCards.isVisible({ timeout: 100 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+      await players[0].waitForTimeout(500);
+    }
+    expect(found).toBe(true);
   });
 });

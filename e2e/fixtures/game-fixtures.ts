@@ -96,7 +96,24 @@ export const test = base.extend<GameFixtures>({
     }
 
     // Wait for bidding phase to appear on any page
-    await p1.getByText(/Bidding Round/).waitFor({ timeout: 15_000 });
+    // Check for bidding controls to appear on at least one player
+    let found = false;
+    for (let attempt = 0; attempt < 30 && !found; attempt++) {
+      for (const page of players) {
+        const seeCards = page.getByRole('button', { name: 'See Cards' });
+        if (await seeCards.isVisible({ timeout: 100 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        await p1.waitForTimeout(500);
+      }
+    }
+
+    if (!found) {
+      throw new Error('Bidding phase did not start within timeout');
+    }
 
     await use({ players, roomCode });
 
