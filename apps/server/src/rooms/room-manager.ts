@@ -80,16 +80,6 @@ export class RoomManager {
 
     this.sessions.set(sessionToken, session);
     this.socketToSession.set(socketId, sessionToken);
-    console.log(
-      '[Session] Created session for socket:',
-      socketId,
-      'token:',
-      sessionToken.substring(0, 8)
-    );
-    console.log(
-      '[Session] socketToSession map size:',
-      this.socketToSession.size
-    );
     return session;
   }
 
@@ -99,39 +89,15 @@ export class RoomManager {
 
   getSessionBySocketId(socketId: string): PlayerSession | undefined {
     const token = this.socketToSession.get(socketId);
-    console.log('[Session] Looking up session for socket:', socketId);
-    console.log(
-      '[Session] Found token:',
-      token ? token.substring(0, 8) : 'NOT FOUND'
-    );
-    console.log(
-      '[Session] socketToSession map size:',
-      this.socketToSession.size
-    );
-    console.log(
-      '[Session] socketToSession keys:',
-      Array.from(this.socketToSession.keys())
-    );
     return token ? this.sessions.get(token) : undefined;
   }
 
   updateSessionSocket(sessionToken: string, socketId: string): void {
     const session = this.sessions.get(sessionToken);
     if (session) {
-      console.log(
-        '[Session] updateSessionSocket called for token:',
-        sessionToken.substring(0, 8)
-      );
-      console.log(
-        '[Session] Old socket:',
-        session.socketId,
-        '-> New socket:',
-        socketId
-      );
       // Remove old socket mapping
       if (session.socketId) {
         this.socketToSession.delete(session.socketId);
-        console.log('[Session] Deleted old socket mapping:', session.socketId);
       }
       session.socketId = socketId;
       session.disconnectedAt = null;
@@ -142,17 +108,9 @@ export class RoomManager {
   markSessionDisconnected(socketId: string): PlayerSession | undefined {
     const session = this.getSessionBySocketId(socketId);
     if (session) {
-      console.log(
-        '[Session] Marking session as disconnected for socket:',
-        socketId
-      );
       session.disconnectedAt = Date.now();
       session.socketId = null;
       this.socketToSession.delete(socketId);
-      console.log(
-        '[Session] socketToSession map size after delete:',
-        this.socketToSession.size
-      );
     }
     return session;
   }

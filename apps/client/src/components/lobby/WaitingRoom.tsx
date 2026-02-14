@@ -1,5 +1,5 @@
 import type { ClientGameState, Position } from '@spades/shared';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -133,6 +133,7 @@ export function WaitingRoom({
 }: WaitingRoomProps) {
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
+  const autoReadyTabsClicked = useRef(false);
 
   const shareableUrl = `${window.location.origin}/room/${roomId}`;
 
@@ -146,6 +147,21 @@ export function WaitingRoom({
       const timer = setTimeout(() => {
         onReady();
       }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady, gameState.players.length, onReady]);
+
+  // Auto-ready in original tab after clicking "Open 3 Auto-Ready Tabs"
+  useEffect(() => {
+    if (
+      autoReadyTabsClicked.current &&
+      !isReady &&
+      gameState.players.length === 4
+    ) {
+      // All players have joined, auto-ready this tab too
+      const timer = setTimeout(() => {
+        onReady();
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [isReady, gameState.players.length, onReady]);
@@ -165,6 +181,8 @@ export function WaitingRoom({
       const autoReadyUrl = `${shareableUrl}?autoReady=true&autoName=${encodeURIComponent(randomName)}`;
       window.open(autoReadyUrl, '_blank');
     }
+    // Mark that we should auto-ready this tab once all players join
+    autoReadyTabsClicked.current = true;
   };
 
   return (

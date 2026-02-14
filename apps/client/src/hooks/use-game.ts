@@ -17,19 +17,11 @@ export function useGame() {
     if (!socket) return;
 
     socket.on('room:created', ({ roomId, sessionToken }) => {
-      console.log(
-        'Room created, saving session:',
-        sessionToken.substring(0, 8) + '...'
-      );
       store.setSession(roomId, sessionToken, 0);
       saveSession(roomId, sessionToken);
     });
 
     socket.on('room:joined', ({ roomId, position, sessionToken }) => {
-      console.log(
-        'Room joined, saving session:',
-        sessionToken.substring(0, 8) + '...'
-      );
       store.setSession(roomId, sessionToken, position);
       saveSession(roomId, sessionToken);
     });
@@ -60,14 +52,12 @@ export function useGame() {
     });
 
     socket.on('reconnect:success', ({ state, hand }) => {
-      console.log('Reconnect SUCCESS');
       store.setGameState(state);
       store.setHand(hand);
       store.revealCards();
     });
 
     socket.on('reconnect:failed', ({ reason }) => {
-      console.log('Reconnect FAILED:', reason);
       store.setError(`Reconnection failed: ${reason}`);
       clearSession();
     });
@@ -101,23 +91,16 @@ export function useGame() {
     const isAutoJoin = params.get('autoName') !== null;
 
     if (isAutoJoin) {
-      console.log('Auto-join tab detected, clearing inherited session');
       clearSession();
       return;
     }
 
     const session = loadSession();
     if (session) {
-      console.log(
-        'Attempting reconnect with session:',
-        session.sessionToken.substring(0, 8) + '...'
-      );
       socket.emit('player:reconnect', {
         sessionToken: session.sessionToken,
         roomId: session.roomId,
       });
-    } else {
-      console.log('No session found to reconnect');
     }
   }, [socket, connected]);
 
@@ -141,12 +124,6 @@ export function useGame() {
 
   const setReady = useCallback(() => {
     if (!socket) return;
-    console.log(
-      'Setting ready, socket connected:',
-      socket.connected,
-      'socket id:',
-      socket.id
-    );
     socket.emit('room:ready');
   }, [socket]);
 
