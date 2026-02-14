@@ -166,7 +166,7 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
 
       // Send hands to each player
       for (const player of state.players) {
-        const playerSession = Array.from(roomManager.sessions.values()).find(
+        const playerSession = Array.from(roomManager.getAllSessions()).find(
           (s) => s.playerId === player.id && s.roomId === room.id
         );
 
@@ -346,7 +346,7 @@ function handlePlayCard(
               // Send hands to each player
               for (const player of room.game.getState().players) {
                 const playerSession = Array.from(
-                  roomManager.sessions.values()
+                  roomManager.getAllSessions()
                 ).find((s) => s.playerId === player.id && s.roomId === room.id);
 
                 if (playerSession?.socketId) {

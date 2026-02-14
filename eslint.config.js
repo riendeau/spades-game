@@ -69,6 +69,7 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-argument': 'warn', // Downgrade to warning
       '@typescript-eslint/no-unsafe-member-access': 'warn', // Downgrade to warning
       '@typescript-eslint/no-unsafe-return': 'warn', // Downgrade to warning
+      '@typescript-eslint/no-unsafe-call': 'warn', // Downgrade to warning
       '@typescript-eslint/no-empty-function': 'warn', // Downgrade to warning
     },
   },

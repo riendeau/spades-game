@@ -1,10 +1,10 @@
-import type {
-  GameState,
-  GameConfig,
-  Card,
-  PlayerId,
-  ClientGameState,
-  RoundSummary,
+import {
+  type GameState,
+  type GameConfig,
+  type Card,
+  type PlayerId,
+  type ClientGameState,
+  type RoundSummary,
   processAction,
   DEFAULT_GAME_CONFIG,
   type GameAction,

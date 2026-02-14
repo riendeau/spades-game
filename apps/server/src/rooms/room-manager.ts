@@ -187,6 +187,10 @@ export class RoomManager {
   getSessionCount(): number {
     return this.sessions.size;
   }
+
+  getAllSessions(): IterableIterator<PlayerSession> {
+    return this.sessions.values();
+  }
 }
 
 export const roomManager = new RoomManager();
