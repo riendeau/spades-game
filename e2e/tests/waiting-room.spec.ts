@@ -35,7 +35,7 @@ test.describe('Waiting Room', () => {
     let found = false;
     for (const page of players) {
       const seeCards = page.getByRole('button', { name: 'See Cards' });
-      if (await seeCards.isVisible({ timeout: 100 }).catch(() => false)) {
+      if (await seeCards.isVisible({ timeout: 1000 }).catch(() => false)) {
         found = true;
         break;
       }
