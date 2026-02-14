@@ -96,6 +96,16 @@ export function useGame() {
   useEffect(() => {
     if (!socket || !connected) return;
 
+    // If this is an auto-join tab, clear any inherited session first
+    const params = new URLSearchParams(window.location.search);
+    const isAutoJoin = params.get('autoName') !== null;
+
+    if (isAutoJoin) {
+      console.log('Auto-join tab detected, clearing inherited session');
+      clearSession();
+      return;
+    }
+
     const session = loadSession();
     if (session) {
       console.log(
