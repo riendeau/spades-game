@@ -2,14 +2,18 @@ import { test, expect } from '../fixtures/game-fixtures';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 test.describe('Waiting Room', () => {
-  test('ready button is disabled with fewer than 4 players', async ({ createPlayerPage }) => {
+  test('ready button is disabled with fewer than 4 players', async ({
+    createPlayerPage,
+  }) => {
     const p1 = await createPlayerPage('Alice');
     await createRoom(p1, 'Alice');
 
     await expect(p1.getByRole('button', { name: 'Ready' })).toBeDisabled();
   });
 
-  test('all players readying up starts the game', async ({ fourPlayerRoom }) => {
+  test('all players readying up starts the game', async ({
+    fourPlayerRoom,
+  }) => {
     const { players } = fourPlayerRoom;
 
     // Ready buttons should be enabled now that we have 4 players
@@ -23,7 +27,9 @@ test.describe('Waiting Room', () => {
     }
 
     // Should transition to bidding phase
-    await expect(players[0].getByText(/Bidding Round/)).toBeVisible({ timeout: 15_000 });
+    await expect(players[0].getByText(/Bidding Round/)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test('player can leave the waiting room', async ({ createPlayerPage }) => {

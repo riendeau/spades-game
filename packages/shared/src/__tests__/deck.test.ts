@@ -8,7 +8,7 @@ import {
   hasCard,
   hasSuit,
   getCardsOfSuit,
-  hasOnlySpades
+  hasOnlySpades,
 } from '../game-logic/deck';
 import type { Card } from '../types/card';
 
@@ -21,10 +21,10 @@ describe('Deck', () => {
 
     it('should have 13 cards of each suit', () => {
       const deck = createDeck();
-      const spades = deck.filter(c => c.suit === 'spades');
-      const hearts = deck.filter(c => c.suit === 'hearts');
-      const diamonds = deck.filter(c => c.suit === 'diamonds');
-      const clubs = deck.filter(c => c.suit === 'clubs');
+      const spades = deck.filter((c) => c.suit === 'spades');
+      const hearts = deck.filter((c) => c.suit === 'hearts');
+      const diamonds = deck.filter((c) => c.suit === 'diamonds');
+      const clubs = deck.filter((c) => c.suit === 'clubs');
 
       expect(spades).toHaveLength(13);
       expect(hearts).toHaveLength(13);
@@ -51,8 +51,8 @@ describe('Deck', () => {
       const deck = createDeck();
       const shuffled = shuffleDeck(deck);
       // It's possible but extremely unlikely for a shuffled deck to match
-      const matches = deck.filter((c, i) =>
-        c.suit === shuffled[i].suit && c.rank === shuffled[i].rank
+      const matches = deck.filter(
+        (c, i) => c.suit === shuffled[i].suit && c.rank === shuffled[i].rank
       );
       expect(matches.length).toBeLessThan(52);
     });
@@ -64,7 +64,7 @@ describe('Deck', () => {
       const hands = dealCards(deck);
 
       expect(hands).toHaveLength(4);
-      hands.forEach(hand => {
+      hands.forEach((hand) => {
         expect(hand).toHaveLength(13);
       });
     });
@@ -76,7 +76,7 @@ describe('Deck', () => {
 
       expect(allCards).toHaveLength(52);
 
-      const uniqueCards = new Set(allCards.map(c => `${c.suit}-${c.rank}`));
+      const uniqueCards = new Set(allCards.map((c) => `${c.suit}-${c.rank}`));
       expect(uniqueCards.size).toBe(52);
     });
   });
@@ -87,7 +87,7 @@ describe('Deck', () => {
         { suit: 'hearts', rank: '5' },
         { suit: 'spades', rank: 'A' },
         { suit: 'spades', rank: '2' },
-        { suit: 'clubs', rank: 'K' }
+        { suit: 'clubs', rank: 'K' },
       ];
 
       const sorted = sortHand(hand);
@@ -106,7 +106,7 @@ describe('Deck', () => {
       const hand: Card[] = [
         { suit: 'spades', rank: 'A' },
         { suit: 'hearts', rank: 'K' },
-        { suit: 'diamonds', rank: 'Q' }
+        { suit: 'diamonds', rank: 'Q' },
       ];
 
       const result = removeCardFromHand(hand, { suit: 'hearts', rank: 'K' });
@@ -138,7 +138,7 @@ describe('Deck', () => {
     it('should return true if hand has cards of the suit', () => {
       const hand: Card[] = [
         { suit: 'spades', rank: 'A' },
-        { suit: 'hearts', rank: 'K' }
+        { suit: 'hearts', rank: 'K' },
       ];
       expect(hasSuit(hand, 'spades')).toBe(true);
     });
@@ -154,7 +154,7 @@ describe('Deck', () => {
       const hand: Card[] = [
         { suit: 'spades', rank: 'A' },
         { suit: 'spades', rank: 'K' },
-        { suit: 'hearts', rank: 'Q' }
+        { suit: 'hearts', rank: 'Q' },
       ];
 
       const spades = getCardsOfSuit(hand, 'spades');
@@ -168,7 +168,7 @@ describe('Deck', () => {
     it('should return true if hand only has spades', () => {
       const hand: Card[] = [
         { suit: 'spades', rank: 'A' },
-        { suit: 'spades', rank: 'K' }
+        { suit: 'spades', rank: 'K' },
       ];
       expect(hasOnlySpades(hand)).toBe(true);
     });
@@ -176,7 +176,7 @@ describe('Deck', () => {
     it('should return false if hand has other suits', () => {
       const hand: Card[] = [
         { suit: 'spades', rank: 'A' },
-        { suit: 'hearts', rank: 'K' }
+        { suit: 'hearts', rank: 'K' },
       ];
       expect(hasOnlySpades(hand)).toBe(false);
     });

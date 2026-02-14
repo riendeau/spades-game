@@ -1,12 +1,12 @@
-import { Server, Socket } from 'socket.io';
-import { v4 as uuidv4 } from 'uuid';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
-  Card
+  Card,
 } from '@spades/shared';
-import { roomManager } from '../rooms/room-manager.js';
 import { validatePlay, validateBid } from '@spades/shared';
+import { type Server, type Socket } from 'socket.io';
+import { v4 as uuidv4 } from 'uuid';
+import { roomManager } from '../rooms/room-manager.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -55,7 +55,10 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
 
   const result = room.game.addPlayer(playerId, nickname);
   if (!result.valid) {
-    socket.emit('error', { code: 'CREATE_FAILED', message: result.error || 'Failed to create room' });
+    socket.emit('error', {
+      code: 'CREATE_FAILED',
+      message: result.error || 'Failed to create room',
+    });
     return;
   }
 
@@ -64,19 +67,23 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
 
   socket.emit('room:created', {
     roomId: room.id,
-    sessionToken: session.sessionToken
+    sessionToken: session.sessionToken,
   });
 
   socket.emit('room:joined', {
     roomId: room.id,
     position: 0,
-    sessionToken: session.sessionToken
+    sessionToken: session.sessionToken,
   });
 
   socket.emit('game:state-update', { state: room.game.toClientState() });
 }
 
-function handleJoinRoom(socket: TypedSocket, roomId: string, nickname: string): void {
+function handleJoinRoom(
+  socket: TypedSocket,
+  roomId: string,
+  nickname: string
+): void {
   const room = roomManager.getRoom(roomId);
   if (!room) {
     socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
@@ -87,7 +94,10 @@ function handleJoinRoom(socket: TypedSocket, roomId: string, nickname: string): 
   const result = room.game.addPlayer(playerId, nickname);
 
   if (!result.valid) {
-    socket.emit('error', { code: 'JOIN_FAILED', message: result.error || 'Failed to join room' });
+    socket.emit('error', {
+      code: 'JOIN_FAILED',
+      message: result.error || 'Failed to join room',
+    });
     return;
   }
 
@@ -95,19 +105,19 @@ function handleJoinRoom(socket: TypedSocket, roomId: string, nickname: string): 
   socket.join(room.id);
   roomManager.touchRoom(room.id);
 
-  const player = room.game.getState().players.find(p => p.id === playerId);
+  const player = room.game.getState().players.find((p) => p.id === playerId);
 
   socket.emit('room:joined', {
     roomId: room.id,
     position: player!.position,
-    sessionToken: session.sessionToken
+    sessionToken: session.sessionToken,
   });
 
   // Notify others
   socket.to(room.id).emit('room:player-joined', {
     playerId,
     nickname,
-    position: player!.position
+    position: player!.position,
   });
 
   // Send state to all
@@ -119,7 +129,10 @@ function handleJoinRoom(socket: TypedSocket, roomId: string, nickname: string): 
 function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
-    socket.emit('error', { code: 'SESSION_NOT_FOUND', message: 'Session not found' });
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
     return;
   }
 
@@ -131,7 +144,10 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
 
   const result = room.game.setPlayerReady(session.playerId);
   if (!result.valid) {
-    socket.emit('error', { code: 'READY_FAILED', message: result.error || 'Failed to ready' });
+    socket.emit('error', {
+      code: 'READY_FAILED',
+      message: result.error || 'Failed to ready',
+    });
     return;
   }
 
@@ -150,8 +166,9 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
 
       // Send hands to each player
       for (const player of state.players) {
-        const playerSession = Array.from(roomManager['sessions'].values())
-          .find(s => s.playerId === player.id && s.roomId === room.id);
+        const playerSession = Array.from(roomManager.getAllSessions()).find(
+          (s) => s.playerId === player.id && s.roomId === room.id
+        );
 
         if (playerSession?.socketId) {
           const hand = room.game.getPlayerHand(player.id);
@@ -160,10 +177,14 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
       }
 
       // Update state
-      io.to(room.id).emit('game:state-update', { state: room.game.toClientState() });
+      io.to(room.id).emit('game:state-update', {
+        state: room.game.toClientState(),
+      });
     }
   } else {
-    io.to(room.id).emit('game:state-update', { state: room.game.toClientState() });
+    io.to(room.id).emit('game:state-update', {
+      state: room.game.toClientState(),
+    });
   }
 }
 
@@ -177,8 +198,12 @@ function handlePlayerLeave(socket: TypedSocket, io: TypedServer): void {
   room.game.removePlayer(session.playerId);
   socket.leave(session.roomId);
 
-  io.to(session.roomId).emit('room:player-left', { playerId: session.playerId });
-  io.to(session.roomId).emit('game:state-update', { state: room.game.toClientState() });
+  io.to(session.roomId).emit('room:player-left', {
+    playerId: session.playerId,
+  });
+  io.to(session.roomId).emit('game:state-update', {
+    state: room.game.toClientState(),
+  });
 }
 
 function handleBid(
@@ -190,7 +215,10 @@ function handleBid(
 ): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
-    socket.emit('error', { code: 'SESSION_NOT_FOUND', message: 'Session not found' });
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
     return;
   }
 
@@ -211,13 +239,19 @@ function handleBid(
   );
 
   if (!validation.valid) {
-    socket.emit('error', { code: 'INVALID_BID', message: validation.errorMessage || 'Invalid bid' });
+    socket.emit('error', {
+      code: 'INVALID_BID',
+      message: validation.errorMessage || 'Invalid bid',
+    });
     return;
   }
 
   const result = room.game.makeBid(session.playerId, bid, isNil, isBlindNil);
   if (!result.valid) {
-    socket.emit('error', { code: 'BID_FAILED', message: result.error || 'Bid failed' });
+    socket.emit('error', {
+      code: 'BID_FAILED',
+      message: result.error || 'Bid failed',
+    });
     return;
   }
 
@@ -227,16 +261,25 @@ function handleBid(
     playerId: session.playerId,
     bid,
     isNil,
-    isBlindNil
+    isBlindNil,
   });
 
-  io.to(room.id).emit('game:state-update', { state: room.game.toClientState() });
+  io.to(room.id).emit('game:state-update', {
+    state: room.game.toClientState(),
+  });
 }
 
-function handlePlayCard(socket: TypedSocket, io: TypedServer, card: Card): void {
+function handlePlayCard(
+  socket: TypedSocket,
+  io: TypedServer,
+  card: Card
+): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
-    socket.emit('error', { code: 'SESSION_NOT_FOUND', message: 'Session not found' });
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
     return;
   }
 
@@ -248,16 +291,27 @@ function handlePlayCard(socket: TypedSocket, io: TypedServer, card: Card): void 
 
   // Validate play
   const hand = room.game.getPlayerHand(session.playerId);
-  const validation = validatePlay(room.game.getState(), session.playerId, card, hand);
+  const validation = validatePlay(
+    room.game.getState(),
+    session.playerId,
+    card,
+    hand
+  );
 
   if (!validation.valid) {
-    socket.emit('error', { code: 'INVALID_PLAY', message: validation.errorMessage || 'Invalid play' });
+    socket.emit('error', {
+      code: 'INVALID_PLAY',
+      message: validation.errorMessage || 'Invalid play',
+    });
     return;
   }
 
   const result = room.game.playCard(session.playerId, card);
   if (!result.valid) {
-    socket.emit('error', { code: 'PLAY_FAILED', message: result.error || 'Play failed' });
+    socket.emit('error', {
+      code: 'PLAY_FAILED',
+      message: result.error || 'Play failed',
+    });
     return;
   }
 
@@ -265,7 +319,7 @@ function handlePlayCard(socket: TypedSocket, io: TypedServer, card: Card): void 
 
   io.to(room.id).emit('game:card-played', {
     playerId: session.playerId,
-    card
+    card,
   });
 
   // Check for side effects
@@ -274,14 +328,14 @@ function handlePlayCard(socket: TypedSocket, io: TypedServer, card: Card): void 
       if (effect.type === 'TRICK_COMPLETE') {
         io.to(room.id).emit('game:trick-won', {
           winnerId: effect.winnerId,
-          trickNumber: effect.trickNumber
+          trickNumber: effect.trickNumber,
         });
       }
 
       if (effect.type === 'ROUND_COMPLETE') {
         io.to(room.id).emit('game:round-end', {
           scores: room.game.getState().scores,
-          roundSummary: effect.summary
+          roundSummary: effect.summary,
         });
 
         // If game not over, start next round after delay
@@ -291,16 +345,21 @@ function handlePlayCard(socket: TypedSocket, io: TypedServer, card: Card): void 
             if (nextResult.valid) {
               // Send hands to each player
               for (const player of room.game.getState().players) {
-                const playerSession = Array.from(roomManager['sessions'].values())
-                  .find(s => s.playerId === player.id && s.roomId === room.id);
+                const playerSession = Array.from(
+                  roomManager.getAllSessions()
+                ).find((s) => s.playerId === player.id && s.roomId === room.id);
 
                 if (playerSession?.socketId) {
                   const hand = room.game.getPlayerHand(player.id);
-                  io.to(playerSession.socketId).emit('game:cards-dealt', { hand });
+                  io.to(playerSession.socketId).emit('game:cards-dealt', {
+                    hand,
+                  });
                 }
               }
 
-              io.to(room.id).emit('game:state-update', { state: room.game.toClientState() });
+              io.to(room.id).emit('game:state-update', {
+                state: room.game.toClientState(),
+              });
             }
           }, 3000);
         }
@@ -309,13 +368,15 @@ function handlePlayCard(socket: TypedSocket, io: TypedServer, card: Card): void 
       if (effect.type === 'GAME_COMPLETE') {
         io.to(room.id).emit('game:ended', {
           winningTeam: effect.winner,
-          finalScores: room.game.getState().scores
+          finalScores: room.game.getState().scores,
         });
       }
     }
   }
 
-  io.to(room.id).emit('game:state-update', { state: room.game.toClientState() });
+  io.to(room.id).emit('game:state-update', {
+    state: room.game.toClientState(),
+  });
 }
 
 function handleReconnect(
@@ -330,7 +391,7 @@ function handleReconnect(
   }
 
   const session = roomManager.getSession(sessionToken);
-  if (!session || session.roomId !== roomId) {
+  if (session?.roomId !== roomId) {
     socket.emit('reconnect:failed', { reason: 'Invalid session' });
     return;
   }
@@ -354,11 +415,13 @@ function handleReconnect(
 
   socket.emit('reconnect:success', {
     state: room.game.toClientState(),
-    hand
+    hand,
   });
 
   // Notify others
-  socket.to(roomId).emit('room:player-reconnected', { playerId: session.playerId });
+  socket
+    .to(roomId)
+    .emit('room:player-reconnected', { playerId: session.playerId });
   io.to(roomId).emit('game:state-update', { state: room.game.toClientState() });
 }
 
@@ -371,8 +434,12 @@ function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
 
   room.game.disconnectPlayer(session.playerId);
 
-  io.to(session.roomId).emit('room:player-disconnected', { playerId: session.playerId });
-  io.to(session.roomId).emit('game:state-update', { state: room.game.toClientState() });
+  io.to(session.roomId).emit('room:player-disconnected', {
+    playerId: session.playerId,
+  });
+  io.to(session.roomId).emit('game:state-update', {
+    state: room.game.toClientState(),
+  });
 
   console.log(`Client disconnected: ${socket.id}, player: ${session.playerId}`);
 }

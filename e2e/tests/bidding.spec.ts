@@ -1,8 +1,15 @@
 import { test, expect } from '../fixtures/game-fixtures';
-import { placeBid, placeNilBid, placeBlindNilBid, completeAllBids } from '../helpers/bidding-helpers';
+import {
+  placeBid,
+  placeNilBid,
+  placeBlindNilBid,
+  completeAllBids,
+} from '../helpers/bidding-helpers';
 
 test.describe('Bidding', () => {
-  test('only the current bidder sees bidding controls', async ({ fourPlayerBidding }) => {
+  test('only the current bidder sees bidding controls', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     // Exactly one player should see bidding controls (See Cards or bid grid)
@@ -46,7 +53,9 @@ test.describe('Bidding', () => {
     }
   });
 
-  test('player can bid blind nil before seeing cards', async ({ fourPlayerBidding }) => {
+  test('player can bid blind nil before seeing cards', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     // Find the current bidder
@@ -62,7 +71,9 @@ test.describe('Bidding', () => {
     }
   });
 
-  test('player can bid nil after seeing cards', async ({ fourPlayerBidding }) => {
+  test('player can bid nil after seeing cards', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     // Find the current bidder
@@ -78,7 +89,9 @@ test.describe('Bidding', () => {
     }
   });
 
-  test('all 4 bids transitions to playing phase', async ({ fourPlayerBidding }) => {
+  test('all 4 bids transitions to playing phase', async ({
+    fourPlayerBidding,
+  }) => {
     const { players } = fourPlayerBidding;
 
     await completeAllBids(players, 3);

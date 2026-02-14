@@ -1,25 +1,26 @@
-import type {
-  GameState,
-  GameConfig,
-  Card,
-  PlayerId,
-  ClientGameState,
-  RoundSummary
-} from '@spades/shared';
 import {
+  type GameState,
+  type GameConfig,
+  type Card,
+  type PlayerId,
+  type ClientGameState,
+  type RoundSummary,
   processAction,
   DEFAULT_GAME_CONFIG,
   type GameAction,
   type ActionResult,
-  type SideEffect
+  type SideEffect,
 } from '@spades/shared';
 
 export class GameInstance {
   private state: GameState;
   private config: GameConfig;
-  private playerHands: Map<PlayerId, Card[]> = new Map();
+  private playerHands = new Map<PlayerId, Card[]>();
 
-  constructor(initialState: GameState, config: GameConfig = DEFAULT_GAME_CONFIG) {
+  constructor(
+    initialState: GameState,
+    config: GameConfig = DEFAULT_GAME_CONFIG
+  ) {
     this.state = initialState;
     this.config = config;
   }
@@ -66,7 +67,9 @@ export class GameInstance {
 
   toClientState(): ClientGameState {
     const tricksWon: Record<PlayerId, number> = {};
-    this.state.players.forEach(p => { tricksWon[p.id] = 0; });
+    this.state.players.forEach((p) => {
+      tricksWon[p.id] = 0;
+    });
 
     if (this.state.currentRound) {
       for (const trick of this.state.currentRound.tricks) {
@@ -79,28 +82,30 @@ export class GameInstance {
     return {
       id: this.state.id,
       phase: this.state.phase,
-      players: this.state.players.map(p => ({
+      players: this.state.players.map((p) => ({
         id: p.id,
         nickname: p.nickname,
         position: p.position,
         team: p.team,
         cardCount: p.hand.length,
         connected: p.connected,
-        ready: p.ready
+        ready: p.ready,
       })),
       scores: this.state.scores,
-      currentRound: this.state.currentRound ? {
-        roundNumber: this.state.currentRound.roundNumber,
-        bids: this.state.currentRound.bids,
-        currentTrick: {
-          plays: this.state.currentRound.currentTrick.plays,
-          leadSuit: this.state.currentRound.currentTrick.leadSuit
-        },
-        tricksWon,
-        spadesBroken: this.state.currentRound.spadesBroken
-      } : null,
+      currentRound: this.state.currentRound
+        ? {
+            roundNumber: this.state.currentRound.roundNumber,
+            bids: this.state.currentRound.bids,
+            currentTrick: {
+              plays: this.state.currentRound.currentTrick.plays,
+              leadSuit: this.state.currentRound.currentTrick.leadSuit,
+            },
+            tricksWon,
+            spadesBroken: this.state.currentRound.spadesBroken,
+          }
+        : null,
       dealerPosition: this.state.dealerPosition,
-      currentPlayerPosition: this.state.currentPlayerPosition
+      currentPlayerPosition: this.state.currentPlayerPosition,
     };
   }
 
@@ -108,35 +113,35 @@ export class GameInstance {
     return this.dispatch({
       type: 'PLAYER_JOIN',
       playerId,
-      nickname
+      nickname,
     });
   }
 
   removePlayer(playerId: PlayerId): ActionResult {
     return this.dispatch({
       type: 'PLAYER_LEAVE',
-      playerId
+      playerId,
     });
   }
 
   setPlayerReady(playerId: PlayerId): ActionResult {
     return this.dispatch({
       type: 'PLAYER_READY',
-      playerId
+      playerId,
     });
   }
 
   reconnectPlayer(playerId: PlayerId): ActionResult {
     return this.dispatch({
       type: 'PLAYER_RECONNECT',
-      playerId
+      playerId,
     });
   }
 
   disconnectPlayer(playerId: PlayerId): ActionResult {
     return this.dispatch({
       type: 'PLAYER_DISCONNECT',
-      playerId
+      playerId,
     });
   }
 
@@ -147,36 +152,43 @@ export class GameInstance {
     return this.dispatch({ type: 'DEAL_CARDS' });
   }
 
-  makeBid(playerId: PlayerId, bid: number, isNil: boolean = false, isBlindNil: boolean = false): ActionResult {
+  makeBid(
+    playerId: PlayerId,
+    bid: number,
+    isNil = false,
+    isBlindNil = false
+  ): ActionResult {
     return this.dispatch({
       type: 'MAKE_BID',
       playerId,
       bid,
       isNil,
-      isBlindNil
+      isBlindNil,
     });
   }
 
   playCard(playerId: PlayerId, card: Card): ActionResult {
     // Validate card is in hand
     const hand = this.playerHands.get(playerId);
-    if (!hand || !hand.some(c => c.suit === card.suit && c.rank === card.rank)) {
+    if (!hand?.some((c) => c.suit === card.suit && c.rank === card.rank)) {
       return {
         state: this.state,
         valid: false,
-        error: 'Card not in hand'
+        error: 'Card not in hand',
       };
     }
 
     const result = this.dispatch({
       type: 'PLAY_CARD',
       playerId,
-      card
+      card,
     });
 
     if (result.valid) {
       // Update local hand cache
-      const newHand = hand.filter(c => !(c.suit === card.suit && c.rank === card.rank));
+      const newHand = hand.filter(
+        (c) => !(c.suit === card.suit && c.rank === card.rank)
+      );
       this.playerHands.set(playerId, newHand);
 
       // If trick ended, collect it
@@ -197,8 +209,8 @@ export class GameInstance {
           sideEffects: [
             ...(result.sideEffects || []),
             ...(collectResult.sideEffects || []),
-            ...endRoundSideEffects
-          ]
+            ...endRoundSideEffects,
+          ],
         };
       }
     }
@@ -214,11 +226,11 @@ export class GameInstance {
   }
 
   isPlayerTurn(playerId: PlayerId): boolean {
-    const player = this.state.players.find(p => p.id === playerId);
+    const player = this.state.players.find((p) => p.id === playerId);
     return player?.position === this.state.currentPlayerPosition;
   }
 
   getPlayerByPosition(position: number): PlayerId | undefined {
-    return this.state.players.find(p => p.position === position)?.id;
+    return this.state.players.find((p) => p.position === position)?.id;
   }
 }

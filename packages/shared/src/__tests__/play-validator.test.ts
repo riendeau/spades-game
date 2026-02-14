@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import type { Card } from '../types/card';
 import { validatePlay, getPlayableCards } from '../validation/play-validator';
 import type { PlayValidationGameState } from '../validation/play-validator';
-import type { Card } from '../types/card';
 
-function makeGameState(overrides: Partial<PlayValidationGameState> = {}): PlayValidationGameState {
+function makeGameState(
+  overrides: Partial<PlayValidationGameState> = {}
+): PlayValidationGameState {
   return {
     phase: 'playing',
     players: [

@@ -6,5 +6,5 @@ export {
   getNextBidder,
   allBidsComplete,
   createBid,
-  getTeamTotalBid
+  getTeamTotalBid,
 } from './bidding.js';

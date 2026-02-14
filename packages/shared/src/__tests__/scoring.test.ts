@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateRoundScore,
   updateTeamScore,
-  checkGameEnd
+  checkGameEnd,
 } from '../game-logic/scoring';
 import { DEFAULT_GAME_CONFIG } from '../types/game-state';
 import type { TeamScore, PlayerBid } from '../types/player';
@@ -29,41 +29,65 @@ describe('Scoring', () => {
 
     it('should award 100 points for successful nil', () => {
       const nilBids: PlayerBid[] = [
-        { playerId: 'p1', bid: 0, isNil: true, isBlindNil: false }
+        { playerId: 'p1', bid: 0, isNil: true, isBlindNil: false },
       ];
       const playerTricks = { p1: 0 };
 
-      const result = calculateRoundScore(0, 0, nilBids, playerTricks, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(
+        0,
+        0,
+        nilBids,
+        playerTricks,
+        DEFAULT_GAME_CONFIG
+      );
       expect(result.nilBonus).toBe(100);
     });
 
     it('should penalize 100 points for failed nil', () => {
       const nilBids: PlayerBid[] = [
-        { playerId: 'p1', bid: 0, isNil: true, isBlindNil: false }
+        { playerId: 'p1', bid: 0, isNil: true, isBlindNil: false },
       ];
       const playerTricks = { p1: 2 };
 
-      const result = calculateRoundScore(0, 2, nilBids, playerTricks, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(
+        0,
+        2,
+        nilBids,
+        playerTricks,
+        DEFAULT_GAME_CONFIG
+      );
       expect(result.nilBonus).toBe(-100);
     });
 
     it('should award 200 points for successful blind nil', () => {
       const nilBids: PlayerBid[] = [
-        { playerId: 'p1', bid: 0, isNil: false, isBlindNil: true }
+        { playerId: 'p1', bid: 0, isNil: false, isBlindNil: true },
       ];
       const playerTricks = { p1: 0 };
 
-      const result = calculateRoundScore(0, 0, nilBids, playerTricks, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(
+        0,
+        0,
+        nilBids,
+        playerTricks,
+        DEFAULT_GAME_CONFIG
+      );
       expect(result.nilBonus).toBe(200);
     });
 
     it('should penalize 200 points for failed blind nil', () => {
       const nilBids: PlayerBid[] = [
-        { playerId: 'p1', bid: 0, isNil: false, isBlindNil: true }
+        { playerId: 'p1', bid: 0, isNil: false, isBlindNil: true },
       ];
       const playerTricks = { p1: 1 };
 
-      const result = calculateRoundScore(0, 1, nilBids, playerTricks, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(
+        0,
+        1,
+        nilBids,
+        playerTricks,
+        DEFAULT_GAME_CONFIG
+      );
       expect(result.nilBonus).toBe(-200);
     });
   });
@@ -75,7 +99,7 @@ describe('Scoring', () => {
         score: 100,
         bags: 3,
         roundBid: 0,
-        roundTricks: 0
+        roundTricks: 0,
       };
 
       const roundCalc = {
@@ -83,7 +107,7 @@ describe('Scoring', () => {
         bags: 2,
         bagPenalty: 0,
         nilBonus: 0,
-        totalScore: 50
+        totalScore: 50,
       };
 
       const result = updateTeamScore(current, roundCalc, DEFAULT_GAME_CONFIG);
@@ -97,7 +121,7 @@ describe('Scoring', () => {
         score: 200,
         bags: 8,
         roundBid: 0,
-        roundTricks: 0
+        roundTricks: 0,
       };
 
       const roundCalc = {
@@ -105,7 +129,7 @@ describe('Scoring', () => {
         bags: 3,
         bagPenalty: 0,
         nilBonus: 0,
-        totalScore: 50
+        totalScore: 50,
       };
 
       const result = updateTeamScore(current, roundCalc, DEFAULT_GAME_CONFIG);
@@ -119,24 +143,60 @@ describe('Scoring', () => {
   describe('checkGameEnd', () => {
     it('should return null if no team reached winning score', () => {
       const scores = {
-        team1: { teamId: 'team1' as const, score: 400, bags: 0, roundBid: 0, roundTricks: 0 },
-        team2: { teamId: 'team2' as const, score: 300, bags: 0, roundBid: 0, roundTricks: 0 }
+        team1: {
+          teamId: 'team1' as const,
+          score: 400,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
+        team2: {
+          teamId: 'team2' as const,
+          score: 300,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
       };
       expect(checkGameEnd(scores, 500)).toBeNull();
     });
 
     it('should return team1 if they reach winning score first', () => {
       const scores = {
-        team1: { teamId: 'team1' as const, score: 520, bags: 0, roundBid: 0, roundTricks: 0 },
-        team2: { teamId: 'team2' as const, score: 400, bags: 0, roundBid: 0, roundTricks: 0 }
+        team1: {
+          teamId: 'team1' as const,
+          score: 520,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
+        team2: {
+          teamId: 'team2' as const,
+          score: 400,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
       };
       expect(checkGameEnd(scores, 500)).toBe('team1');
     });
 
     it('should return team with higher score if both over winning score', () => {
       const scores = {
-        team1: { teamId: 'team1' as const, score: 520, bags: 0, roundBid: 0, roundTricks: 0 },
-        team2: { teamId: 'team2' as const, score: 550, bags: 0, roundBid: 0, roundTricks: 0 }
+        team1: {
+          teamId: 'team1' as const,
+          score: 520,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
+        team2: {
+          teamId: 'team2' as const,
+          score: 550,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
       };
       expect(checkGameEnd(scores, 500)).toBe('team2');
     });

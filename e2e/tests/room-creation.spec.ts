@@ -2,7 +2,9 @@ import { test, expect } from '../fixtures/game-fixtures';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 test.describe('Room Creation', () => {
-  test('creating a room shows the waiting room with a 6-character code', async ({ createPlayerPage }) => {
+  test('creating a room shows the waiting room with a 6-character code', async ({
+    createPlayerPage,
+  }) => {
     const page = await createPlayerPage('Alice');
     const roomCode = await createRoom(page, 'Alice');
 
@@ -10,7 +12,9 @@ test.describe('Room Creation', () => {
     expect(roomCode).toMatch(/^[A-Z0-9]{6}$/);
   });
 
-  test('second player can join with room code', async ({ createPlayerPage }) => {
+  test('second player can join with room code', async ({
+    createPlayerPage,
+  }) => {
     const p1 = await createPlayerPage('Alice');
     const roomCode = await createRoom(p1, 'Alice');
 
@@ -30,10 +34,14 @@ test.describe('Room Creation', () => {
     await page.getByRole('button', { name: 'Join Room' }).click();
 
     // Should show an error (stays on join screen, error toast appears)
-    await expect(page.getByText(/not found|invalid|does not exist/i)).toBeVisible({ timeout: 5_000 });
+    await expect(
+      page.getByText(/not found|invalid|does not exist/i)
+    ).toBeVisible({ timeout: 5_000 });
   });
 
-  test('four players can all join the same room', async ({ createPlayerPage }) => {
+  test('four players can all join the same room', async ({
+    createPlayerPage,
+  }) => {
     const p1 = await createPlayerPage('Alice');
     const roomCode = await createRoom(p1, 'Alice');
 

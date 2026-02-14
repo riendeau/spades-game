@@ -1,5 +1,5 @@
-import React from 'react';
 import type { Card as CardType } from '@spades/shared';
+import React from 'react';
 import { Card, CardBack } from '../ui/Card';
 
 interface PlayerHandProps {
@@ -19,18 +19,20 @@ export function PlayerHand({
   selectedCard,
   onSelectCard,
   faceDown = false,
-  playableCards
+  playableCards,
 }: PlayerHandProps) {
   const isCardPlayable = (card: CardType): boolean => {
     if (!isMyTurn) return false;
     if (!playableCards) return true;
-    return playableCards.some(c => c.suit === card.suit && c.rank === card.rank);
+    return playableCards.some(
+      (c) => c.suit === card.suit && c.rank === card.rank
+    );
   };
 
   const handleCardClick = (card: CardType) => {
     if (!isCardPlayable(card)) return;
 
-    if (selectedCard && selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
+    if (selectedCard?.suit === card.suit && selectedCard.rank === card.rank) {
       // Double click to play
       onPlayCard(card);
       onSelectCard(null);
@@ -45,7 +47,7 @@ export function PlayerHand({
         display: 'flex',
         justifyContent: 'center',
         gap: '-20px',
-        padding: '20px'
+        padding: '20px',
       }}
     >
       {cards.map((card, idx) => {
@@ -57,7 +59,7 @@ export function PlayerHand({
             key={`${card.suit}-${card.rank}`}
             style={{
               marginLeft: idx > 0 ? '-25px' : 0,
-              zIndex: isSelected ? 100 : idx
+              zIndex: isSelected ? 100 : idx,
             }}
           >
             {faceDown ? (

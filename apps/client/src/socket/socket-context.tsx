@@ -1,6 +1,9 @@
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from '@spades/shared';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ServerToClientEvents } from '@spades/shared';
+import { io, type Socket } from 'socket.io-client';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -11,7 +14,7 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType>({
   socket: null,
-  connected: false
+  connected: false,
 });
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
@@ -19,17 +22,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const serverUrl = import.meta.env.VITE_SERVER_URL
-      || (import.meta.env.DEV ? 'http://localhost:3001' : undefined);
-    const newSocket: TypedSocket = io(
-      serverUrl ?? window.location.origin,
-      {
-        autoConnect: true,
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000
-      }
-    );
+    const serverUrl =
+      import.meta.env.VITE_SERVER_URL ||
+      (import.meta.env.DEV ? 'http://localhost:3001' : undefined);
+    const newSocket: TypedSocket = io(serverUrl ?? window.location.origin, {
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+    });
 
     newSocket.on('connect', () => {
       setConnected(true);

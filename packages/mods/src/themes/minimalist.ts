@@ -20,7 +20,7 @@ export const minimalistTheme: ThemeMod = {
       error: '#b91c1c',
       success: '#15803d',
       cardBack: '#404040',
-      tableGreen: '#f5f5f5'
+      tableGreen: '#f5f5f5',
     },
     typography: {
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -28,19 +28,19 @@ export const minimalistTheme: ThemeMod = {
         small: '11px',
         medium: '13px',
         large: '16px',
-        xlarge: '22px'
-      }
+        xlarge: '22px',
+      },
     },
     cardStyle: {
       borderRadius: '4px',
       shadow: '0 1px 2px rgba(0,0,0,0.05)',
       width: '65px',
-      height: '95px'
+      height: '95px',
     },
     animations: {
       dealSpeed: 200,
       playSpeed: 250,
-      trickCollectSpeed: 350
-    }
-  }
+      trickCollectSpeed: 350,
+    },
+  },
 };

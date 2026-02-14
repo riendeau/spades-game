@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { processAction, canTransition } from '../state-machine/game-machine';
-import { createInitialGameState, DEFAULT_GAME_CONFIG } from '../types/game-state';
+import {
+  createInitialGameState,
+  DEFAULT_GAME_CONFIG,
+} from '../types/game-state';
 
 describe('Game State Machine', () => {
   describe('canTransition', () => {
@@ -32,7 +35,7 @@ describe('Game State Machine', () => {
       const result = processAction(state, {
         type: 'PLAYER_JOIN',
         playerId: 'p1',
-        nickname: 'Player 1'
+        nickname: 'Player 1',
       });
 
       expect(result.valid).toBe(true);
@@ -49,7 +52,7 @@ describe('Game State Machine', () => {
         const result = processAction(state, {
           type: 'PLAYER_JOIN',
           playerId: `p${i}`,
-          nickname: `Player ${i}`
+          nickname: `Player ${i}`,
         });
         state = result.state;
       }
@@ -67,7 +70,7 @@ describe('Game State Machine', () => {
         const result = processAction(state, {
           type: 'PLAYER_JOIN',
           playerId: `p${i}`,
-          nickname: `Player ${i}`
+          nickname: `Player ${i}`,
         });
         state = result.state;
       }
@@ -75,7 +78,7 @@ describe('Game State Machine', () => {
       const result = processAction(state, {
         type: 'PLAYER_JOIN',
         playerId: 'p5',
-        nickname: 'Player 5'
+        nickname: 'Player 5',
       });
 
       expect(result.valid).toBe(false);
@@ -89,12 +92,12 @@ describe('Game State Machine', () => {
       state = processAction(state, {
         type: 'PLAYER_JOIN',
         playerId: 'p1',
-        nickname: 'Player 1'
+        nickname: 'Player 1',
       }).state;
 
       const result = processAction(state, {
         type: 'PLAYER_READY',
-        playerId: 'p1'
+        playerId: 'p1',
       });
 
       expect(result.valid).toBe(true);
@@ -109,7 +112,7 @@ describe('Game State Machine', () => {
         state = processAction(state, {
           type: 'PLAYER_JOIN',
           playerId: `p${i}`,
-          nickname: `Player ${i}`
+          nickname: `Player ${i}`,
         }).state;
       }
 
@@ -117,7 +120,7 @@ describe('Game State Machine', () => {
       for (let i = 0; i < 3; i++) {
         state = processAction(state, {
           type: 'PLAYER_READY',
-          playerId: `p${i}`
+          playerId: `p${i}`,
         }).state;
         expect(state.phase).toBe('waiting');
       }
@@ -125,7 +128,7 @@ describe('Game State Machine', () => {
       // Ready last player
       const result = processAction(state, {
         type: 'PLAYER_READY',
-        playerId: 'p3'
+        playerId: 'p3',
       });
 
       expect(result.valid).toBe(true);
@@ -142,11 +145,11 @@ describe('Game State Machine', () => {
         state = processAction(state, {
           type: 'PLAYER_JOIN',
           playerId: `p${i}`,
-          nickname: `Player ${i}`
+          nickname: `Player ${i}`,
         }).state;
         state = processAction(state, {
           type: 'PLAYER_READY',
-          playerId: `p${i}`
+          playerId: `p${i}`,
         }).state;
       }
 
@@ -158,7 +161,7 @@ describe('Game State Machine', () => {
 
       expect(result.valid).toBe(true);
       expect(result.state.phase).toBe('bidding');
-      result.state.players.forEach(player => {
+      result.state.players.forEach((player) => {
         expect(player.hand).toHaveLength(13);
       });
     });
@@ -172,11 +175,11 @@ describe('Game State Machine', () => {
         state = processAction(state, {
           type: 'PLAYER_JOIN',
           playerId: `p${i}`,
-          nickname: `Player ${i}`
+          nickname: `Player ${i}`,
         }).state;
         state = processAction(state, {
           type: 'PLAYER_READY',
-          playerId: `p${i}`
+          playerId: `p${i}`,
         }).state;
       }
 
@@ -189,7 +192,7 @@ describe('Game State Machine', () => {
     it('should allow valid bid from current player', () => {
       const state = setupBiddingGame();
       const currentPlayer = state.players.find(
-        p => p.position === state.currentPlayerPosition
+        (p) => p.position === state.currentPlayerPosition
       );
 
       const result = processAction(state, {
@@ -197,7 +200,7 @@ describe('Game State Machine', () => {
         playerId: currentPlayer!.id,
         bid: 3,
         isNil: false,
-        isBlindNil: false
+        isBlindNil: false,
       });
 
       expect(result.valid).toBe(true);
@@ -207,7 +210,7 @@ describe('Game State Machine', () => {
     it('should reject bid from wrong player', () => {
       const state = setupBiddingGame();
       const wrongPlayer = state.players.find(
-        p => p.position !== state.currentPlayerPosition
+        (p) => p.position !== state.currentPlayerPosition
       );
 
       const result = processAction(state, {
@@ -215,7 +218,7 @@ describe('Game State Machine', () => {
         playerId: wrongPlayer!.id,
         bid: 3,
         isNil: false,
-        isBlindNil: false
+        isBlindNil: false,
       });
 
       expect(result.valid).toBe(false);
@@ -227,14 +230,14 @@ describe('Game State Machine', () => {
       // All 4 players bid
       for (let i = 0; i < 4; i++) {
         const currentPlayer = state.players.find(
-          p => p.position === state.currentPlayerPosition
+          (p) => p.position === state.currentPlayerPosition
         );
         state = processAction(state, {
           type: 'MAKE_BID',
           playerId: currentPlayer!.id,
           bid: 3,
           isNil: false,
-          isBlindNil: false
+          isBlindNil: false,
         }).state;
       }
 
@@ -245,7 +248,7 @@ describe('Game State Machine', () => {
     it('should allow blind nil bid from current player', () => {
       const state = setupBiddingGame();
       const currentPlayer = state.players.find(
-        p => p.position === state.currentPlayerPosition
+        (p) => p.position === state.currentPlayerPosition
       );
 
       const result = processAction(state, {
@@ -253,7 +256,7 @@ describe('Game State Machine', () => {
         playerId: currentPlayer!.id,
         bid: 0,
         isNil: false,
-        isBlindNil: true
+        isBlindNil: true,
       });
 
       expect(result.valid).toBe(true);
@@ -267,14 +270,14 @@ describe('Game State Machine', () => {
 
       // First player bids blind nil
       const firstPlayer = state.players.find(
-        p => p.position === state.currentPlayerPosition
+        (p) => p.position === state.currentPlayerPosition
       );
       state = processAction(state, {
         type: 'MAKE_BID',
         playerId: firstPlayer!.id,
         bid: 0,
         isNil: false,
-        isBlindNil: true
+        isBlindNil: true,
       }).state;
 
       expect(state.phase).toBe('bidding');
@@ -282,14 +285,14 @@ describe('Game State Machine', () => {
       // Remaining 3 players bid normally
       for (let i = 0; i < 3; i++) {
         const currentPlayer = state.players.find(
-          p => p.position === state.currentPlayerPosition
+          (p) => p.position === state.currentPlayerPosition
         );
         state = processAction(state, {
           type: 'MAKE_BID',
           playerId: currentPlayer!.id,
           bid: 3,
           isNil: false,
-          isBlindNil: false
+          isBlindNil: false,
         }).state;
       }
 

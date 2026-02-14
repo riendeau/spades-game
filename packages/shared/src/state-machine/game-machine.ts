@@ -1,19 +1,38 @@
+import {
+  allBidsComplete,
+  getNextBidder,
+  createBid,
+} from '../game-logic/bidding.js';
+import {
+  createDeck,
+  dealCards,
+  removeCardFromHand,
+} from '../game-logic/deck.js';
+import {
+  calculateRoundScore,
+  updateTeamScore,
+  checkGameEnd,
+  createRoundSummary,
+} from '../game-logic/scoring.js';
+import {
+  addPlayToTrick,
+  isTrickComplete,
+  determineTrickWinner,
+} from '../game-logic/trick.js';
 import type { Card } from '../types/card.js';
 import type {
   GameState,
   GamePhase,
   GameConfig,
   Trick,
+} from '../types/game-state.js';
+import {
+  DEFAULT_GAME_CONFIG,
   createEmptyTrick,
-  createRoundState
+  createRoundState,
 } from '../types/game-state.js';
 import type { Player, PlayerId, Position, PlayerBid } from '../types/player.js';
 import { getTeamForPosition } from '../types/player.js';
-import { createDeck, dealCards, removeCardFromHand } from '../game-logic/deck.js';
-import { addPlayToTrick, isTrickComplete, determineTrickWinner } from '../game-logic/trick.js';
-import { allBidsComplete, getNextBidder, createBid } from '../game-logic/bidding.js';
-import { calculateRoundScore, updateTeamScore, checkGameEnd, createRoundSummary } from '../game-logic/scoring.js';
-import { DEFAULT_GAME_CONFIG } from '../types/game-state.js';
 
 export type GameAction =
   | { type: 'PLAYER_JOIN'; playerId: PlayerId; nickname: string }
@@ -23,7 +42,13 @@ export type GameAction =
   | { type: 'PLAYER_DISCONNECT'; playerId: PlayerId }
   | { type: 'START_GAME' }
   | { type: 'DEAL_CARDS' }
-  | { type: 'MAKE_BID'; playerId: PlayerId; bid: number; isNil: boolean; isBlindNil: boolean }
+  | {
+      type: 'MAKE_BID';
+      playerId: PlayerId;
+      bid: number;
+      isNil: boolean;
+      isBlindNil: boolean;
+    }
   | { type: 'PLAY_CARD'; playerId: PlayerId; card: Card }
   | { type: 'COLLECT_TRICK' }
   | { type: 'END_ROUND' }
@@ -43,14 +68,14 @@ export type SideEffect =
   | { type: 'GAME_COMPLETE'; winner: 'team1' | 'team2' };
 
 const VALID_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
-  'waiting': ['ready'],
-  'ready': ['dealing'],
-  'dealing': ['bidding'],
-  'bidding': ['playing'],
-  'playing': ['trick-end', 'playing'],
+  waiting: ['ready'],
+  ready: ['dealing'],
+  dealing: ['bidding'],
+  bidding: ['playing'],
+  playing: ['trick-end', 'playing'],
   'trick-end': ['playing', 'round-end'],
   'round-end': ['dealing', 'game-end'],
-  'game-end': []
+  'game-end': [],
 };
 
 export function canTransition(from: GamePhase, to: GamePhase): boolean {
@@ -87,7 +112,14 @@ export function processAction(
       return handleDealCards(newState);
 
     case 'MAKE_BID':
-      return handleMakeBid(newState, action.playerId, action.bid, action.isNil, action.isBlindNil, config);
+      return handleMakeBid(
+        newState,
+        action.playerId,
+        action.bid,
+        action.isNil,
+        action.isBlindNil,
+        config
+      );
 
     case 'PLAY_CARD':
       return handlePlayCard(newState, action.playerId, action.card, config);
@@ -106,7 +138,11 @@ export function processAction(
   }
 }
 
-function handlePlayerJoin(state: GameState, playerId: PlayerId, nickname: string): ActionResult {
+function handlePlayerJoin(
+  state: GameState,
+  playerId: PlayerId,
+  nickname: string
+): ActionResult {
   if (state.phase !== 'waiting') {
     return { state, valid: false, error: 'Game already started' };
   }
@@ -115,7 +151,7 @@ function handlePlayerJoin(state: GameState, playerId: PlayerId, nickname: string
     return { state, valid: false, error: 'Game is full' };
   }
 
-  if (state.players.some(p => p.id === playerId)) {
+  if (state.players.some((p) => p.id === playerId)) {
     return { state, valid: false, error: 'Player already in game' };
   }
 
@@ -129,20 +165,20 @@ function handlePlayerJoin(state: GameState, playerId: PlayerId, nickname: string
     team,
     hand: [],
     connected: true,
-    ready: false
+    ready: false,
   };
 
   return {
     state: {
       ...state,
-      players: [...state.players, newPlayer]
+      players: [...state.players, newPlayer],
     },
-    valid: true
+    valid: true,
   };
 }
 
 function handlePlayerLeave(state: GameState, playerId: PlayerId): ActionResult {
-  const player = state.players.find(p => p.id === playerId);
+  const player = state.players.find((p) => p.id === playerId);
   if (!player) {
     return { state, valid: false, error: 'Player not found' };
   }
@@ -154,19 +190,19 @@ function handlePlayerLeave(state: GameState, playerId: PlayerId): ActionResult {
 
   // In waiting phase, remove player and reposition remaining players
   const remainingPlayers = state.players
-    .filter(p => p.id !== playerId)
+    .filter((p) => p.id !== playerId)
     .map((p, idx) => ({
       ...p,
       position: idx as Position,
-      team: getTeamForPosition(idx as Position)
+      team: getTeamForPosition(idx as Position),
     }));
 
   return {
     state: {
       ...state,
-      players: remainingPlayers
+      players: remainingPlayers,
     },
-    valid: true
+    valid: true,
   };
 }
 
@@ -175,7 +211,7 @@ function handlePlayerReady(state: GameState, playerId: PlayerId): ActionResult {
     return { state, valid: false, error: 'Cannot ready during game' };
   }
 
-  const playerIndex = state.players.findIndex(p => p.id === playerId);
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex === -1) {
     return { state, valid: false, error: 'Player not found' };
   }
@@ -183,20 +219,23 @@ function handlePlayerReady(state: GameState, playerId: PlayerId): ActionResult {
   const newPlayers = [...state.players];
   newPlayers[playerIndex] = { ...newPlayers[playerIndex], ready: true };
 
-  const allReady = newPlayers.length === 4 && newPlayers.every(p => p.ready);
+  const allReady = newPlayers.length === 4 && newPlayers.every((p) => p.ready);
 
   return {
     state: {
       ...state,
       players: newPlayers,
-      phase: allReady ? 'ready' : 'waiting'
+      phase: allReady ? 'ready' : 'waiting',
     },
-    valid: true
+    valid: true,
   };
 }
 
-function handlePlayerReconnect(state: GameState, playerId: PlayerId): ActionResult {
-  const playerIndex = state.players.findIndex(p => p.id === playerId);
+function handlePlayerReconnect(
+  state: GameState,
+  playerId: PlayerId
+): ActionResult {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex === -1) {
     return { state, valid: false, error: 'Player not found' };
   }
@@ -206,12 +245,15 @@ function handlePlayerReconnect(state: GameState, playerId: PlayerId): ActionResu
 
   return {
     state: { ...state, players: newPlayers },
-    valid: true
+    valid: true,
   };
 }
 
-function handlePlayerDisconnect(state: GameState, playerId: PlayerId): ActionResult {
-  const playerIndex = state.players.findIndex(p => p.id === playerId);
+function handlePlayerDisconnect(
+  state: GameState,
+  playerId: PlayerId
+): ActionResult {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex === -1) {
     return { state, valid: false, error: 'Player not found' };
   }
@@ -221,7 +263,7 @@ function handlePlayerDisconnect(state: GameState, playerId: PlayerId): ActionRes
 
   return {
     state: { ...state, players: newPlayers },
-    valid: true
+    valid: true,
   };
 }
 
@@ -232,7 +274,7 @@ function handleStartGame(state: GameState): ActionResult {
 
   return {
     state: { ...state, phase: 'dealing' },
-    valid: true
+    valid: true,
   };
 }
 
@@ -246,13 +288,15 @@ function handleDealCards(state: GameState): ActionResult {
 
   const newPlayers = state.players.map((player, idx) => ({
     ...player,
-    hand: hands[idx]
+    hand: hands[idx],
   }));
 
-  const roundNumber = state.currentRound ? state.currentRound.roundNumber + 1 : 1;
+  const roundNumber = state.currentRound
+    ? state.currentRound.roundNumber + 1
+    : 1;
 
   const handsRecord: Record<PlayerId, Card[]> = {};
-  newPlayers.forEach(p => {
+  newPlayers.forEach((p) => {
     handsRecord[p.id] = p.hand;
   });
 
@@ -266,12 +310,12 @@ function handleDealCards(state: GameState): ActionResult {
         bids: [],
         tricks: [],
         currentTrick: { plays: [], leadSuit: null, winner: null },
-        spadesBroken: false
+        spadesBroken: false,
       },
-      currentPlayerPosition: ((state.dealerPosition + 1) % 4) as Position
+      currentPlayerPosition: ((state.dealerPosition + 1) % 4) as Position,
     },
     valid: true,
-    sideEffects: [{ type: 'DEAL_HANDS', hands: handsRecord }]
+    sideEffects: [{ type: 'DEAL_HANDS', hands: handsRecord }],
   };
 }
 
@@ -287,7 +331,7 @@ function handleMakeBid(
     return { state, valid: false, error: 'Not in bidding phase' };
   }
 
-  const player = state.players.find(p => p.id === playerId);
+  const player = state.players.find((p) => p.id === playerId);
   if (!player) {
     return { state, valid: false, error: 'Player not found' };
   }
@@ -305,8 +349,8 @@ function handleMakeBid(
 
   const allBidsDone = newBids.length === 4;
   const nextPosition = allBidsDone
-    ? ((state.dealerPosition + 1) % 4) as Position
-    : ((state.currentPlayerPosition + 1) % 4) as Position;
+    ? (((state.dealerPosition + 1) % 4) as Position)
+    : (((state.currentPlayerPosition + 1) % 4) as Position);
 
   return {
     state: {
@@ -314,11 +358,11 @@ function handleMakeBid(
       phase: allBidsDone ? 'playing' : 'bidding',
       currentRound: {
         ...state.currentRound,
-        bids: newBids
+        bids: newBids,
       },
-      currentPlayerPosition: nextPosition
+      currentPlayerPosition: nextPosition,
     },
-    valid: true
+    valid: true,
   };
 }
 
@@ -332,7 +376,7 @@ function handlePlayCard(
     return { state, valid: false, error: 'Not in playing phase' };
   }
 
-  const playerIndex = state.players.findIndex(p => p.id === playerId);
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex === -1) {
     return { state, valid: false, error: 'Player not found' };
   }
@@ -356,22 +400,26 @@ function handlePlayCard(
   newPlayers[playerIndex] = { ...player, hand: newHand };
 
   // Add play to trick
-  const newTrick = addPlayToTrick(state.currentRound.currentTrick, { playerId, card });
+  const newTrick = addPlayToTrick(state.currentRound.currentTrick, {
+    playerId,
+    card,
+  });
 
   // Check if spades are now broken
-  const spadesBroken = state.currentRound.spadesBroken || card.suit === 'spades';
+  const spadesBroken =
+    state.currentRound.spadesBroken || card.suit === 'spades';
 
   const trickComplete = isTrickComplete(newTrick);
   const nextPosition = trickComplete
     ? state.currentPlayerPosition // Will be updated in COLLECT_TRICK
-    : ((state.currentPlayerPosition + 1) % 4) as Position;
+    : (((state.currentPlayerPosition + 1) % 4) as Position);
 
   const sideEffects: SideEffect[] = [];
   if (trickComplete && newTrick.winner) {
     sideEffects.push({
       type: 'TRICK_COMPLETE',
       winnerId: newTrick.winner,
-      trickNumber: state.currentRound.tricks.length + 1
+      trickNumber: state.currentRound.tricks.length + 1,
     });
   }
 
@@ -383,16 +431,19 @@ function handlePlayCard(
       currentRound: {
         ...state.currentRound,
         currentTrick: newTrick,
-        spadesBroken
+        spadesBroken,
       },
-      currentPlayerPosition: nextPosition
+      currentPlayerPosition: nextPosition,
     },
     valid: true,
-    sideEffects
+    sideEffects,
   };
 }
 
-function handleCollectTrick(state: GameState, config: GameConfig): ActionResult {
+function handleCollectTrick(
+  state: GameState,
+  config: GameConfig
+): ActionResult {
   if (state.phase !== 'trick-end') {
     return { state, valid: false, error: 'Not in trick-end phase' };
   }
@@ -406,7 +457,9 @@ function handleCollectTrick(state: GameState, config: GameConfig): ActionResult 
     return { state, valid: false, error: 'Trick has no winner' };
   }
 
-  const winnerPlayer = state.players.find(p => p.id === completedTrick.winner);
+  const winnerPlayer = state.players.find(
+    (p) => p.id === completedTrick.winner
+  );
   if (!winnerPlayer) {
     return { state, valid: false, error: 'Winner not found' };
   }
@@ -421,11 +474,11 @@ function handleCollectTrick(state: GameState, config: GameConfig): ActionResult 
       currentRound: {
         ...state.currentRound,
         tricks: newTricks,
-        currentTrick: { plays: [], leadSuit: null, winner: null }
+        currentTrick: { plays: [], leadSuit: null, winner: null },
       },
-      currentPlayerPosition: winnerPlayer.position
+      currentPlayerPosition: winnerPlayer.position,
     },
-    valid: true
+    valid: true,
   };
 }
 
@@ -440,7 +493,9 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
 
   // Calculate tricks won by each player
   const playerTricks: Record<PlayerId, number> = {};
-  state.players.forEach(p => { playerTricks[p.id] = 0; });
+  state.players.forEach((p) => {
+    playerTricks[p.id] = 0;
+  });
 
   for (const trick of state.currentRound.tricks) {
     if (trick.winner) {
@@ -450,17 +505,26 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
 
   // Calculate scores for each team
   const calculateTeamScore = (teamId: 'team1' | 'team2') => {
-    const teamPlayers = state.players.filter(p => p.team === teamId);
-    const teamBids = state.currentRound!.bids.filter(b =>
-      teamPlayers.some(p => p.id === b.playerId)
+    const teamPlayers = state.players.filter((p) => p.team === teamId);
+    const teamBids = state.currentRound!.bids.filter((b) =>
+      teamPlayers.some((p) => p.id === b.playerId)
     );
-    const nilBids = teamBids.filter(b => b.isNil || b.isBlindNil);
+    const nilBids = teamBids.filter((b) => b.isNil || b.isBlindNil);
     const regularBid = teamBids
-      .filter(b => !b.isNil && !b.isBlindNil)
+      .filter((b) => !b.isNil && !b.isBlindNil)
       .reduce((sum, b) => sum + b.bid, 0);
-    const teamTricks = teamPlayers.reduce((sum, p) => sum + playerTricks[p.id], 0);
+    const teamTricks = teamPlayers.reduce(
+      (sum, p) => sum + playerTricks[p.id],
+      0
+    );
 
-    return calculateRoundScore(regularBid, teamTricks, nilBids, playerTricks, config);
+    return calculateRoundScore(
+      regularBid,
+      teamTricks,
+      nilBids,
+      playerTricks,
+      config
+    );
   };
 
   const team1Calc = calculateTeamScore('team1');
@@ -468,7 +532,7 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
 
   const newScores = {
     team1: updateTeamScore(state.scores.team1, team1Calc, config),
-    team2: updateTeamScore(state.scores.team2, team2Calc, config)
+    team2: updateTeamScore(state.scores.team2, team2Calc, config),
   };
 
   const winner = checkGameEnd(newScores, state.winningScore);
@@ -484,10 +548,10 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
       ...state,
       phase: winner ? 'game-end' : 'round-end',
       scores: newScores,
-      dealerPosition: ((state.dealerPosition + 1) % 4) as Position
+      dealerPosition: ((state.dealerPosition + 1) % 4) as Position,
     },
     valid: true,
-    sideEffects
+    sideEffects,
   };
 }
 
@@ -499,19 +563,19 @@ function handleStartNextRound(state: GameState): ActionResult {
   // Reset scores round tracking
   const newScores = {
     team1: { ...state.scores.team1, roundBid: 0, roundTricks: 0 },
-    team2: { ...state.scores.team2, roundBid: 0, roundTricks: 0 }
+    team2: { ...state.scores.team2, roundBid: 0, roundTricks: 0 },
   };
 
   // Clear player hands
-  const newPlayers = state.players.map(p => ({ ...p, hand: [] }));
+  const newPlayers = state.players.map((p) => ({ ...p, hand: [] }));
 
   return {
     state: {
       ...state,
       phase: 'dealing',
       players: newPlayers,
-      scores: newScores
+      scores: newScores,
     },
-    valid: true
+    valid: true,
   };
 }

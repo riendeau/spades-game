@@ -1,8 +1,8 @@
 import type { RuleMod, ThemeMod, Mod } from '@spades/shared';
 
 class ModRegistry {
-  private ruleMods: Map<string, RuleMod> = new Map();
-  private themeMods: Map<string, ThemeMod> = new Map();
+  private ruleMods = new Map<string, RuleMod>();
+  private themeMods = new Map<string, ThemeMod>();
 
   registerRuleMod(mod: RuleMod): void {
     this.ruleMods.set(mod.id, mod);
@@ -34,12 +34,17 @@ class ModRegistry {
     return [...this.getAllRuleMods(), ...this.getAllThemeMods()];
   }
 
-  getModList(): Array<{ id: string; name: string; type: 'rule' | 'theme'; description: string }> {
-    return this.getAllMods().map(mod => ({
+  getModList(): {
+    id: string;
+    name: string;
+    type: 'rule' | 'theme';
+    description: string;
+  }[] {
+    return this.getAllMods().map((mod) => ({
       id: mod.id,
       name: mod.name,
       type: mod.type,
-      description: mod.description
+      description: mod.description,
     }));
   }
 }

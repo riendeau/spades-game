@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import type { ClientGameState, Position } from '@spades/shared';
+import React, { useState } from 'react';
 import { Button } from '../ui/Button';
 
 interface BiddingPanelProps {
@@ -10,11 +10,19 @@ interface BiddingPanelProps {
   onRevealCards: () => void;
 }
 
-export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRevealCards }: BiddingPanelProps) {
+export function BiddingPanel({
+  gameState,
+  myPosition,
+  cardsRevealed,
+  onBid,
+  onRevealCards,
+}: BiddingPanelProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const myBid = gameState.currentRound?.bids.find(
-    b => b.playerId === gameState.players.find(p => p.position === myPosition)?.id
+    (b) =>
+      b.playerId ===
+      gameState.players.find((p) => p.position === myPosition)?.id
   );
   const hasBid = !!myBid;
 
@@ -44,7 +52,7 @@ export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRe
         backgroundColor: '#fff',
         borderRadius: '12px',
         padding: '20px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       }}
     >
       <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600 }}>
@@ -53,12 +61,16 @@ export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRe
 
       {/* Current bids */}
       <div style={{ marginBottom: '20px' }}>
-        <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
+        <div
+          style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}
+        >
           Bids placed:
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {gameState.players.map(player => {
-            const bid = gameState.currentRound?.bids.find(b => b.playerId === player.id);
+          {gameState.players.map((player) => {
+            const bid = gameState.currentRound?.bids.find(
+              (b) => b.playerId === player.id
+            );
             return (
               <div
                 key={player.id}
@@ -66,7 +78,7 @@ export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRe
                   padding: '8px 12px',
                   backgroundColor: '#f3f4f6',
                   borderRadius: '8px',
-                  fontSize: '14px'
+                  fontSize: '14px',
                 }}
               >
                 <span style={{ fontWeight: 500 }}>{player.nickname}</span>
@@ -88,32 +100,45 @@ export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRe
       {isMyTurn && !hasBid ? (
         !cardsRevealed ? (
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>
-              Your cards are face down. Would you like to bid blind nil or see your cards first?
+            <div
+              style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginBottom: '16px',
+              }}
+            >
+              Your cards are face down. Would you like to bid blind nil or see
+              your cards first?
             </div>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <div
+              style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}
+            >
               <Button variant="secondary" onClick={handleBlindNilBid}>
                 Bid Blind Nil
               </Button>
-              <Button onClick={handleSeeCards}>
-                See Cards
-              </Button>
+              <Button onClick={handleSeeCards}>See Cards</Button>
             </div>
           </div>
         ) : (
           <>
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
+              <div
+                style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  marginBottom: '8px',
+                }}
+              >
                 Select your bid:
               </div>
               <div
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: '8px'
+                  gap: '8px',
                 }}
               >
-                {Array.from({ length: 13 }, (_, i) => i + 1).map(bid => (
+                {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => (
                   <button
                     key={bid}
                     onClick={() => setSelectedBid(bid)}
@@ -121,11 +146,12 @@ export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRe
                       padding: '12px',
                       fontSize: '16px',
                       fontWeight: 600,
-                      backgroundColor: selectedBid === bid ? '#3b82f6' : '#f3f4f6',
+                      backgroundColor:
+                        selectedBid === bid ? '#3b82f6' : '#f3f4f6',
                       color: selectedBid === bid ? '#fff' : '#374151',
                       border: 'none',
                       borderRadius: '8px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     {bid}
@@ -153,13 +179,30 @@ export function BiddingPanel({ gameState, myPosition, cardsRevealed, onBid, onRe
           style={{
             textAlign: 'center',
             color: '#6b7280',
-            padding: '20px'
+            padding: '20px',
           }}
         >
           {hasBid ? (
-            <>Your bid: <strong>{myBid?.isBlindNil ? 'Blind Nil' : myBid?.isNil ? 'Nil' : myBid?.bid}</strong></>
+            <>
+              Your bid:{' '}
+              <strong>
+                {myBid?.isBlindNil
+                  ? 'Blind Nil'
+                  : myBid?.isNil
+                    ? 'Nil'
+                    : myBid?.bid}
+              </strong>
+            </>
           ) : (
-            <>Waiting for {gameState.players.find(p => p.position === gameState.currentPlayerPosition)?.nickname} to bid...</>
+            <>
+              Waiting for{' '}
+              {
+                gameState.players.find(
+                  (p) => p.position === gameState.currentPlayerPosition
+                )?.nickname
+              }{' '}
+              to bid...
+            </>
           )}
         </div>
       )}

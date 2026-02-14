@@ -2,7 +2,9 @@ import { test, expect } from '../fixtures/game-fixtures';
 import { createRoom } from '../helpers/room-helpers';
 
 test.describe('Shareable URL', () => {
-  test('waiting room displays shareable URL after room creation', async ({ createPlayerPage }) => {
+  test('waiting room displays shareable URL after room creation', async ({
+    createPlayerPage,
+  }) => {
     const page = await createPlayerPage('Alice');
     const roomCode = await createRoom(page, 'Alice');
 
@@ -10,7 +12,9 @@ test.describe('Shareable URL', () => {
     await expect(page.getByText('Share this link:')).toBeVisible();
 
     // Should show the URL with the room code in it
-    const urlElement = page.locator('code').filter({ hasText: `/room/${roomCode}` });
+    const urlElement = page
+      .locator('code')
+      .filter({ hasText: `/room/${roomCode}` });
     await expect(urlElement).toBeVisible();
 
     // Should include the origin (http://localhost:5173)
@@ -19,24 +23,36 @@ test.describe('Shareable URL', () => {
     expect(urlText).toContain(`/room/${roomCode}`);
   });
 
-  test('clicking shareable URL copies it to clipboard', async ({ createPlayerPage }) => {
+  test('clicking shareable URL copies it to clipboard', async ({
+    createPlayerPage,
+  }) => {
     const page = await createPlayerPage('Alice');
     const roomCode = await createRoom(page, 'Alice');
 
     // Grant clipboard permissions
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page
+      .context()
+      .grantPermissions(['clipboard-read', 'clipboard-write']);
 
     // Click on the URL container (not just the code element)
-    const urlContainer = page.locator('code').filter({ hasText: `/room/${roomCode}` }).locator('..');
+    const urlContainer = page
+      .locator('code')
+      .filter({ hasText: `/room/${roomCode}` })
+      .locator('..');
     await urlContainer.click();
 
     // Verify clipboard content
-    const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+    const clipboardText = await page.evaluate(() =>
+      navigator.clipboard.readText()
+    );
     expect(clipboardText).toContain(`/room/${roomCode}`);
     expect(clipboardText).toContain('http://localhost:5173');
   });
 
-  test('navigating to shareable URL pre-fills room code', async ({ createPlayerPage, browser }) => {
+  test('navigating to shareable URL pre-fills room code', async ({
+    createPlayerPage,
+    browser,
+  }) => {
     // Player 1 creates a room
     const p1 = await createPlayerPage('Alice');
     const roomCode = await createRoom(p1, 'Alice');
@@ -57,7 +73,10 @@ test.describe('Shareable URL', () => {
     await context2.close();
   });
 
-  test('joining room via pre-filled shareable URL works', async ({ createPlayerPage, browser }) => {
+  test('joining room via pre-filled shareable URL works', async ({
+    createPlayerPage,
+    browser,
+  }) => {
     // Player 1 creates a room
     const p1 = await createPlayerPage('Alice');
     const roomCode = await createRoom(p1, 'Alice');
@@ -81,7 +100,9 @@ test.describe('Shareable URL', () => {
     await context2.close();
   });
 
-  test('shareable URL with invalid room code shows error', async ({ browser }) => {
+  test('shareable URL with invalid room code shows error', async ({
+    browser,
+  }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -96,12 +117,17 @@ test.describe('Shareable URL', () => {
     await page.getByRole('button', { name: 'Join Room' }).click();
 
     // Should show error
-    await expect(page.getByText(/not found|invalid|does not exist/i)).toBeVisible({ timeout: 5_000 });
+    await expect(
+      page.getByText(/not found|invalid|does not exist/i)
+    ).toBeVisible({ timeout: 5_000 });
 
     await context.close();
   });
 
-  test('shareable URL is case-insensitive', async ({ createPlayerPage, browser }) => {
+  test('shareable URL is case-insensitive', async ({
+    createPlayerPage,
+    browser,
+  }) => {
     // Player 1 creates a room
     const p1 = await createPlayerPage('Alice');
     const roomCode = await createRoom(p1, 'Alice');

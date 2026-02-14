@@ -1,7 +1,12 @@
+import type { Card } from '@spades/shared';
 import { useEffect, useCallback } from 'react';
 import { useSocket } from '../socket/socket-context';
-import { useGameStore, saveSession, loadSession, clearSession } from '../store/game-store';
-import type { Card } from '@spades/shared';
+import {
+  useGameStore,
+  saveSession,
+  loadSession,
+  clearSession,
+} from '../store/game-store';
 
 export function useGame() {
   const { socket, connected } = useSocket();
@@ -85,37 +90,49 @@ export function useGame() {
     if (session) {
       socket.emit('player:reconnect', {
         sessionToken: session.sessionToken,
-        roomId: session.roomId
+        roomId: session.roomId,
       });
     }
   }, [socket, connected]);
 
-  const createRoom = useCallback((nickname: string) => {
-    if (!socket) return;
-    store.setNickname(nickname);
-    socket.emit('room:create', { nickname });
-  }, [socket]);
+  const createRoom = useCallback(
+    (nickname: string) => {
+      if (!socket) return;
+      store.setNickname(nickname);
+      socket.emit('room:create', { nickname });
+    },
+    [socket]
+  );
 
-  const joinRoom = useCallback((roomId: string, nickname: string) => {
-    if (!socket) return;
-    store.setNickname(nickname);
-    socket.emit('room:join', { roomId, nickname });
-  }, [socket]);
+  const joinRoom = useCallback(
+    (roomId: string, nickname: string) => {
+      if (!socket) return;
+      store.setNickname(nickname);
+      socket.emit('room:join', { roomId, nickname });
+    },
+    [socket]
+  );
 
   const setReady = useCallback(() => {
     if (!socket) return;
     socket.emit('room:ready');
   }, [socket]);
 
-  const makeBid = useCallback((bid: number, isNil = false, isBlindNil = false) => {
-    if (!socket) return;
-    socket.emit('game:bid', { bid, isNil, isBlindNil });
-  }, [socket]);
+  const makeBid = useCallback(
+    (bid: number, isNil = false, isBlindNil = false) => {
+      if (!socket) return;
+      socket.emit('game:bid', { bid, isNil, isBlindNil });
+    },
+    [socket]
+  );
 
-  const playCard = useCallback((card: Card) => {
-    if (!socket) return;
-    socket.emit('game:play-card', { card });
-  }, [socket]);
+  const playCard = useCallback(
+    (card: Card) => {
+      if (!socket) return;
+      socket.emit('game:play-card', { card });
+    },
+    [socket]
+  );
 
   const leaveRoom = useCallback(() => {
     if (!socket) return;
@@ -132,6 +149,6 @@ export function useGame() {
     setReady,
     makeBid,
     playCard,
-    leaveRoom
+    leaveRoom,
   };
 }

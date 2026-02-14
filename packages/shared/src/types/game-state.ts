@@ -1,5 +1,12 @@
 import type { Card } from './card.js';
-import type { Player, PlayerId, PlayerBid, PlayerTrickPlay, TeamScore, Position } from './player.js';
+import type {
+  Player,
+  PlayerId,
+  PlayerBid,
+  PlayerTrickPlay,
+  TeamScore,
+  Position,
+} from './player.js';
 
 export type GamePhase =
   | 'waiting'
@@ -51,7 +58,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   allowNil: true,
   allowBlindNil: true,
   bagPenaltyThreshold: 10,
-  bagPenalty: 100
+  bagPenalty: 100,
 };
 
 export function createInitialGameState(id: string): GameState {
@@ -60,15 +67,27 @@ export function createInitialGameState(id: string): GameState {
     phase: 'waiting',
     players: [],
     scores: {
-      team1: { teamId: 'team1', score: 0, bags: 0, roundBid: 0, roundTricks: 0 },
-      team2: { teamId: 'team2', score: 0, bags: 0, roundBid: 0, roundTricks: 0 }
+      team1: {
+        teamId: 'team1',
+        score: 0,
+        bags: 0,
+        roundBid: 0,
+        roundTricks: 0,
+      },
+      team2: {
+        teamId: 'team2',
+        score: 0,
+        bags: 0,
+        roundBid: 0,
+        roundTricks: 0,
+      },
     },
     currentRound: null,
     dealerPosition: 0,
     currentPlayerPosition: 1,
     winningScore: DEFAULT_GAME_CONFIG.winningScore,
     createdAt: Date.now(),
-    lastActivity: Date.now()
+    lastActivity: Date.now(),
   };
 }
 
@@ -76,7 +95,7 @@ export function createEmptyTrick(): Trick {
   return {
     plays: [],
     leadSuit: null,
-    winner: null
+    winner: null,
   };
 }
 
@@ -86,6 +105,6 @@ export function createRoundState(roundNumber: number): RoundState {
     bids: [],
     tricks: [],
     currentTrick: createEmptyTrick(),
-    spadesBroken: false
+    spadesBroken: false,
   };
 }

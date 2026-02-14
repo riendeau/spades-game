@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
 import type { ThemeMod } from '@spades/shared';
+import React, { createContext, useContext, useState } from 'react';
 
 interface ModInfo {
   id: string;
@@ -21,7 +21,7 @@ const ModContext = createContext<ModContextType>({
   activeMods: [],
   setAvailableMods: () => {},
   toggleMod: () => {},
-  isModActive: () => false
+  isModActive: () => false,
 });
 
 export function ModProvider({ children }: { children: React.ReactNode }) {
@@ -29,9 +29,9 @@ export function ModProvider({ children }: { children: React.ReactNode }) {
   const [activeMods, setActiveMods] = useState<string[]>([]);
 
   const toggleMod = (modId: string) => {
-    setActiveMods(prev =>
+    setActiveMods((prev) =>
       prev.includes(modId)
-        ? prev.filter(id => id !== modId)
+        ? prev.filter((id) => id !== modId)
         : [...prev, modId]
     );
   };
@@ -45,7 +45,7 @@ export function ModProvider({ children }: { children: React.ReactNode }) {
         activeMods,
         setAvailableMods,
         toggleMod,
-        isModActive
+        isModActive,
       }}
     >
       {children}

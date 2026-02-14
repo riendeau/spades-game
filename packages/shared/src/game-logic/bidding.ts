@@ -20,7 +20,7 @@ export function validateBid(
   }
 
   // Check if player exists and it's their turn
-  const player = gameState.players.find(p => p.id === playerId);
+  const player = gameState.players.find((p) => p.id === playerId);
   if (!player) {
     return { valid: false, errorMessage: 'Player not found' };
   }
@@ -30,7 +30,9 @@ export function validateBid(
   }
 
   // Check if player already bid
-  const existingBid = gameState.currentRound?.bids.find(b => b.playerId === playerId);
+  const existingBid = gameState.currentRound?.bids.find(
+    (b) => b.playerId === playerId
+  );
   if (existingBid) {
     return { valid: false, errorMessage: 'Player already bid' };
   }
@@ -83,12 +85,15 @@ export function createBid(
     playerId,
     bid: isNil || isBlindNil ? 0 : bid,
     isNil,
-    isBlindNil
+    isBlindNil,
   };
 }
 
-export function getTeamTotalBid(bids: PlayerBid[], playerIds: PlayerId[]): number {
+export function getTeamTotalBid(
+  bids: PlayerBid[],
+  playerIds: PlayerId[]
+): number {
   return bids
-    .filter(b => playerIds.includes(b.playerId) && !b.isNil && !b.isBlindNil)
+    .filter((b) => playerIds.includes(b.playerId) && !b.isNil && !b.isBlindNil)
     .reduce((sum, b) => sum + b.bid, 0);
 }

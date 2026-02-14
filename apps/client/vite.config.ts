@@ -8,8 +8,8 @@ export default defineConfig({
     proxy: {
       '/socket.io': {
         target: 'http://localhost:3001',
-        ws: true
-      }
-    }
-  }
+        ws: true,
+      },
+    },
+  },
 });

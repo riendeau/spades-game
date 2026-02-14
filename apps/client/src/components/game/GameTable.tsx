@@ -1,12 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import type { Card as CardType, ClientGameState, Position } from '@spades/shared';
+import type {
+  Card as CardType,
+  ClientGameState,
+  Position,
+} from '@spades/shared';
 import { getPlayableCards } from '@spades/shared';
-import { PlayerHand } from './PlayerHand';
-import { TrickArea } from './TrickArea';
-import { OpponentArea } from './OpponentArea';
-import { ScoreBoard } from './ScoreBoard';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BiddingPanel } from '../bidding/BiddingPanel';
 import { Button } from '../ui/Button';
+import { OpponentArea } from './OpponentArea';
+import { PlayerHand } from './PlayerHand';
+import { ScoreBoard } from './ScoreBoard';
+import { TrickArea } from './TrickArea';
 
 interface GameTableProps {
   gameState: ClientGameState;
@@ -25,14 +29,16 @@ export function GameTable({
   cardsRevealed,
   onPlayCard,
   onBid,
-  onRevealCards
+  onRevealCards,
 }: GameTableProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const isBidding = gameState.phase === 'bidding';
   const isPlaying = gameState.phase === 'playing';
 
-  const myPlayerId = gameState.players.find(p => p.position === myPosition)?.id;
+  const myPlayerId = gameState.players.find(
+    (p) => p.position === myPosition
+  )?.id;
 
   const playableCards = useMemo(() => {
     if (!isPlaying || !isMyTurn || !myPlayerId) return undefined;
@@ -40,9 +46,13 @@ export function GameTable({
   }, [isPlaying, isMyTurn, myPlayerId, gameState, myHand]);
 
   useEffect(() => {
-    if (selectedCard && playableCards && !playableCards.some(
-      c => c.suit === selectedCard.suit && c.rank === selectedCard.rank
-    )) {
+    if (
+      selectedCard &&
+      playableCards &&
+      !playableCards.some(
+        (c) => c.suit === selectedCard.suit && c.rank === selectedCard.rank
+      )
+    ) {
       setSelectedCard(null);
     }
   }, [playableCards, selectedCard]);
@@ -62,7 +72,7 @@ export function GameTable({
         flexDirection: 'column',
         backgroundColor: '#1a472a',
         color: '#fff',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
       {/* Top bar */}
@@ -71,7 +81,7 @@ export function GameTable({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          padding: '16px'
+          padding: '16px',
         }}
       >
         <ScoreBoard gameState={gameState} />
@@ -83,7 +93,9 @@ export function GameTable({
       {/* Game area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Top opponent */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}
+        >
           <OpponentArea
             gameState={gameState}
             myPosition={myPosition}
@@ -98,7 +110,7 @@ export function GameTable({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 20px'
+            padding: '0 20px',
           }}
         >
           <OpponentArea
@@ -135,7 +147,7 @@ export function GameTable({
           style={{
             backgroundColor: 'rgba(0,0,0,0.2)',
             padding: '20px',
-            borderRadius: '20px 20px 0 0'
+            borderRadius: '20px 20px 0 0',
           }}
         >
           {isPlaying && isMyTurn && (
@@ -143,10 +155,13 @@ export function GameTable({
               style={{
                 textAlign: 'center',
                 marginBottom: '12px',
-                color: '#fbbf24'
+                color: '#fbbf24',
               }}
             >
-              Your turn! {selectedCard ? 'Click card again or press Play' : 'Select a card'}
+              Your turn!{' '}
+              {selectedCard
+                ? 'Click card again or press Play'
+                : 'Select a card'}
             </div>
           )}
 
@@ -175,26 +190,36 @@ export function GameTable({
               justifyContent: 'center',
               gap: '24px',
               marginTop: '12px',
-              fontSize: '14px'
+              fontSize: '14px',
             }}
           >
             {gameState.currentRound?.bids.find(
-              b => b.playerId === gameState.players.find(p => p.position === myPosition)?.id
+              (b) =>
+                b.playerId ===
+                gameState.players.find((p) => p.position === myPosition)?.id
             ) && (
               <>
                 <span>
                   My Bid:{' '}
                   {(() => {
                     const myBid = gameState.currentRound?.bids.find(
-                      b => b.playerId === gameState.players.find(p => p.position === myPosition)?.id
+                      (b) =>
+                        b.playerId ===
+                        gameState.players.find((p) => p.position === myPosition)
+                          ?.id
                     );
-                    return myBid?.isBlindNil ? 'Blind Nil' : myBid?.isNil ? 'Nil' : myBid?.bid;
+                    return myBid?.isBlindNil
+                      ? 'Blind Nil'
+                      : myBid?.isNil
+                        ? 'Nil'
+                        : myBid?.bid;
                   })()}
                 </span>
                 <span>
                   Tricks Won:{' '}
                   {gameState.currentRound?.tricksWon[
-                    gameState.players.find(p => p.position === myPosition)?.id || ''
+                    gameState.players.find((p) => p.position === myPosition)
+                      ?.id || ''
                   ] || 0}
                 </span>
               </>

@@ -1,6 +1,11 @@
+import {
+  suicideSpadesMod,
+  jokerSpadesMod,
+  classicTheme,
+  neonTheme,
+  minimalistTheme,
+} from '@spades/mods';
 import { modRegistry } from './mod-registry.js';
-import { suicideSpadesMod, jokerSpadesMod } from '@spades/mods';
-import { classicTheme, neonTheme, minimalistTheme } from '@spades/mods';
 
 export function loadBuiltInMods(): void {
   // Load rule mods

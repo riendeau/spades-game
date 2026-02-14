@@ -12,7 +12,9 @@ export async function playFirstCard(page: Page): Promise<void> {
   const countBefore = await handCards.count();
 
   // Use data-testid + :not([disabled]) to target playable hand cards
-  const card = page.locator('[data-testid="hand-card"]:not([disabled])').first();
+  const card = page
+    .locator('[data-testid="hand-card"]:not([disabled])')
+    .first();
   await card.click();
 
   // Wait for the Play button to appear and click it
@@ -23,7 +25,8 @@ export async function playFirstCard(page: Page): Promise<void> {
   // Wait for the server to confirm the play (card removed from hand)
   // This prevents findCurrentPlayer from picking a stale page on the next call
   await page.waitForFunction(
-    (before: number) => document.querySelectorAll('[data-testid="hand-card"]').length < before,
+    (before: number) =>
+      document.querySelectorAll('[data-testid="hand-card"]').length < before,
     countBefore,
     { timeout: 10_000 }
   );

@@ -1,13 +1,16 @@
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
-import { fileURLToPath } from 'url';
-import path from 'path';
 import fs from 'fs';
-import type { ClientToServerEvents, ServerToClientEvents } from '@spades/shared';
-import { setupSocketHandlers } from './socket/handler.js';
+import { createServer } from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from '@spades/shared';
+import express from 'express';
+import { Server } from 'socket.io';
 import { loadBuiltInMods } from './mods/mod-loader.js';
 import { modRegistry } from './mods/mod-registry.js';
+import { setupSocketHandlers } from './socket/handler.js';
 
 const PORT = process.env.PORT || 3001;
 
@@ -23,15 +26,16 @@ const clientDistPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../apps/client/dist'
 );
-const servingClient = process.env.SERVE_CLIENT === 'true' && fs.existsSync(clientDistPath);
+const servingClient =
+  process.env.SERVE_CLIENT === 'true' && fs.existsSync(clientDistPath);
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: servingClient
     ? undefined
     : {
         origin: process.env.CLIENT_URL || 'http://localhost:5173',
-        methods: ['GET', 'POST']
-      }
+        methods: ['GET', 'POST'],
+      },
 });
 
 // Health check
@@ -62,8 +66,12 @@ if (servingClient) {
 // Handle port conflicts from orphaned tsx watch processes
 httpServer.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. This is likely an orphaned tsx watch process.`);
-    console.error(`Run this command to kill it: lsof -ti :${PORT} | xargs kill`);
+    console.error(
+      `Port ${PORT} is already in use. This is likely an orphaned tsx watch process.`
+    );
+    console.error(
+      `Run this command to kill it: lsof -ti :${PORT} | xargs kill`
+    );
     process.exit(1);
   }
   throw err;

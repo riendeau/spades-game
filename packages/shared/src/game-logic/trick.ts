@@ -1,7 +1,7 @@
 import type { Card } from '../types/card.js';
-import type { PlayerId, PlayerTrickPlay } from '../types/player.js';
-import type { Trick } from '../types/game-state.js';
 import { compareCards, RANK_VALUES } from '../types/card.js';
+import type { Trick } from '../types/game-state.js';
+import type { PlayerId, PlayerTrickPlay } from '../types/player.js';
 
 export function determineTrickWinner(trick: Trick): PlayerId | null {
   if (trick.plays.length !== 4 || !trick.leadSuit) {
@@ -27,7 +27,10 @@ export function addPlayToTrick(trick: Trick, play: PlayerTrickPlay): Trick {
   return {
     plays: newPlays,
     leadSuit,
-    winner: newPlays.length === 4 ? determineTrickWinner({ ...trick, plays: newPlays, leadSuit }) : null
+    winner:
+      newPlays.length === 4
+        ? determineTrickWinner({ ...trick, plays: newPlays, leadSuit })
+        : null,
   };
 }
 
@@ -48,5 +51,5 @@ export function getHighestCardInTrick(trick: Trick): Card | null {
 }
 
 export function hasSpadeBeenPlayedInTrick(trick: Trick): boolean {
-  return trick.plays.some(p => p.card.suit === 'spades');
+  return trick.plays.some((p) => p.card.suit === 'spades');
 }

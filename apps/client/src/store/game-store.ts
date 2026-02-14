@@ -1,5 +1,10 @@
+import type {
+  Card,
+  ClientGameState,
+  Position,
+  RoundSummary,
+} from '@spades/shared';
 import { create } from 'zustand';
-import type { Card, ClientGameState, Position, RoundSummary } from '@spades/shared';
 
 interface GameStore {
   // Session state
@@ -16,11 +21,18 @@ interface GameStore {
   lastTrickWinner: string | null;
   roundSummary: RoundSummary | null;
   error: string | null;
-  gameEnded: { winner: 'team1' | 'team2'; scores: ClientGameState['scores'] } | null;
+  gameEnded: {
+    winner: 'team1' | 'team2';
+    scores: ClientGameState['scores'];
+  } | null;
   cardsRevealed: boolean;
 
   // Actions
-  setSession: (roomId: string, sessionToken: string, position: Position) => void;
+  setSession: (
+    roomId: string,
+    sessionToken: string,
+    position: Position
+  ) => void;
   setNickname: (nickname: string) => void;
   setGameState: (state: ClientGameState) => void;
   setHand: (hand: Card[]) => void;
@@ -30,7 +42,10 @@ interface GameStore {
   setRoundSummary: (summary: RoundSummary) => void;
   clearRoundSummary: () => void;
   setError: (error: string | null) => void;
-  setGameEnded: (data: { winner: 'team1' | 'team2'; scores: ClientGameState['scores'] }) => void;
+  setGameEnded: (data: {
+    winner: 'team1' | 'team2';
+    scores: ClientGameState['scores'];
+  }) => void;
   revealCards: () => void;
   reset: () => void;
 }
@@ -46,7 +61,7 @@ const initialState = {
   roundSummary: null,
   error: null,
   gameEnded: null,
-  cardsRevealed: false
+  cardsRevealed: false,
 };
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -65,7 +80,7 @@ export const useGameStore = create<GameStore>((set) => ({
     set((state) => ({
       myHand: state.myHand.filter(
         (c) => !(c.suit === card.suit && c.rank === card.rank)
-      )
+      ),
     })),
 
   setTrickWinner: (winnerId) => set({ lastTrickWinner: winnerId }),
@@ -82,14 +97,17 @@ export const useGameStore = create<GameStore>((set) => ({
 
   revealCards: () => set({ cardsRevealed: true }),
 
-  reset: () => set(initialState)
+  reset: () => set(initialState),
 }));
 
 // Session persistence - use sessionStorage so each tab has its own session
 const SESSION_KEY = 'spades_session';
 
 export function saveSession(roomId: string, sessionToken: string) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ roomId, sessionToken, timestamp: Date.now() }));
+  sessionStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({ roomId, sessionToken, timestamp: Date.now() })
+  );
 }
 
 export function loadSession(): { roomId: string; sessionToken: string } | null {

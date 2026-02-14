@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { SocketProvider } from './socket/socket-context';
 import { App } from './App';
+import { SocketProvider } from './socket/socket-context';
 
 // Global styles
 const style = document.createElement('style');

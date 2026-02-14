@@ -1,16 +1,16 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
-type PlayerPage = {
+interface PlayerPage {
   page: Page;
   context: BrowserContext;
-};
+}
 
-type GameFixtures = {
+interface GameFixtures {
   createPlayerPage: (nickname: string) => Promise<Page>;
   fourPlayerRoom: { players: Page[]; roomCode: string };
   fourPlayerBidding: { players: Page[]; roomCode: string };
-};
+}
 
 export const test = base.extend<GameFixtures>({
   createPlayerPage: async ({ browser }, use) => {

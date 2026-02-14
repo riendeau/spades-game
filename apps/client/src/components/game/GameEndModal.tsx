@@ -1,5 +1,5 @@
-import React from 'react';
 import type { ClientGameState } from '@spades/shared';
+import React from 'react';
 import { Button } from '../ui/Button';
 
 interface GameEndModalProps {
@@ -9,7 +9,12 @@ interface GameEndModalProps {
   onNewGame: () => void;
 }
 
-export function GameEndModal({ winner, scores, myTeam, onNewGame }: GameEndModalProps) {
+export function GameEndModal({
+  winner,
+  scores,
+  myTeam,
+  onNewGame,
+}: GameEndModalProps) {
   const didWin = winner === myTeam;
 
   return (
@@ -21,7 +26,7 @@ export function GameEndModal({ winner, scores, myTeam, onNewGame }: GameEndModal
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000
+        zIndex: 1000,
       }}
     >
       <div
@@ -32,7 +37,7 @@ export function GameEndModal({ winner, scores, myTeam, onNewGame }: GameEndModal
           maxWidth: '400px',
           width: '90%',
           textAlign: 'center',
-          color: '#1f2937'
+          color: '#1f2937',
         }}
       >
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>
@@ -52,7 +57,7 @@ export function GameEndModal({ winner, scores, myTeam, onNewGame }: GameEndModal
             display: 'flex',
             justifyContent: 'center',
             gap: '40px',
-            marginBottom: '32px'
+            marginBottom: '32px',
           }}
         >
           <div>

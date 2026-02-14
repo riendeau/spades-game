@@ -3,7 +3,8 @@ import type { ThemeMod } from '@spades/shared';
 export const classicTheme: ThemeMod = {
   id: 'classic',
   name: 'Classic',
-  description: 'Traditional card table look with green felt and classic styling.',
+  description:
+    'Traditional card table look with green felt and classic styling.',
   version: '1.0.0',
   type: 'theme',
   author: 'Spades Team',
@@ -20,7 +21,7 @@ export const classicTheme: ThemeMod = {
       error: '#dc2626',
       success: '#10b981',
       cardBack: '#1e40af',
-      tableGreen: '#1a472a'
+      tableGreen: '#1a472a',
     },
     typography: {
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -28,19 +29,19 @@ export const classicTheme: ThemeMod = {
         small: '12px',
         medium: '14px',
         large: '18px',
-        xlarge: '24px'
-      }
+        xlarge: '24px',
+      },
     },
     cardStyle: {
       borderRadius: '8px',
       shadow: '0 2px 4px rgba(0,0,0,0.1)',
       width: '70px',
-      height: '100px'
+      height: '100px',
     },
     animations: {
       dealSpeed: 150,
       playSpeed: 200,
-      trickCollectSpeed: 300
-    }
-  }
+      trickCollectSpeed: 300,
+    },
+  },
 };

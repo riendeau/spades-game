@@ -21,7 +21,7 @@ export function Input({ label, style, ...props }: InputProps) {
           borderRadius: '8px',
           outline: 'none',
           transition: 'border-color 0.15s ease',
-          ...style
+          ...style,
         }}
       />
     </div>
