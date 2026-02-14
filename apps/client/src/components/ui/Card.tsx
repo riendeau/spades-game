@@ -8,6 +8,7 @@ interface CardProps {
   selected?: boolean;
   small?: boolean;
   testId?: string;
+  visuallyDisabled?: boolean;
 }
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -31,9 +32,13 @@ export function Card({
   selected,
   small,
   testId,
+  visuallyDisabled,
 }: CardProps) {
   const symbol = SUIT_SYMBOLS[card.suit];
   const color = SUIT_COLORS[card.suit];
+
+  // Default visuallyDisabled to disabled if not explicitly set
+  const showDisabled = visuallyDisabled ?? disabled;
 
   return (
     <button
@@ -43,7 +48,7 @@ export function Card({
       style={{
         width: small ? '50px' : '70px',
         height: small ? '75px' : '100px',
-        backgroundColor: disabled ? '#e8e8e8' : '#fff',
+        backgroundColor: showDisabled ? '#e8e8e8' : '#fff',
         border: selected ? '3px solid #3b82f6' : '1px solid #ccc',
         borderRadius: '8px',
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -56,12 +61,12 @@ export function Card({
         color,
         boxShadow: selected
           ? '0 4px 12px rgba(59, 130, 246, 0.4)'
-          : disabled
+          : showDisabled
             ? 'none'
             : '0 2px 4px rgba(0,0,0,0.1)',
         transition: 'all 0.15s ease',
         transform: selected ? 'translateY(-8px)' : 'none',
-        filter: disabled ? 'grayscale(1) brightness(0.85)' : 'none',
+        filter: showDisabled ? 'grayscale(1) brightness(0.85)' : 'none',
       }}
     >
       <span>{card.rank}</span>
