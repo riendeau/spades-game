@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
+    "build:prod": "BASE_PATH=${BASE_PATH:-/} pnpm build",
+    "start": "pnpm --filter @spades/server start",
     "test": "pnpm -r --filter '!@spades/e2e' test",
     "test:e2e": "pnpm --filter @spades/e2e test",
     "test:all": "pnpm test && pnpm test:e2e",

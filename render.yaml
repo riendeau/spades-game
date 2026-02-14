@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: spades-game
+    env: node
+    buildCommand: pnpm install && pnpm build:prod
+    startCommand: pnpm start
+    envVars:
+      - key: SERVE_CLIENT
+        value: true
+      - key: BASE_PATH
+        value: /
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health
