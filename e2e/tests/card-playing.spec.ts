@@ -148,4 +148,66 @@ test.describe('Card Playing', () => {
     // if they don't have the suit) should be enabled, so enabled <= total
     expect(enabledCount).toBeLessThanOrEqual(totalCount);
   });
+
+  test('clicking a selected card deselects it', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+
+    await completeAllBids(players, 3);
+
+    const activePlayer = await findCurrentPlayer(players);
+
+    // Select a card
+    const card = activePlayer
+      .locator('[data-testid="hand-card"]:not([disabled])')
+      .first();
+    await card.click();
+
+    // Button should show "Play <card>"
+    await expect(
+      activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })
+    ).toBeVisible({ timeout: 2_000 });
+
+    // Click the same card again to deselect
+    await card.click();
+
+    // Button should now show "Select Card" (card is deselected)
+    await expect(
+      activePlayer.getByRole('button', { name: 'Select Card' })
+    ).toBeVisible({ timeout: 2_000 });
+  });
+
+  test('double-clicking a card plays it immediately', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+
+    await completeAllBids(players, 3);
+
+    const activePlayer = await findCurrentPlayer(players);
+
+    // Count cards before playing
+    const handCards = activePlayer.locator('[data-testid="hand-card"]');
+    const countBefore = await handCards.count();
+
+    // Double-click a card to play it immediately
+    const card = activePlayer
+      .locator('[data-testid="hand-card"]:not([disabled])')
+      .first();
+    await card.dblclick();
+
+    // Wait for the server to confirm the play (card removed from hand)
+    await activePlayer.waitForFunction(
+      (before: number) =>
+        document.querySelectorAll('[data-testid="hand-card"]').length < before,
+      countBefore,
+      { timeout: 10_000 }
+    );
+
+    // Button should now show "Waiting..." after playing
+    await expect(
+      activePlayer.getByRole('button', { name: 'Waiting...' })
+    ).toBeVisible({ timeout: 5_000 });
+  });
 });

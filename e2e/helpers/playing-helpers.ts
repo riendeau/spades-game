@@ -72,3 +72,32 @@ export async function findCurrentPlayer(pages: Page[]): Promise<Page> {
   }
   throw new Error('Could not find current player');
 }
+
+/**
+ * Plays the first available card by double-clicking it (bypasses button).
+ * The page must be the current player's turn.
+ */
+export async function playFirstCardDoubleClick(page: Page): Promise<void> {
+  // Wait for it to be this player's turn
+  await page
+    .getByRole('button', { name: /^(Select Card|Play .+ of .+)$/ })
+    .waitFor({ timeout: 15_000 });
+
+  // Count cards before playing
+  const handCards = page.locator('[data-testid="hand-card"]');
+  const countBefore = await handCards.count();
+
+  // Double-click the first playable card
+  const card = page
+    .locator('[data-testid="hand-card"]:not([disabled])')
+    .first();
+  await card.dblclick();
+
+  // Wait for the server to confirm the play (card removed from hand)
+  await page.waitForFunction(
+    (before: number) =>
+      document.querySelectorAll('[data-testid="hand-card"]').length < before,
+    countBefore,
+    { timeout: 10_000 }
+  );
+}
