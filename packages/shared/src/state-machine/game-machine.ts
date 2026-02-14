@@ -25,10 +25,12 @@ import type {
   GamePhase,
   GameConfig,
   Trick,
+} from '../types/game-state.js';
+import {
+  DEFAULT_GAME_CONFIG,
   createEmptyTrick,
   createRoundState,
 } from '../types/game-state.js';
-import { DEFAULT_GAME_CONFIG } from '../types/game-state.js';
 import type { Player, PlayerId, Position, PlayerBid } from '../types/player.js';
 import { getTeamForPosition } from '../types/player.js';
 
