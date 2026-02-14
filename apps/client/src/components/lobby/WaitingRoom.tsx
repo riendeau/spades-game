@@ -1,5 +1,5 @@
 import type { ClientGameState, Position } from '@spades/shared';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -103,12 +103,33 @@ export function WaitingRoom({
 
   const shareableUrl = `${window.location.origin}/room/${roomId}`;
 
+  // Auto-ready feature: check for autoReady query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shouldAutoReady = params.get('autoReady') === 'true';
+
+    if (shouldAutoReady && !isReady && gameState.players.length === 4) {
+      // Auto-click ready after a short delay to ensure everything is loaded
+      const timer = setTimeout(() => {
+        onReady();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady, gameState.players.length, onReady]);
+
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomId);
   };
 
   const copyShareableUrl = () => {
     navigator.clipboard.writeText(shareableUrl);
+  };
+
+  const openAutoReadyTabs = () => {
+    const autoReadyUrl = `${shareableUrl}?autoReady=true`;
+    for (let i = 0; i < 3; i++) {
+      window.open(autoReadyUrl, '_blank');
+    }
   };
 
   return (
@@ -264,6 +285,21 @@ export function WaitingRoom({
           {isReady ? 'Waiting for others...' : 'Ready'}
         </Button>
       </div>
+
+      {/* Dev button to auto-fill room */}
+      {import.meta.env.DEV && gameState.players.length < 4 && (
+        <Button
+          onClick={openAutoReadyTabs}
+          style={{
+            marginTop: '12px',
+            width: '100%',
+            backgroundColor: '#8b5cf6',
+            fontSize: '13px',
+          }}
+        >
+          🚀 Open 3 Auto-Ready Tabs (Dev)
+        </Button>
+      )}
 
       {gameState.players.length < 4 && (
         <p

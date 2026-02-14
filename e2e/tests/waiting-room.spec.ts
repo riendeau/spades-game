@@ -8,7 +8,9 @@ test.describe('Waiting Room', () => {
     const p1 = await createPlayerPage('Alice');
     await createRoom(p1, 'Alice');
 
-    await expect(p1.getByRole('button', { name: 'Ready' })).toBeDisabled();
+    await expect(
+      p1.getByRole('button', { name: 'Ready', exact: true })
+    ).toBeDisabled();
   });
 
   test('all players readying up starts the game', async ({
@@ -18,12 +20,14 @@ test.describe('Waiting Room', () => {
 
     // Ready buttons should be enabled now that we have 4 players
     for (const page of players) {
-      await expect(page.getByRole('button', { name: 'Ready' })).toBeEnabled();
+      await expect(
+        page.getByRole('button', { name: 'Ready', exact: true })
+      ).toBeEnabled();
     }
 
     // All players click ready
     for (const page of players) {
-      await page.getByRole('button', { name: 'Ready' }).click();
+      await page.getByRole('button', { name: 'Ready', exact: true }).click();
     }
 
     // Should transition to bidding phase (check for bidding buttons)
