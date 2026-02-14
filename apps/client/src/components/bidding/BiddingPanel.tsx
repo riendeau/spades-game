@@ -57,10 +57,6 @@ export function BiddingPanel({
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       }}
     >
-      <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600 }}>
-        Bidding Round {gameState.currentRound?.roundNumber}
-      </h3>
-
       {isMyTurn && !hasBid ? (
         !cardsRevealed ? (
           <div
