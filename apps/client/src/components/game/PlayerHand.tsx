@@ -34,13 +34,23 @@ export function PlayerHand({
   const handleCardClick = (card: CardType) => {
     if (!isCardPlayable(card)) return;
 
-    if (selectedCard?.suit === card.suit && selectedCard.rank === card.rank) {
-      // Double click to play
-      onPlayCard(card);
+    const isSelected =
+      selectedCard?.suit === card.suit && selectedCard.rank === card.rank;
+    if (isSelected) {
+      // Clicking a selected card deselects it
       onSelectCard(null);
     } else {
+      // Clicking an unselected card selects it
       onSelectCard(card);
     }
+  };
+
+  const handleCardDoubleClick = (card: CardType) => {
+    if (!isCardPlayable(card)) return;
+
+    // Double-clicking immediately plays the card
+    onPlayCard(card);
+    onSelectCard(null);
   };
 
   return (
@@ -70,6 +80,7 @@ export function PlayerHand({
               <Card
                 card={card}
                 onClick={() => handleCardClick(card)}
+                onDoubleClick={() => handleCardDoubleClick(card)}
                 disabled={!isCardPlayable(card)}
                 selected={isSelected}
                 testId="hand-card"

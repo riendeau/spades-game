@@ -19,10 +19,10 @@ test.describe('Card Playing', () => {
     // Find whose turn it is and play a card
     const activePlayer = await playCurrentPlayerCard(players);
 
-    // The play button should disappear after playing
+    // The play button should now show "Waiting..." after playing
     await expect(
-      activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })
-    ).not.toBeVisible({ timeout: 5_000 });
+      activePlayer.getByRole('button', { name: 'Waiting...' })
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test('complete a full trick with 4 card plays', async ({
@@ -33,12 +33,14 @@ test.describe('Card Playing', () => {
     await completeAllBids(players, 3);
     await completeTrick(players);
 
-    // After trick is complete, another "Your turn!" should appear for the next trick
+    // After trick is complete, one player should have button showing "Select Card" for the next trick
     let foundNextTurn = false;
     for (let attempt = 0; attempt < 20; attempt++) {
       for (const page of players) {
-        const turn = page.getByText('Your turn!');
-        if (await turn.isVisible({ timeout: 200 }).catch(() => false)) {
+        const turnButton = page.getByRole('button', {
+          name: /^(Select Card|Play .+ of .+)$/,
+        });
+        if (await turnButton.isVisible({ timeout: 200 }).catch(() => false)) {
           foundNextTurn = true;
           break;
         }
@@ -56,10 +58,12 @@ test.describe('Card Playing', () => {
 
     await completeAllBids(players, 3);
 
-    // Find a player whose turn it is NOT
+    // Find a player whose turn it is NOT (button showing "Waiting...")
     for (const page of players) {
-      const turn = page.getByText('Your turn!');
-      if (!(await turn.isVisible({ timeout: 2_000 }).catch(() => false))) {
+      const waitingButton = page.getByRole('button', { name: 'Waiting...' });
+      if (
+        await waitingButton.isVisible({ timeout: 2_000 }).catch(() => false)
+      ) {
         // This player should have disabled cards
         // Card buttons in the hand should be disabled
         const cardButtons = page.locator('button[disabled]').filter({
@@ -143,5 +147,67 @@ test.describe('Card Playing', () => {
     // If the follower has the lead suit, only those cards (and possibly others
     // if they don't have the suit) should be enabled, so enabled <= total
     expect(enabledCount).toBeLessThanOrEqual(totalCount);
+  });
+
+  test('clicking a selected card deselects it', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+
+    await completeAllBids(players, 3);
+
+    const activePlayer = await findCurrentPlayer(players);
+
+    // Select a card
+    const card = activePlayer
+      .locator('[data-testid="hand-card"]:not([disabled])')
+      .first();
+    await card.click();
+
+    // Button should show "Play <card>"
+    await expect(
+      activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })
+    ).toBeVisible({ timeout: 2_000 });
+
+    // Click the same card again to deselect
+    await card.click();
+
+    // Button should now show "Select Card" (card is deselected)
+    await expect(
+      activePlayer.getByRole('button', { name: 'Select Card' })
+    ).toBeVisible({ timeout: 2_000 });
+  });
+
+  test('double-clicking a card plays it immediately', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+
+    await completeAllBids(players, 3);
+
+    const activePlayer = await findCurrentPlayer(players);
+
+    // Count cards before playing
+    const handCards = activePlayer.locator('[data-testid="hand-card"]');
+    const countBefore = await handCards.count();
+
+    // Double-click a card to play it immediately
+    const card = activePlayer
+      .locator('[data-testid="hand-card"]:not([disabled])')
+      .first();
+    await card.dblclick();
+
+    // Wait for the server to confirm the play (card removed from hand)
+    await activePlayer.waitForFunction(
+      (before: number) =>
+        document.querySelectorAll('[data-testid="hand-card"]').length < before,
+      countBefore,
+      { timeout: 10_000 }
+    );
+
+    // Button should now show "Waiting..." after playing
+    await expect(
+      activePlayer.getByRole('button', { name: 'Waiting...' })
+    ).toBeVisible({ timeout: 5_000 });
   });
 });

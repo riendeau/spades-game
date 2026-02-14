@@ -64,6 +64,25 @@ export function GameTable({
     }
   };
 
+  // Determine button text and state
+  const getButtonState = () => {
+    if (!isPlaying) {
+      return { text: 'Waiting...', disabled: true };
+    }
+    if (!isMyTurn) {
+      return { text: 'Waiting...', disabled: true };
+    }
+    if (!selectedCard) {
+      return { text: 'Select Card', disabled: true };
+    }
+    return {
+      text: `Play ${selectedCard.rank} of ${selectedCard.suit}`,
+      disabled: false,
+    };
+  };
+
+  const buttonState = getButtonState();
+
   return (
     <div
       style={{
@@ -150,21 +169,6 @@ export function GameTable({
             borderRadius: '20px 20px 0 0',
           }}
         >
-          {isPlaying && isMyTurn && (
-            <div
-              style={{
-                textAlign: 'center',
-                marginBottom: '12px',
-                color: '#fbbf24',
-              }}
-            >
-              Your turn!{' '}
-              {selectedCard
-                ? 'Click card again or press Play'
-                : 'Select a card'}
-            </div>
-          )}
-
           <PlayerHand
             cards={myHand}
             onPlayCard={onPlayCard}
@@ -176,10 +180,13 @@ export function GameTable({
             isBiddingPhase={isBidding && cardsRevealed}
           />
 
-          {selectedCard && isMyTurn && (
+          {!isBidding && (
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <Button onClick={handlePlaySelected}>
-                Play {selectedCard.rank} of {selectedCard.suit}
+              <Button
+                onClick={handlePlaySelected}
+                disabled={buttonState.disabled}
+              >
+                {buttonState.text}
               </Button>
             </div>
           )}

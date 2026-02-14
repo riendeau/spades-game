@@ -4,6 +4,7 @@ import React from 'react';
 interface CardProps {
   card: CardType;
   onClick?: () => void;
+  onDoubleClick?: () => void;
   disabled?: boolean;
   selected?: boolean;
   small?: boolean;
@@ -28,6 +29,7 @@ const SUIT_COLORS: Record<Suit, string> = {
 export function Card({
   card,
   onClick,
+  onDoubleClick,
   disabled,
   selected,
   small,
@@ -43,6 +45,7 @@ export function Card({
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       disabled={disabled}
       data-testid={testId}
       style={{
