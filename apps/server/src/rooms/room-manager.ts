@@ -118,9 +118,20 @@ export class RoomManager {
   updateSessionSocket(sessionToken: string, socketId: string): void {
     const session = this.sessions.get(sessionToken);
     if (session) {
+      console.log(
+        '[Session] updateSessionSocket called for token:',
+        sessionToken.substring(0, 8)
+      );
+      console.log(
+        '[Session] Old socket:',
+        session.socketId,
+        '-> New socket:',
+        socketId
+      );
       // Remove old socket mapping
       if (session.socketId) {
         this.socketToSession.delete(session.socketId);
+        console.log('[Session] Deleted old socket mapping:', session.socketId);
       }
       session.socketId = socketId;
       session.disconnectedAt = null;
