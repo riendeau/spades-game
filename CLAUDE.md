@@ -54,6 +54,13 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 - `apps/server/src/rooms/room-manager.ts` - Room and session management
 - `apps/client/src/hooks/use-game.ts` - Main client-side game hook
 
+### Team Structure
+
+- **Positions**: 0, 1, 2, 3 (clockwise from dealer's left)
+- **Teams**: Positions 0 & 2 are `team1`, positions 1 & 3 are `team2`
+- **Partners**: Use `getPartnerPosition(position)` helper which returns `(position + 2) % 4`
+- **Bidding order**: Position 0 → 1 → 2 → 3 (partners alternate)
+
 ## Development Environment
 
 ### Dev Server Setup
@@ -152,6 +159,7 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 - **Multiple elements**: Playwright throws "strict mode violation" if locator matches multiple elements
 - **Card interactions**: Use `[data-testid="hand-card"]` to target hand cards (not trick area cards)
 - **Native vs React events**: Always use Playwright's `.click()`, not `page.evaluate(() => btn.click())`
+- **Bid button clicks**: When clicking bid number buttons, use the `placeBid()` helper from `bidding-helpers.ts` instead of manual `getByRole('button', { name: '5' }).click()`. This prevents "strict mode violations" when hand cards with the same number are visible (e.g., 5 of diamonds). The helper uses more specific selectors and handles the "See Cards" step automatically.
 
 ## Workflow
 
