@@ -1,4 +1,5 @@
 import type { Card } from './card.js';
+import type { RoundSummary } from './events.js';
 import type { GameState, GameConfig } from './game-state.js';
 import type { PlayerId, PlayerBid } from './player.js';
 
@@ -66,13 +67,37 @@ export interface TrickCompleteContext {
   winnerId: PlayerId;
 }
 
+export interface RoundEndContext {
+  gameState: GameState;
+  config: GameConfig;
+  roundSummary: RoundSummary;
+  modState: unknown;
+}
+
+export interface RoundEndResult {
+  modState?: unknown;
+}
+
+export interface CalculateDisabledBidsContext {
+  gameState: GameState;
+  config: GameConfig;
+  playerId: PlayerId;
+  currentBids: PlayerBid[];
+  modState: unknown;
+  disabledBids: number[]; // Mods can add to this array
+}
+
 // Rule mod hooks interface
 export interface RuleHooks {
   onCalculateScore?: (context: ScoreContext) => ScoreContext;
+  onCalculateDisabledBids?: (
+    context: CalculateDisabledBidsContext
+  ) => CalculateDisabledBidsContext;
   onValidateBid?: (context: BidValidationContext) => BidValidationContext;
   onValidatePlay?: (context: PlayValidationContext) => PlayValidationContext;
   onCardPlayed?: (context: CardPlayedContext) => CardPlayedContext;
   onTrickComplete?: (context: TrickCompleteContext) => TrickCompleteContext;
+  onRoundEnd?: (context: RoundEndContext) => RoundEndResult;
   modifyConfig?: (config: GameConfig) => GameConfig;
 }
 

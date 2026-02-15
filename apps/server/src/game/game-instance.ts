@@ -4,18 +4,19 @@ import {
   type Card,
   type PlayerId,
   type ClientGameState,
-  type RoundSummary,
   processAction,
   DEFAULT_GAME_CONFIG,
   type GameAction,
   type ActionResult,
   type SideEffect,
 } from '@spades/shared';
+import { hookExecutor } from '../mods/hook-executor.js';
 
 export class GameInstance {
   private state: GameState;
   private config: GameConfig;
   private playerHands = new Map<PlayerId, Card[]>();
+  private modState = new Map<string, unknown>();
 
   constructor(
     initialState: GameState,
@@ -34,7 +35,15 @@ export class GameInstance {
   }
 
   getPlayerHand(playerId: PlayerId): Card[] {
-    return this.playerHands.get(playerId) || [];
+    return this.playerHands.get(playerId) ?? [];
+  }
+
+  getModState(modId: string): unknown {
+    return this.modState.get(modId);
+  }
+
+  setModState(modId: string, state: unknown): void {
+    this.modState.set(modId, state);
   }
 
   dispatch(action: GameAction): ActionResult {
@@ -79,7 +88,7 @@ export class GameInstance {
       }
     }
 
-    return {
+    const result: ClientGameState = {
       id: this.state.id,
       phase: this.state.phase,
       players: this.state.players.map((p) => ({
@@ -107,6 +116,36 @@ export class GameInstance {
       dealerPosition: this.state.dealerPosition,
       currentPlayerPosition: this.state.currentPlayerPosition,
     };
+
+    // Calculate disabled bids for current bidder
+    if (this.state.phase === 'bidding') {
+      const currentBids = this.state.currentRound?.bids ?? [];
+      const currentPlayer = this.state.players.find(
+        (p) => p.position === this.state.currentPlayerPosition
+      );
+
+      if (currentPlayer) {
+        const disabledBidsContext = hookExecutor.executeCalculateDisabledBids({
+          gameState: this.state,
+          config: this.config,
+          playerId: currentPlayer.id,
+          currentBids,
+          modState: this.getModState('anti-eleven'),
+          disabledBids: [],
+        });
+
+        if (disabledBidsContext.disabledBids.length > 0) {
+          result.disabledBids = disabledBidsContext.disabledBids;
+        }
+
+        // Update mod state if changed
+        if (disabledBidsContext.modState !== undefined) {
+          this.setModState('anti-eleven', disabledBidsContext.modState);
+        }
+      }
+    }
+
+    return result;
   }
 
   addPlayer(playerId: PlayerId, nickname: string): ActionResult {
@@ -200,15 +239,39 @@ export class GameInstance {
         let endRoundSideEffects: SideEffect[] = [];
         if (phaseAfterCollect === 'round-end') {
           const endRoundResult = this.dispatch({ type: 'END_ROUND' });
-          endRoundSideEffects = endRoundResult.sideEffects || [];
+          endRoundSideEffects = endRoundResult.sideEffects ?? [];
+
+          // Execute mod round-end hooks
+          const roundSummary = endRoundSideEffects.find(
+            (e): e is Extract<SideEffect, { type: 'ROUND_COMPLETE' }> =>
+              e.type === 'ROUND_COMPLETE'
+          )?.summary;
+
+          if (roundSummary) {
+            for (const modId of hookExecutor.getAllModIds()) {
+              const hookResult = hookExecutor.executeRoundEnd(
+                {
+                  gameState: this.state,
+                  config: this.config,
+                  roundSummary,
+                  modState: this.getModState(modId),
+                },
+                modId
+              );
+
+              if (hookResult.modState !== undefined) {
+                this.setModState(modId, hookResult.modState);
+              }
+            }
+          }
         }
 
         return {
           ...result,
           state: this.state,
           sideEffects: [
-            ...(result.sideEffects || []),
-            ...(collectResult.sideEffects || []),
+            ...(result.sideEffects ?? []),
+            ...(collectResult.sideEffects ?? []),
             ...endRoundSideEffects,
           ],
         };

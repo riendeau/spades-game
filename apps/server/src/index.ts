@@ -8,6 +8,7 @@ import type {
 } from '@spades/shared';
 import express from 'express';
 import { Server } from 'socket.io';
+import { hookExecutor } from './mods/hook-executor.js';
 import { loadBuiltInMods } from './mods/mod-loader.js';
 import { modRegistry } from './mods/mod-registry.js';
 import { setupSocketHandlers } from './socket/handler.js';
@@ -17,6 +18,9 @@ const BASE_PATH = process.env.BASE_PATH || '/';
 
 // Load mods
 loadBuiltInMods();
+
+// Wire loaded mods into hook executor
+hookExecutor.setMods(modRegistry.getAllRuleMods());
 
 const app = express();
 const httpServer = createServer(app);

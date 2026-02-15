@@ -117,7 +117,9 @@ export function BiddingPanel({
                 }}
               >
                 {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => {
-                  const isDisabled = bid > maxAllowedBid;
+                  const isDisabled =
+                    bid > maxAllowedBid ||
+                    (gameState.disabledBids?.includes(bid) ?? false);
                   return (
                     <button
                       key={bid}

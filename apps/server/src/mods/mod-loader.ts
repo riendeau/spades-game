@@ -1,6 +1,7 @@
 import {
   suicideSpadesMod,
   jokerSpadesMod,
+  antiElevenMod,
   classicTheme,
   neonTheme,
   minimalistTheme,
@@ -11,6 +12,7 @@ export function loadBuiltInMods(): void {
   // Load rule mods
   modRegistry.registerRuleMod(suicideSpadesMod);
   modRegistry.registerRuleMod(jokerSpadesMod);
+  modRegistry.registerRuleMod(antiElevenMod);
 
   // Load theme mods
   modRegistry.registerThemeMod(classicTheme);
