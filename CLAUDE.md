@@ -38,14 +38,13 @@ This is a real-time multiplayer Spades card game using a pnpm monorepo with Type
 
 **Session Management**: 6-character room codes for joining. Session tokens stored in `sessionStorage` (per-tab) enable reconnection during games with 5-minute grace period.
 
-**Mod System**: Rule mods implement hooks (`onValidateBid`, `onCalculateScore`, etc.) that intercept game events. Theme mods provide CSS variable definitions.
+**Mod System**: Rule mods implement hooks (`onCalculateScore`, `onCalculateDisabledBids`, etc.) that intercept game events. Theme mods provide CSS variable definitions.
 
 **Important Hook Semantics:**
 
 - **`modifyConfig`**: Called **once** during room creation (`room-manager.ts:createRoom()`) to allow mods to declaratively modify game configuration (e.g., disable nil bids, change bag penalties). The modified config is passed to the `GameInstance` constructor and affects basic validation and game logic throughout the game.
 - **`onCalculateDisabledBids`**: Called **once** per state update during bidding to pre-calculate which bids should be disabled for the current player. This hook should make any random decisions **once** and store them in `modState` for consistency. Subsequent calls should read from `modState` instead of re-randomizing.
-- **`onValidateBid`**: Called to validate a **specific bid** that was already made. Should NOT be used for pre-calculation or randomization. The UI prevents players from submitting disabled bids, so this hook is primarily for edge-case validation.
-- **Rule**: If you need randomness or state, use `onCalculateDisabledBids` and store decisions in `modState`. Never call `Math.random()` in validation hooks that run multiple times.
+- **Rule**: If you need randomness or state in bid restrictions, use `onCalculateDisabledBids` and store decisions in `modState`. Never call `Math.random()` in hooks that run multiple times per state update.
 
 ### Socket Events
 
