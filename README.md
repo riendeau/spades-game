@@ -80,7 +80,7 @@ The game follows a server-authoritative model: all logic runs on the server, and
 
 ### Mod system
 
-Rule mods hook into game events (`onValidateBid`, `onCalculateScore`, etc.) to modify behavior. Theme mods supply CSS variable overrides.
+Rule mods hook into game events (`onCalculateScore`, `onCalculateDisabledBids`, etc.) to modify behavior. Theme mods supply CSS variable overrides.
 
 ## Other Commands
 

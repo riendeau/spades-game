@@ -2,7 +2,6 @@ import type {
   RuleMod,
   ScoreContext,
   CalculateDisabledBidsContext,
-  BidValidationContext,
   PlayValidationContext,
   CardPlayedContext,
   TrickCompleteContext,
@@ -43,18 +42,6 @@ export class HookExecutor {
     for (const mod of this.mods) {
       if (mod.hooks.onCalculateDisabledBids) {
         result = mod.hooks.onCalculateDisabledBids(result);
-      }
-    }
-    return result;
-  }
-
-  executeValidateBid(context: BidValidationContext): BidValidationContext {
-    let result = context;
-    for (const mod of this.mods) {
-      if (mod.hooks.onValidateBid) {
-        result = mod.hooks.onValidateBid(result);
-        // Stop if validation fails
-        if (!result.isValid) break;
       }
     }
     return result;

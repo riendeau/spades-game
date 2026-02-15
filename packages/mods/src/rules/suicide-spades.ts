@@ -1,7 +1,7 @@
 import type {
   RuleMod,
   ScoreContext,
-  BidValidationContext,
+  CalculateDisabledBidsContext,
 } from '@spades/shared';
 
 /**
@@ -18,17 +18,10 @@ export const suicideSpadesMod: RuleMod = {
   author: 'Spades Team',
 
   hooks: {
-    onValidateBid: (context: BidValidationContext): BidValidationContext => {
-      const { gameState, playerId, bid, isNil, isBlindNil } = context;
-
-      // Don't allow nil in Suicide Spades
-      if (isNil || isBlindNil) {
-        return {
-          ...context,
-          isValid: false,
-          errorMessage: 'Nil bids are not allowed in Suicide Spades',
-        };
-      }
+    onCalculateDisabledBids: (
+      context: CalculateDisabledBidsContext
+    ): CalculateDisabledBidsContext => {
+      const { gameState, playerId, currentBids, disabledBids } = context;
 
       const player = gameState.players.find((p) => p.id === playerId);
       if (!player) return context;
@@ -36,35 +29,32 @@ export const suicideSpadesMod: RuleMod = {
       const teamPlayers = gameState.players.filter(
         (p) => p.team === player.team
       );
-      const teamBids =
-        gameState.currentRound?.bids.filter((b) =>
-          teamPlayers.some((tp) => tp.id === b.playerId)
-        ) || [];
+      const teamBids = currentBids.filter((b) =>
+        teamPlayers.some((tp) => tp.id === b.playerId)
+      );
 
       if (teamBids.length === 0) {
-        // First bidder on team: must bid 0-4
-        if (bid < 0 || bid > 4) {
-          return {
-            ...context,
-            isValid: false,
-            errorMessage: 'First team bidder must bid 0-4 in Suicide Spades',
-          };
-        }
+        // First bidder on team: disable bids > 4
+        const disabled = [5, 6, 7, 8, 9, 10, 11, 12, 13];
+        return {
+          ...context,
+          disabledBids: [...disabledBids, ...disabled],
+        };
       } else {
-        // Second bidder: must complete the 4
+        // Second bidder: must complete to exactly 4
         const partnerBid = teamBids[0].bid;
         const requiredBid = 4 - partnerBid;
 
-        if (bid !== requiredBid) {
-          return {
-            ...context,
-            isValid: false,
-            errorMessage: `Must bid ${requiredBid} to make team total of 4`,
-          };
-        }
-      }
+        // Disable all bids except the required one
+        const disabled = Array.from({ length: 13 }, (_, i) => i + 1).filter(
+          (bid) => bid !== requiredBid
+        );
 
-      return context;
+        return {
+          ...context,
+          disabledBids: [...disabledBids, ...disabled],
+        };
+      }
     },
 
     onCalculateScore: (context: ScoreContext): ScoreContext => {
