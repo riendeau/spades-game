@@ -6,6 +6,7 @@ import type {
 import { validatePlay, validateBid } from '@spades/shared';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import { hookExecutor } from '../mods/hook-executor.js';
 import { roomManager } from '../rooms/room-manager.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -226,6 +227,36 @@ function handleBid(
   if (!room) {
     socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
     return;
+  }
+
+  // Get current bids
+  const currentBids = room.game.getState().currentRound?.bids || [];
+
+  // Execute mod hooks
+  const modContext = hookExecutor.executeValidateBid({
+    gameState: room.game.getState(),
+    config: room.game.getConfig(),
+    playerId: session.playerId,
+    bid,
+    isNil,
+    isBlindNil,
+    currentBids,
+    modState: room.game.getModState('anti-eleven'),
+    isValid: true,
+  });
+
+  // Check if bid is disabled by mods
+  if (modContext.disabledBids?.includes(bid)) {
+    socket.emit('error', {
+      code: 'INVALID_BID',
+      message: `Bid of ${bid} is not allowed`,
+    });
+    return;
+  }
+
+  // Update mod state if changed
+  if (modContext.modState !== undefined) {
+    room.game.setModState('anti-eleven', modContext.modState);
   }
 
   // Validate bid
