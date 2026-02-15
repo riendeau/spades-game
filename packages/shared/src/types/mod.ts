@@ -25,17 +25,6 @@ export interface ScoreContext {
   calculatedBags: number;
 }
 
-export interface BidValidationContext {
-  gameState: GameState;
-  config: GameConfig;
-  playerId: PlayerId;
-  bid: number;
-  isNil: boolean;
-  isBlindNil: boolean;
-  isValid: boolean;
-  errorMessage?: string;
-}
-
 export interface PlayValidationContext {
   gameState: GameState;
   config: GameConfig;
@@ -93,7 +82,6 @@ export interface RuleHooks {
   onCalculateDisabledBids?: (
     context: CalculateDisabledBidsContext
   ) => CalculateDisabledBidsContext;
-  onValidateBid?: (context: BidValidationContext) => BidValidationContext;
   onValidatePlay?: (context: PlayValidationContext) => PlayValidationContext;
   onCardPlayed?: (context: CardPlayedContext) => CardPlayedContext;
   onTrickComplete?: (context: TrickCompleteContext) => TrickCompleteContext;
