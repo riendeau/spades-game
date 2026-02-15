@@ -32,13 +32,18 @@ test.describe('Waiting Room', () => {
 
     // Should transition to bidding phase (check for bidding buttons)
     // One of the players should see bidding controls
+    // Poll up to 10 times with 500ms intervals (max 5 seconds)
     let found = false;
-    for (const page of players) {
-      const seeCards = page.getByRole('button', { name: 'See Cards' });
-      if (await seeCards.isVisible({ timeout: 1000 }).catch(() => false)) {
-        found = true;
-        break;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      for (const page of players) {
+        const seeCards = page.getByRole('button', { name: 'See Cards' });
+        if (await seeCards.isVisible({ timeout: 200 }).catch(() => false)) {
+          found = true;
+          break;
+        }
       }
+      if (found) break;
+      await players[0].waitForTimeout(500);
     }
     expect(found).toBe(true);
   });
