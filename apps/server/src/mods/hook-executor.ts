@@ -5,6 +5,8 @@ import type {
   PlayValidationContext,
   CardPlayedContext,
   TrickCompleteContext,
+  RoundEndContext,
+  RoundEndResult,
   GameConfig,
 } from '@spades/shared';
 
@@ -75,6 +77,18 @@ export class HookExecutor {
       }
     }
     return result;
+  }
+
+  executeRoundEnd(context: RoundEndContext, modId: string): RoundEndResult {
+    const mod = this.mods.find((m) => m.id === modId);
+    if (mod?.hooks.onRoundEnd) {
+      return mod.hooks.onRoundEnd(context);
+    }
+    return {};
+  }
+
+  getAllModIds(): string[] {
+    return this.mods.map((m) => m.id);
   }
 
   modifyConfig(config: GameConfig): GameConfig {
