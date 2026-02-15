@@ -89,6 +89,7 @@ export interface ClientGameState {
   } | null;
   dealerPosition: Position;
   currentPlayerPosition: Position;
+  disabledBids?: number[];
 }
 
 export interface RoundSummary {
