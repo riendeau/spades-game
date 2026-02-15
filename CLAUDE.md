@@ -26,7 +26,7 @@ This is a real-time multiplayer Spades card game using a pnpm monorepo with Type
 ### Packages
 
 - **packages/shared** (`@spades/shared`): Core game logic, types, validation, and state machine. Shared between server and client.
-- **packages/mods** (`@spades/mods`): Rule mods (e.g., Suicide Spades) and theme mods. Extensible via hook system.
+- **packages/mods** (`@spades/mods`): Rule mods and theme mods. Extensible via hook system. Currently active: anti-eleven mod. Reference examples (inactive): suicide-spades, joker-spades.
 - **apps/server** (`@spades/server`): Express + Socket.io server. Manages rooms, sessions, and authoritative game state.
 - **apps/client** (`@spades/client`): React + Vite + Zustand client with Socket.io connection.
 
@@ -42,6 +42,7 @@ This is a real-time multiplayer Spades card game using a pnpm monorepo with Type
 
 **Important Hook Semantics:**
 
+- **`modifyConfig`**: Called **once** during room creation (`room-manager.ts:createRoom()`) to allow mods to declaratively modify game configuration (e.g., disable nil bids, change bag penalties). The modified config is passed to the `GameInstance` constructor and affects basic validation and game logic throughout the game.
 - **`onCalculateDisabledBids`**: Called **once** per state update during bidding to pre-calculate which bids should be disabled for the current player. This hook should make any random decisions **once** and store them in `modState` for consistency. Subsequent calls should read from `modState` instead of re-randomizing.
 - **`onValidateBid`**: Called to validate a **specific bid** that was already made. Should NOT be used for pre-calculation or randomization. The UI prevents players from submitting disabled bids, so this hook is primarily for edge-case validation.
 - **Rule**: If you need randomness or state, use `onCalculateDisabledBids` and store decisions in `modState`. Never call `Math.random()` in validation hooks that run multiple times.
@@ -57,7 +58,9 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 - `packages/shared/src/types/` - All TypeScript types (Card, Player, GameState, Events, Mod)
 - `packages/shared/src/game-logic/` - Deck, trick resolution, scoring, bidding rules
 - `apps/server/src/socket/handler.ts` - All socket event handlers
-- `apps/server/src/rooms/room-manager.ts` - Room and session management
+- `apps/server/src/rooms/room-manager.ts` - Room and session management (includes modifyConfig hook invocation)
+- `apps/server/src/mods/mod-loader.ts` - Registers built-in mods (controls which mods are active)
+- `apps/server/src/mods/hook-executor.ts` - Executes mod hooks in sequence
 - `apps/client/src/hooks/use-game.ts` - Main client-side game hook
 
 ### Team Structure
