@@ -1,4 +1,5 @@
 import type { ClientGameState, Position } from '@spades/shared';
+import { getPartnerPosition } from '@spades/shared';
 import React, { useState } from 'react';
 import { Button } from '../ui/Button';
 
@@ -48,6 +49,35 @@ export function BiddingPanel({
     onRevealCards();
   };
 
+  // Calculate max allowed bid based on partner's bid (to prevent team bidding > 13)
+  const getMaxAllowedBid = (): number => {
+    const currentBids = gameState.currentRound?.bids || [];
+    // Only restrict if we're the 3rd or 4th player to bid
+    if (currentBids.length < 2) {
+      return 13; // No restriction for first two bidders
+    }
+
+    const partnerPosition = getPartnerPosition(myPosition);
+    const partnerBid = currentBids.find(
+      (b) =>
+        b.playerId ===
+        gameState.players.find((p) => p.position === partnerPosition)?.id
+    );
+
+    if (!partnerBid) {
+      return 13; // Partner hasn't bid yet
+    }
+
+    // If partner bid nil, they're bidding 0 tricks
+    const partnerTrickBid =
+      partnerBid.isNil || partnerBid.isBlindNil ? 0 : partnerBid.bid;
+
+    // Max we can bid is 13 minus partner's bid
+    return 13 - partnerTrickBid;
+  };
+
+  const maxAllowedBid = getMaxAllowedBid();
+
   return (
     <div
       style={{
@@ -86,25 +116,30 @@ export function BiddingPanel({
                   gap: '8px',
                 }}
               >
-                {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => (
-                  <button
-                    key={bid}
-                    onClick={() => setSelectedBid(bid)}
-                    style={{
-                      padding: '12px',
-                      fontSize: '16px',
-                      fontWeight: 600,
-                      backgroundColor:
-                        selectedBid === bid ? '#3b82f6' : '#f3f4f6',
-                      color: selectedBid === bid ? '#fff' : '#374151',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {bid}
-                  </button>
-                ))}
+                {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => {
+                  const isDisabled = bid > maxAllowedBid;
+                  return (
+                    <button
+                      key={bid}
+                      onClick={() => !isDisabled && setSelectedBid(bid)}
+                      disabled={isDisabled}
+                      style={{
+                        padding: '12px',
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        backgroundColor:
+                          selectedBid === bid ? '#3b82f6' : '#f3f4f6',
+                        color: selectedBid === bid ? '#fff' : '#374151',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled ? 0.4 : 1,
+                      }}
+                    >
+                      {bid}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
