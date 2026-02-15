@@ -123,30 +123,24 @@ export class GameInstance {
       const currentPlayer = this.state.players.find(
         (p) => p.position === this.state.currentPlayerPosition
       );
-      const disabledBidsSet = new Set<number>();
 
       if (currentPlayer) {
-        // Check each possible bid (1-13) against mod hooks
-        for (let testBid = 1; testBid <= 13; testBid++) {
-          const modContext = hookExecutor.executeValidateBid({
-            gameState: this.state,
-            config: this.config,
-            playerId: currentPlayer.id,
-            bid: testBid,
-            isNil: false,
-            isBlindNil: false,
-            currentBids,
-            modState: this.getModState('anti-eleven'),
-            isValid: true,
-          });
+        const disabledBidsContext = hookExecutor.executeCalculateDisabledBids({
+          gameState: this.state,
+          config: this.config,
+          playerId: currentPlayer.id,
+          currentBids,
+          modState: this.getModState('anti-eleven'),
+          disabledBids: [],
+        });
 
-          if (modContext.disabledBids) {
-            modContext.disabledBids.forEach((b) => disabledBidsSet.add(b));
-          }
+        if (disabledBidsContext.disabledBids.length > 0) {
+          result.disabledBids = disabledBidsContext.disabledBids;
         }
 
-        if (disabledBidsSet.size > 0) {
-          result.disabledBids = Array.from(disabledBidsSet);
+        // Update mod state if changed
+        if (disabledBidsContext.modState !== undefined) {
+          this.setModState('anti-eleven', disabledBidsContext.modState);
         }
       }
     }

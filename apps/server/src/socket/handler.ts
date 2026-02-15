@@ -229,36 +229,6 @@ function handleBid(
     return;
   }
 
-  // Get current bids
-  const currentBids = room.game.getState().currentRound?.bids || [];
-
-  // Execute mod hooks
-  const modContext = hookExecutor.executeValidateBid({
-    gameState: room.game.getState(),
-    config: room.game.getConfig(),
-    playerId: session.playerId,
-    bid,
-    isNil,
-    isBlindNil,
-    currentBids,
-    modState: room.game.getModState('anti-eleven'),
-    isValid: true,
-  });
-
-  // Check if bid is disabled by mods
-  if (modContext.disabledBids?.includes(bid)) {
-    socket.emit('error', {
-      code: 'INVALID_BID',
-      message: `Bid of ${bid} is not allowed`,
-    });
-    return;
-  }
-
-  // Update mod state if changed
-  if (modContext.modState !== undefined) {
-    room.game.setModState('anti-eleven', modContext.modState);
-  }
-
   // Validate bid
   const validation = validateBid(
     room.game.getState(),

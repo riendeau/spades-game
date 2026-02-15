@@ -1,6 +1,7 @@
 import type {
   RuleMod,
   ScoreContext,
+  CalculateDisabledBidsContext,
   BidValidationContext,
   PlayValidationContext,
   CardPlayedContext,
@@ -30,6 +31,18 @@ export class HookExecutor {
     for (const mod of this.mods) {
       if (mod.hooks.onCalculateScore) {
         result = mod.hooks.onCalculateScore(result);
+      }
+    }
+    return result;
+  }
+
+  executeCalculateDisabledBids(
+    context: CalculateDisabledBidsContext
+  ): CalculateDisabledBidsContext {
+    let result = context;
+    for (const mod of this.mods) {
+      if (mod.hooks.onCalculateDisabledBids) {
+        result = mod.hooks.onCalculateDisabledBids(result);
       }
     }
     return result;

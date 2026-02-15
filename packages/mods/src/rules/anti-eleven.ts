@@ -1,6 +1,6 @@
 import type {
   RuleMod,
-  BidValidationContext,
+  CalculateDisabledBidsContext,
   RoundEndContext,
   RoundEndResult,
 } from '@spades/shared';
@@ -8,6 +8,8 @@ import type {
 interface AntiElevenState {
   disablementChance: number; // 0.0 to 1.0
   disablementOccurredThisRound: boolean;
+  shouldDisableThisTurn?: boolean; // Decision made when turn starts
+  disabledBid: number | null; // Which specific bid is disabled
 }
 
 /**
@@ -29,8 +31,10 @@ export const antiElevenMod: RuleMod = {
   author: 'Spades Team',
 
   hooks: {
-    onValidateBid: (context: BidValidationContext): BidValidationContext => {
-      const { currentBids, bid, isNil, modState } = context;
+    onCalculateDisabledBids: (
+      context: CalculateDisabledBidsContext
+    ): CalculateDisabledBidsContext => {
+      const { currentBids, modState } = context;
 
       // Only apply to 4th bidder
       if (currentBids.length !== 3) {
@@ -43,35 +47,48 @@ export const antiElevenMod: RuleMod = {
         0
       );
 
-      // If table already >= 11, skip check entirely (requirement 4)
+      // If table already >= 11, skip check entirely
       if (tableBid >= 11) {
         return context;
       }
 
-      // Calculate what total would be with this bid
-      const proposedBid = isNil ? 0 : bid;
-      const proposedTotal = tableBid + proposedBid;
+      const state = (modState || {}) as AntiElevenState;
 
-      // Only apply to bids that would make total exactly 11
-      if (proposedTotal !== 11) {
-        return context;
+      // Make disablement decision on first call for this turn
+      if (state.shouldDisableThisTurn === undefined) {
+        const chance = state.disablementChance || 0;
+        const shouldDisable = Math.random() < chance;
+
+        // Calculate which bid(s) would make total = 11
+        const targetBid = 11 - tableBid;
+        const disabledBid =
+          targetBid >= 1 && targetBid <= 13 ? targetBid : null;
+
+        // Store decision in modState
+        const newState: AntiElevenState = {
+          ...state,
+          shouldDisableThisTurn: shouldDisable,
+          disabledBid: shouldDisable ? disabledBid : null,
+          disablementOccurredThisRound: shouldDisable,
+        };
+
+        const result = {
+          ...context,
+          modState: newState,
+          disabledBids:
+            shouldDisable && disabledBid !== null
+              ? [...context.disabledBids, disabledBid]
+              : context.disabledBids,
+        };
+
+        return result;
       }
 
-      // Get current disablement chance (default 0%)
-      const state = (modState || {}) as AntiElevenState;
-      const chance = state.disablementChance || 0;
-
-      // Randomly decide whether to disable based on current chance
-      const shouldDisable = Math.random() < chance;
-
-      if (shouldDisable) {
+      // Decision already made - just return stored result
+      if (state.shouldDisableThisTurn && state.disabledBid !== null) {
         return {
           ...context,
-          disabledBids: [bid],
-          modState: {
-            ...state,
-            disablementOccurredThisRound: true,
-          },
+          disabledBids: [...context.disabledBids, state.disabledBid],
         };
       }
 
@@ -85,9 +102,21 @@ export const antiElevenMod: RuleMod = {
       // Calculate total table bid
       const totalBid = roundSummary.team1.bid + roundSummary.team2.bid;
 
+      // Clear turn state
+      const baseState = {
+        shouldDisableThisTurn: undefined,
+        disabledBid: null,
+      };
+
       // Only react to exactly 11
       if (totalBid !== 11) {
-        return { modState: { ...state, disablementOccurredThisRound: false } };
+        return {
+          modState: {
+            ...state,
+            ...baseState,
+            disablementOccurredThisRound: false,
+          },
+        };
       }
 
       // If disablement occurred, reset chance to 0%
@@ -96,6 +125,8 @@ export const antiElevenMod: RuleMod = {
           modState: {
             disablementChance: 0,
             disablementOccurredThisRound: false,
+            shouldDisableThisTurn: undefined,
+            disabledBid: null,
           },
         };
       }
@@ -106,6 +137,8 @@ export const antiElevenMod: RuleMod = {
         modState: {
           disablementChance: newChance,
           disablementOccurredThisRound: false,
+          shouldDisableThisTurn: undefined,
+          disabledBid: null,
         },
       };
     },

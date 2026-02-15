@@ -32,9 +32,6 @@ export interface BidValidationContext {
   bid: number;
   isNil: boolean;
   isBlindNil: boolean;
-  currentBids: PlayerBid[];
-  modState: unknown;
-  disabledBids?: number[];
   isValid: boolean;
   errorMessage?: string;
 }
@@ -81,9 +78,21 @@ export interface RoundEndResult {
   modState?: unknown;
 }
 
+export interface CalculateDisabledBidsContext {
+  gameState: GameState;
+  config: GameConfig;
+  playerId: PlayerId;
+  currentBids: PlayerBid[];
+  modState: unknown;
+  disabledBids: number[]; // Mods can add to this array
+}
+
 // Rule mod hooks interface
 export interface RuleHooks {
   onCalculateScore?: (context: ScoreContext) => ScoreContext;
+  onCalculateDisabledBids?: (
+    context: CalculateDisabledBidsContext
+  ) => CalculateDisabledBidsContext;
   onValidateBid?: (context: BidValidationContext) => BidValidationContext;
   onValidatePlay?: (context: PlayValidationContext) => PlayValidationContext;
   onCardPlayed?: (context: CardPlayedContext) => CardPlayedContext;
