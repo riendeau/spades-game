@@ -1,7 +1,8 @@
 import type { GameState, Card, Position } from '@spades/shared';
-import { createInitialGameState } from '@spades/shared';
+import { createInitialGameState, DEFAULT_GAME_CONFIG } from '@spades/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { GameInstance } from '../game/game-instance.js';
+import { hookExecutor } from '../mods/hook-executor.js';
 
 const ROOM_ID_LENGTH = 6;
 const ROOM_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
@@ -47,7 +48,11 @@ export class RoomManager {
   createRoom(): Room {
     const roomId = this.generateRoomId();
     const gameState = createInitialGameState(roomId);
-    const game = new GameInstance(gameState);
+
+    // Apply mod-based config modifications
+    const modifiedConfig = hookExecutor.modifyConfig(DEFAULT_GAME_CONFIG);
+
+    const game = new GameInstance(gameState, modifiedConfig);
 
     const room: Room = {
       id: roomId,

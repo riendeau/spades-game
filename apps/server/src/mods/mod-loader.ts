@@ -10,8 +10,8 @@ import { modRegistry } from './mod-registry.js';
 
 export function loadBuiltInMods(): void {
   // Load rule mods
-  modRegistry.registerRuleMod(suicideSpadesMod);
-  modRegistry.registerRuleMod(jokerSpadesMod);
+  // modRegistry.registerRuleMod(suicideSpadesMod); // Kept as reference example only
+  // modRegistry.registerRuleMod(jokerSpadesMod); // Kept as reference example only
   modRegistry.registerRuleMod(antiElevenMod);
 
   // Load theme mods
