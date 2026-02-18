@@ -58,8 +58,8 @@ export function calculateRoundScore(
     // Both players bid nil, no base score calculation needed
   } else if (tricks >= bid) {
     // Made bid
-    baseScore = bid * 10;
     bags = tricks - bid;
+    baseScore = bid * 10 + bags;
   } else {
     // Set (didn't make bid)
     baseScore = -bid * 10;

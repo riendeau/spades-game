@@ -17,7 +17,7 @@ describe('Scoring', () => {
 
     it('should add bags when exceeding bid', () => {
       const result = calculateRoundScore(4, 6, [], {}, DEFAULT_GAME_CONFIG);
-      expect(result.baseScore).toBe(40);
+      expect(result.baseScore).toBe(42);
       expect(result.bags).toBe(2);
     });
 
@@ -96,45 +96,69 @@ describe('Scoring', () => {
     it('should add round score to total', () => {
       const current: TeamScore = {
         teamId: 'team1',
-        score: 100,
+        score: 103,
         bags: 3,
         roundBid: 0,
         roundTricks: 0,
       };
 
       const roundCalc = {
-        baseScore: 50,
+        baseScore: 52,
         bags: 2,
         bagPenalty: 0,
         nilBonus: 0,
-        totalScore: 50,
+        totalScore: 52,
       };
 
       const result = updateTeamScore(current, roundCalc, DEFAULT_GAME_CONFIG);
-      expect(result.score).toBe(150);
+      expect(result.score).toBe(155);
       expect(result.bags).toBe(5);
     });
 
     it('should apply bag penalty at 10 bags', () => {
       const current: TeamScore = {
         teamId: 'team1',
-        score: 200,
+        score: 208,
         bags: 8,
         roundBid: 0,
         roundTricks: 0,
       };
 
       const roundCalc = {
-        baseScore: 50,
+        baseScore: 53,
         bags: 3,
         bagPenalty: 0,
         nilBonus: 0,
-        totalScore: 50,
+        totalScore: 53,
       };
 
       const result = updateTeamScore(current, roundCalc, DEFAULT_GAME_CONFIG);
-      // 200 + 50 - 100 (penalty) = 150
-      expect(result.score).toBe(150);
+      // 208 + 53 - 100 (penalty) = 161
+      expect(result.score).toBe(161);
+      // 11 bags - 10 = 1 overflow
+      expect(result.bags).toBe(1);
+    });
+
+    it('should apply bag penalty at negative scores', () => {
+      const current: TeamScore = {
+        teamId: 'team1',
+        score: 18,
+        bags: 8,
+        roundBid: 0,
+        roundTricks: 0,
+      };
+
+      const roundCalc = {
+        baseScore: 53,
+        bags: 3,
+        bagPenalty: 0,
+        nilBonus: 0,
+        totalScore: 53,
+      };
+
+      const result = updateTeamScore(current, roundCalc, DEFAULT_GAME_CONFIG);
+      // 18 + 53 - 100 (penalty) = -29
+      expect(result.score).toBe(-29);
       // 11 bags - 10 = 1 overflow
       expect(result.bags).toBe(1);
     });
