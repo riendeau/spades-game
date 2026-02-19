@@ -128,6 +128,8 @@ This typically happens if:
 - Server is authoritative - client state is derived from socket events
 - No optimistic updates - all state changes are server-confirmed
 
+**`game:state-update` and trick completion**: The server runs `PLAY_CARD` → `COLLECT_TRICK` before emitting any events, so `game:state-update` always arrives with `currentTrick.plays` already empty after the 4th card. The 4th card is **never** present in `currentTrick` from the client's perspective. To display all 4 trick cards briefly after completion, `use-game.ts` captures the 4th card from the `game:card-played` payload (closure variable `lastCardPlayed`) and combines it with the 3 existing plays when `game:trick-won` fires, storing them in `lastTrick`. `TrickArea` falls back to `lastTrick` when `currentTrick.plays` is empty. Read current store state inside socket handlers using `useGameStore.getState()` to avoid stale closure issues.
+
 ## E2E Testing
 
 ### Test Structure
