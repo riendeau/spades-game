@@ -123,4 +123,4 @@ export const test = base.extend<GameFixtures>({
   },
 });
 
-export { expect } from '@playwright/test';
+export { expect, type Page } from '@playwright/test';
