@@ -1,8 +1,4 @@
-import type {
-  ClientGameState,
-  Position,
-  Card as CardType,
-} from '@spades/shared';
+import type { ClientGameState, Position } from '@spades/shared';
 import React from 'react';
 import { Card } from '../ui/Card';
 
@@ -10,16 +6,6 @@ interface TrickAreaProps {
   gameState: ClientGameState;
   myPosition: Position;
 }
-
-const POSITION_OFFSETS: Record<
-  Position,
-  { top?: string; bottom?: string; left?: string; right?: string }
-> = {
-  0: { bottom: '20px', left: '50%' },
-  1: { top: '50%', left: '20px' },
-  2: { top: '20px', left: '50%' },
-  3: { top: '50%', right: '20px' },
-};
 
 export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
   const trick = gameState.currentRound?.currentTrick;
