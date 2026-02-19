@@ -15,6 +15,7 @@ export interface ClientToServerEvents {
   }) => void;
   'game:play-card': (data: { card: Card }) => void;
   'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
+  'player:change-seat': (data: { newPosition: Position }) => void;
 }
 
 // Server -> Client Events
@@ -56,6 +57,7 @@ export interface ServerToClientEvents {
   error: (data: { code: string; message: string }) => void;
   'reconnect:success': (data: { state: ClientGameState; hand: Card[] }) => void;
   'reconnect:failed': (data: { reason: string }) => void;
+  'room:seat-changed': (data: { newPosition: Position }) => void;
 }
 
 // Client-safe game state (hides other players' hands)

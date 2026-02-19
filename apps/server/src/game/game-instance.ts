@@ -3,6 +3,7 @@ import {
   type GameConfig,
   type Card,
   type PlayerId,
+  type Position,
   type ClientGameState,
   processAction,
   DEFAULT_GAME_CONFIG,
@@ -285,6 +286,14 @@ export class GameInstance {
     if (!nextResult.valid) return nextResult;
 
     return this.dispatch({ type: 'DEAL_CARDS' });
+  }
+
+  movePlayerToSeat(playerId: PlayerId, newPosition: Position): ActionResult {
+    return this.dispatch({
+      type: 'PLAYER_CHANGE_SEAT',
+      playerId,
+      newPosition,
+    });
   }
 
   isPlayerTurn(playerId: PlayerId): boolean {

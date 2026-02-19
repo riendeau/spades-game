@@ -1,4 +1,4 @@
-import type { Card } from '@spades/shared';
+import type { Card, Position } from '@spades/shared';
 import { useEffect, useCallback } from 'react';
 import { useSocket } from '../socket/socket-context';
 import {
@@ -57,6 +57,10 @@ export function useGame() {
       store.revealCards();
     });
 
+    socket.on('room:seat-changed', ({ newPosition }) => {
+      store.setMyPosition(newPosition);
+    });
+
     socket.on('reconnect:failed', ({ reason }) => {
       store.setError(`Reconnection failed: ${reason}`);
       clearSession();
@@ -76,6 +80,7 @@ export function useGame() {
       socket.off('game:trick-won');
       socket.off('game:round-end');
       socket.off('game:ended');
+      socket.off('room:seat-changed');
       socket.off('reconnect:success');
       socket.off('reconnect:failed');
       socket.off('error');
@@ -150,6 +155,14 @@ export function useGame() {
     store.reset();
   }, [socket]);
 
+  const changeSeat = useCallback(
+    (newPosition: Position) => {
+      if (!socket) return;
+      socket.emit('player:change-seat', { newPosition });
+    },
+    [socket]
+  );
+
   return {
     connected,
     ...store,
@@ -159,5 +172,6 @@ export function useGame() {
     makeBid,
     playCard,
     leaveRoom,
+    changeSeat,
   };
 }
