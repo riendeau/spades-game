@@ -10,7 +10,6 @@ interface PlayerHandProps {
   onSelectCard: (card: CardType | null) => void;
   faceDown?: boolean;
   playableCards?: CardType[];
-  isBiddingPhase?: boolean;
 }
 
 export function PlayerHand({
@@ -21,7 +20,6 @@ export function PlayerHand({
   onSelectCard,
   faceDown = false,
   playableCards,
-  isBiddingPhase = false,
 }: PlayerHandProps) {
   const isCardPlayable = (card: CardType): boolean => {
     if (!isMyTurn) return false;
@@ -84,9 +82,7 @@ export function PlayerHand({
                 disabled={!isCardPlayable(card)}
                 selected={isSelected}
                 testId="hand-card"
-                visuallyDisabled={
-                  isBiddingPhase ? false : !isCardPlayable(card)
-                }
+                visuallyDisabled={isMyTurn && !isCardPlayable(card)}
               />
             )}
           </div>
