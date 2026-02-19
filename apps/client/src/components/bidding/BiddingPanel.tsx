@@ -87,90 +87,152 @@ export function BiddingPanel({
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       }}
     >
-      {isMyTurn && !hasBid ? (
-        !cardsRevealed ? (
-          <div
-            style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}
-          >
-            <Button variant="secondary" onClick={handleBlindNilBid}>
+      {hasBid ? (
+        <div
+          style={{
+            textAlign: 'center',
+            color: '#6b7280',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <div>
+            Your bid:{' '}
+            <strong>
+              {myBid?.isBlindNil
+                ? 'Blind Nil'
+                : myBid?.isNil
+                  ? 'Nil'
+                  : myBid?.bid}
+            </strong>
+          </div>
+          {gameState.currentPlayerPosition != null && (
+            <div style={{ fontSize: '14px' }}>
+              Waiting for{' '}
+              {
+                gameState.players.find(
+                  (p) => p.position === gameState.currentPlayerPosition
+                )?.nickname
+              }{' '}
+              to bid...
+            </div>
+          )}
+        </div>
+      ) : !cardsRevealed ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <Button
+              variant="secondary"
+              onClick={handleBlindNilBid}
+              disabled={!isMyTurn}
+            >
               Bid Blind Nil
             </Button>
             <Button onClick={handleSeeCards}>See Cards</Button>
           </div>
-        ) : (
-          <>
-            <div style={{ marginBottom: '16px' }}>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                }}
-              >
-                Select your bid:
-              </div>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: '8px',
-                }}
-              >
-                {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => {
-                  const isDisabled =
-                    bid > maxAllowedBid ||
-                    (gameState.disabledBids?.includes(bid) ?? false);
-                  return (
-                    <button
-                      key={bid}
-                      onClick={() => !isDisabled && setSelectedBid(bid)}
-                      disabled={isDisabled}
-                      style={{
-                        padding: '12px',
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        backgroundColor:
-                          selectedBid === bid ? '#3b82f6' : '#f3f4f6',
-                        color: selectedBid === bid ? '#fff' : '#374151',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: isDisabled ? 'not-allowed' : 'pointer',
-                        opacity: isDisabled ? 0.4 : 1,
-                      }}
-                    >
-                      {bid}
-                    </button>
-                  );
-                })}
-              </div>
+          <div
+            style={{
+              fontSize: '14px',
+              color: isMyTurn ? '#3b82f6' : '#6b7280',
+            }}
+          >
+            {isMyTurn ? (
+              "It's your turn to bid!"
+            ) : (
+              <>
+                Waiting for{' '}
+                {
+                  gameState.players.find(
+                    (p) => p.position === gameState.currentPlayerPosition
+                  )?.nickname
+                }{' '}
+                to bid...
+              </>
+            )}
+          </div>
+        </div>
+      ) : isMyTurn ? (
+        <>
+          <div style={{ marginBottom: '16px' }}>
+            <div
+              style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginBottom: '8px',
+              }}
+            >
+              Select your bid:
             </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, 1fr)',
+                gap: '8px',
+              }}
+            >
+              {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => {
+                const isDisabled =
+                  bid > maxAllowedBid ||
+                  (gameState.disabledBids?.includes(bid) ?? false);
+                return (
+                  <button
+                    key={bid}
+                    onClick={() => !isDisabled && setSelectedBid(bid)}
+                    disabled={isDisabled}
+                    style={{
+                      padding: '12px',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      backgroundColor:
+                        selectedBid === bid ? '#3b82f6' : '#f3f4f6',
+                      color: selectedBid === bid ? '#fff' : '#374151',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
+                      opacity: isDisabled ? 0.4 : 1,
+                    }}
+                  >
+                    {bid}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={handleNilBid}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  backgroundColor: selectedBid === 0 ? '#3b82f6' : '#f3f4f6',
-                  color: selectedBid === 0 ? '#fff' : '#374151',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                }}
-              >
-                Nil
-              </button>
-              <Button
-                onClick={handleSubmitBid}
-                disabled={selectedBid === null}
-                style={{ flex: 1 }}
-              >
-                Submit Bid
-              </Button>
-            </div>
-          </>
-        )
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={handleNilBid}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: 600,
+                backgroundColor: selectedBid === 0 ? '#3b82f6' : '#f3f4f6',
+                color: selectedBid === 0 ? '#fff' : '#374151',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+              }}
+            >
+              Nil
+            </button>
+            <Button
+              onClick={handleSubmitBid}
+              disabled={selectedBid === null}
+              style={{ flex: 1 }}
+            >
+              Submit Bid
+            </Button>
+          </div>
+        </>
       ) : (
         <div
           style={{
@@ -179,28 +241,13 @@ export function BiddingPanel({
             padding: '20px',
           }}
         >
-          {hasBid ? (
-            <>
-              Your bid:{' '}
-              <strong>
-                {myBid?.isBlindNil
-                  ? 'Blind Nil'
-                  : myBid?.isNil
-                    ? 'Nil'
-                    : myBid?.bid}
-              </strong>
-            </>
-          ) : (
-            <>
-              Waiting for{' '}
-              {
-                gameState.players.find(
-                  (p) => p.position === gameState.currentPlayerPosition
-                )?.nickname
-              }{' '}
-              to bid...
-            </>
-          )}
+          Waiting for{' '}
+          {
+            gameState.players.find(
+              (p) => p.position === gameState.currentPlayerPosition
+            )?.nickname
+          }{' '}
+          to bid...
         </div>
       )}
     </div>

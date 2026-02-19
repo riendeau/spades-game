@@ -55,19 +55,12 @@ export async function completeAllBids(
  * Finds which page currently has bidding controls visible.
  */
 async function findCurrentBidder(pages: Page[]): Promise<Page> {
-  // Poll until one page shows bidding controls
+  // Poll until one page shows "It's your turn to bid!" (only shown for the active bidder, pre-reveal)
   for (let attempt = 0; attempt < 30; attempt++) {
     for (const page of pages) {
-      // Check for "See Cards" button (pre-reveal) or "Submit Bid" button (post-reveal)
-      const seeCards = page.getByRole('button', { name: 'See Cards' });
-      const bidNil = page.getByRole('button', { name: 'Nil' });
-      const blindNil = page.getByRole('button', { name: 'Bid Blind Nil' });
+      const yourTurn = page.getByText("It's your turn to bid!");
 
-      if (
-        (await seeCards.isVisible({ timeout: 100 }).catch(() => false)) ||
-        (await bidNil.isVisible({ timeout: 100 }).catch(() => false)) ||
-        (await blindNil.isVisible({ timeout: 100 }).catch(() => false))
-      ) {
+      if (await yourTurn.isVisible({ timeout: 100 }).catch(() => false)) {
         return page;
       }
     }
