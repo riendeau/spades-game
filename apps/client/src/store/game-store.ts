@@ -6,6 +6,11 @@ import type {
 } from '@spades/shared';
 import { create } from 'zustand';
 
+export interface TrickPlay {
+  playerId: string;
+  card: Card;
+}
+
 interface GameStore {
   // Session state
   roomId: string | null;
@@ -19,6 +24,7 @@ interface GameStore {
 
   // UI state
   lastTrickWinner: string | null;
+  lastTrick: TrickPlay[] | null;
   roundSummary: RoundSummary | null;
   error: string | null;
   gameEnded: {
@@ -39,6 +45,8 @@ interface GameStore {
   removeCard: (card: Card) => void;
   setTrickWinner: (winnerId: string) => void;
   clearTrickWinner: () => void;
+  setLastTrick: (plays: TrickPlay[]) => void;
+  clearLastTrick: () => void;
   setRoundSummary: (summary: RoundSummary) => void;
   clearRoundSummary: () => void;
   setError: (error: string | null) => void;
@@ -58,6 +66,7 @@ const initialState = {
   gameState: null,
   myHand: [],
   lastTrickWinner: null,
+  lastTrick: null,
   roundSummary: null,
   error: null,
   gameEnded: null,
@@ -86,6 +95,10 @@ export const useGameStore = create<GameStore>((set) => ({
   setTrickWinner: (winnerId) => set({ lastTrickWinner: winnerId }),
 
   clearTrickWinner: () => set({ lastTrickWinner: null }),
+
+  setLastTrick: (plays) => set({ lastTrick: plays }),
+
+  clearLastTrick: () => set({ lastTrick: null }),
 
   setRoundSummary: (summary) => set({ roundSummary: summary }),
 

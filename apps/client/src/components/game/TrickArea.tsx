@@ -4,6 +4,7 @@ import type {
   Card as CardType,
 } from '@spades/shared';
 import React from 'react';
+import { useGameStore } from '../../store/game-store';
 import { Card } from '../ui/Card';
 
 interface TrickAreaProps {
@@ -11,19 +12,16 @@ interface TrickAreaProps {
   myPosition: Position;
 }
 
-const POSITION_OFFSETS: Record<
-  Position,
-  { top?: string; bottom?: string; left?: string; right?: string }
-> = {
-  0: { bottom: '20px', left: '50%' },
-  1: { top: '50%', left: '20px' },
-  2: { top: '20px', left: '50%' },
-  3: { top: '50%', right: '20px' },
-};
-
 export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
+  const lastTrick = useGameStore((s) => s.lastTrick);
   const trick = gameState.currentRound?.currentTrick;
   if (!trick) return null;
+
+  // After the 4th card, currentTrick is cleared by game:state-update while
+  // lastTrick briefly holds the completed plays for visibility.
+  const playsToShow = trick.plays.length > 0 ? trick.plays : (lastTrick ?? []);
+
+  if (playsToShow.length === 0) return null;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -49,7 +47,7 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
         margin: '0 auto',
       }}
     >
-      {trick.plays.map((play) => {
+      {playsToShow.map((play) => {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
 

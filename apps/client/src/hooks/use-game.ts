@@ -16,6 +16,11 @@ export function useGame() {
   useEffect(() => {
     if (!socket) return;
 
+    // Tracks the most recently played card so game:trick-won can include it
+    // in lastTrick (the 4th card is never in currentTrick.plays on the client
+    // because the server runs COLLECT_TRICK before sending game:state-update).
+    let lastCardPlayed: { playerId: string; card: Card } | null = null;
+
     socket.on('room:created', ({ roomId, sessionToken }) => {
       store.setSession(roomId, sessionToken, 0);
       saveSession(roomId, sessionToken);
@@ -34,11 +39,26 @@ export function useGame() {
       store.setHand(hand);
     });
 
-    socket.on('game:card-played', ({ card }) => {
+    socket.on('game:card-played', ({ playerId, card }) => {
       store.removeCard(card);
+      lastCardPlayed = { playerId, card };
     });
 
     socket.on('game:trick-won', ({ winnerId }) => {
+      // Build the full 4-card trick: the 3 plays already in state + the 4th
+      // card captured from game:card-played (which fires just before this).
+      const currentPlays =
+        useGameStore.getState().gameState?.currentRound?.currentTrick?.plays ??
+        [];
+      const allPlays = lastCardPlayed
+        ? [...currentPlays, lastCardPlayed]
+        : currentPlays;
+      lastCardPlayed = null;
+
+      if (allPlays.length > 0) {
+        store.setLastTrick(allPlays);
+        setTimeout(() => store.clearLastTrick(), 1500);
+      }
       store.setTrickWinner(winnerId);
       setTimeout(() => store.clearTrickWinner(), 2000);
     });
