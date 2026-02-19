@@ -52,7 +52,8 @@ export type GameAction =
   | { type: 'PLAY_CARD'; playerId: PlayerId; card: Card }
   | { type: 'COLLECT_TRICK' }
   | { type: 'END_ROUND' }
-  | { type: 'START_NEXT_ROUND' };
+  | { type: 'START_NEXT_ROUND' }
+  | { type: 'PLAYER_CHANGE_SEAT'; playerId: PlayerId; newPosition: Position };
 
 export interface ActionResult {
   state: GameState;
@@ -132,6 +133,13 @@ export function processAction(
 
     case 'START_NEXT_ROUND':
       return handleStartNextRound(newState);
+
+    case 'PLAYER_CHANGE_SEAT':
+      return handlePlayerChangeSeat(
+        newState,
+        action.playerId,
+        action.newPosition
+      );
 
     default:
       return { state, valid: false, error: 'Unknown action' };
@@ -552,6 +560,46 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
     },
     valid: true,
     sideEffects,
+  };
+}
+
+function handlePlayerChangeSeat(
+  state: GameState,
+  playerId: PlayerId,
+  newPosition: Position
+): ActionResult {
+  if (state.phase !== 'waiting') {
+    return {
+      state,
+      valid: false,
+      error: 'Cannot change seat after game started',
+    };
+  }
+
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex === -1) {
+    return { state, valid: false, error: 'Player not found' };
+  }
+
+  const player = state.players[playerIndex];
+  if (player.ready) {
+    return { state, valid: false, error: 'Cannot change seat after readying' };
+  }
+
+  if (state.players.some((p) => p.position === newPosition)) {
+    return { state, valid: false, error: 'Seat already occupied' };
+  }
+
+  const newPlayers = [...state.players];
+  newPlayers[playerIndex] = {
+    ...player,
+    position: newPosition,
+    team: getTeamForPosition(newPosition),
+  };
+
+  return {
+    state: { ...state, players: newPlayers },
+    valid: true,
   };
 }
 

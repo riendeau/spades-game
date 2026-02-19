@@ -2,6 +2,7 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
   Card,
+  Position,
 } from '@spades/shared';
 import { validatePlay, validateBid } from '@spades/shared';
 import { type Server, type Socket } from 'socket.io';
@@ -42,6 +43,10 @@ export function setupSocketHandlers(io: TypedServer): void {
 
     socket.on('player:reconnect', ({ sessionToken, roomId }) => {
       handleReconnect(socket, io, sessionToken, roomId);
+    });
+
+    socket.on('player:change-seat', ({ newPosition }) => {
+      handleChangeSeat(socket, io, newPosition);
     });
 
     socket.on('disconnect', () => {
@@ -441,6 +446,43 @@ function handleReconnect(
     .to(roomId)
     .emit('room:player-reconnected', { playerId: session.playerId });
   io.to(roomId).emit('game:state-update', { state: room.game.toClientState() });
+}
+
+function handleChangeSeat(
+  socket: TypedSocket,
+  io: TypedServer,
+  newPosition: Position
+): void {
+  const session = roomManager.getSessionBySocketId(socket.id);
+  if (!session) {
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(session.roomId);
+  if (!room) {
+    socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+    return;
+  }
+
+  const result = room.game.movePlayerToSeat(session.playerId, newPosition);
+  if (!result.valid) {
+    socket.emit('error', {
+      code: 'SEAT_CHANGE_FAILED',
+      message: result.error || 'Failed to change seat',
+    });
+    return;
+  }
+
+  roomManager.touchRoom(room.id);
+
+  socket.emit('room:seat-changed', { newPosition });
+  io.to(room.id).emit('game:state-update', {
+    state: room.game.toClientState(),
+  });
 }
 
 function handleDisconnect(socket: TypedSocket, io: TypedServer): void {

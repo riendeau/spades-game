@@ -46,6 +46,7 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
   }) => void;
+  setMyPosition: (position: Position) => void;
   revealCards: () => void;
   reset: () => void;
 }
@@ -94,6 +95,8 @@ export const useGameStore = create<GameStore>((set) => ({
   setError: (error) => set({ error }),
 
   setGameEnded: (data) => set({ gameEnded: data }),
+
+  setMyPosition: (position) => set({ myPosition: position }),
 
   revealCards: () => set({ cardsRevealed: true }),
 

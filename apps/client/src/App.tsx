@@ -23,6 +23,7 @@ export function App() {
     makeBid,
     playCard,
     leaveRoom,
+    changeSeat,
     clearRoundSummary,
     revealCards,
     reset,
@@ -99,6 +100,7 @@ export function App() {
           myPosition={myPosition}
           onReady={setReady}
           onLeave={leaveRoom}
+          onChangeSeat={changeSeat}
         />
       </div>
     );

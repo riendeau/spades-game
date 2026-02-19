@@ -8,6 +8,7 @@ interface WaitingRoomProps {
   myPosition: Position;
   onReady: () => void;
   onLeave: () => void;
+  onChangeSeat: (position: Position) => void;
 }
 
 const POSITION_LABELS: Record<Position, string> = {
@@ -59,10 +60,12 @@ function PlayerSlot({
   position: pos,
   gameState,
   myPosition,
+  onSitHere,
 }: {
   position: Position;
   gameState: ClientGameState;
   myPosition: Position;
+  onSitHere?: () => void;
 }) {
   const player = gameState.players.find((p) => p.position === pos);
   const isMe = pos === myPosition;
@@ -75,7 +78,7 @@ function PlayerSlot({
         backgroundColor: player ? '#fff' : '#f9fafb',
         border: `2px solid ${player ? TEAM_COLORS[player.team] : '#e5e7eb'}`,
         borderRadius: '12px',
-        opacity: player ? 1 : 0.6,
+        opacity: player || onSitHere ? 1 : 0.6,
       }}
     >
       <div
@@ -106,6 +109,22 @@ function PlayerSlot({
             {player.nickname}
             {isMe && <span style={{ color: '#6b7280' }}> (you)</span>}
           </>
+        ) : onSitHere ? (
+          <button
+            onClick={onSitHere}
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#3b82f6',
+              background: 'none',
+              border: '1px solid #3b82f6',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            Sit here
+          </button>
         ) : (
           <span style={{ color: '#9ca3af' }}>Waiting...</span>
         )}
@@ -130,9 +149,17 @@ export function WaitingRoom({
   myPosition,
   onReady,
   onLeave,
+  onChangeSeat,
 }: WaitingRoomProps) {
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
+
+  const getSitHereHandler = (pos: Position) => {
+    if (pos === myPosition || isReady) return undefined;
+    const occupied = gameState.players.some((p) => p.position === pos);
+    if (occupied) return undefined;
+    return () => onChangeSeat(pos);
+  };
   const autoReadyTabsClicked = useRef(false);
 
   const shareableUrl = `${window.location.origin}/room/${roomId}`;
@@ -301,6 +328,7 @@ export function WaitingRoom({
             position={2}
             gameState={gameState}
             myPosition={myPosition}
+            onSitHere={getSitHereHandler(2)}
           />
         </div>
         {/* West and East */}
@@ -309,11 +337,13 @@ export function WaitingRoom({
             position={1}
             gameState={gameState}
             myPosition={myPosition}
+            onSitHere={getSitHereHandler(1)}
           />
           <PlayerSlot
             position={3}
             gameState={gameState}
             myPosition={myPosition}
+            onSitHere={getSitHereHandler(3)}
           />
         </div>
         {/* South */}
@@ -322,6 +352,7 @@ export function WaitingRoom({
             position={0}
             gameState={gameState}
             myPosition={myPosition}
+            onSitHere={getSitHereHandler(0)}
           />
         </div>
       </div>
