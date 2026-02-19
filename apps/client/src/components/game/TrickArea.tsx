@@ -42,6 +42,7 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
 
   return (
     <div
+      data-testid="trick-area"
       style={{
         position: 'relative',
         width: '250px',
@@ -63,7 +64,7 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
               ...getPositionStyle(relPos),
             }}
           >
-            <Card card={play.card} small />
+            <Card card={play.card} small testId="trick-card" />
           </div>
         );
       })}
