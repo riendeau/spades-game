@@ -323,61 +323,78 @@ function handlePlayCard(
     card,
   });
 
-  // Check for side effects
-  if (result.sideEffects) {
-    for (const effect of result.sideEffects) {
-      if (effect.type === 'TRICK_COMPLETE') {
-        io.to(room.id).emit('game:trick-won', {
-          winnerId: effect.winnerId,
-          trickNumber: effect.trickNumber,
-        });
-      }
+  const trickComplete = result.sideEffects?.find(
+    (e) => e.type === 'TRICK_COMPLETE'
+  );
 
-      if (effect.type === 'ROUND_COMPLETE') {
-        io.to(room.id).emit('game:round-end', {
-          scores: room.game.getState().scores,
-          roundSummary: effect.summary,
-        });
-
-        // If game not over, start next round after delay
-        if (room.game.getState().phase !== 'game-end') {
-          setTimeout(() => {
-            const nextResult = room.game.startNextRound();
-            if (nextResult.valid) {
-              // Send hands to each player
-              for (const player of room.game.getState().players) {
-                const playerSession = Array.from(
-                  roomManager.getAllSessions()
-                ).find((s) => s.playerId === player.id && s.roomId === room.id);
-
-                if (playerSession?.socketId) {
-                  const hand = room.game.getPlayerHand(player.id);
-                  io.to(playerSession.socketId).emit('game:cards-dealt', {
-                    hand,
-                  });
-                }
-              }
-
-              io.to(room.id).emit('game:state-update', {
-                state: room.game.toClientState(),
-              });
-            }
-          }, 3000);
-        }
-      }
-
-      if (effect.type === 'GAME_COMPLETE') {
-        io.to(room.id).emit('game:ended', {
-          winningTeam: effect.winner,
-          finalScores: room.game.getState().scores,
-        });
-      }
-    }
+  if (trickComplete) {
+    io.to(room.id).emit('game:trick-won', {
+      winnerId: trickComplete.winnerId,
+      trickNumber: trickComplete.trickNumber,
+    });
   }
 
+  // Broadcast state with the trick-end phase — all 4 cards are visible in
+  // currentTrick.plays. If the trick is not complete this is the normal update.
   io.to(room.id).emit('game:state-update', {
     state: room.game.toClientState(),
   });
+
+  if (trickComplete) {
+    // After a short delay so players can see all 4 cards, collect the trick
+    // and process any round/game-end side effects.
+    setTimeout(() => {
+      const collectResult = room.game.collectTrick();
+
+      for (const effect of collectResult.sideEffects ?? []) {
+        if (effect.type === 'ROUND_COMPLETE') {
+          io.to(room.id).emit('game:round-end', {
+            scores: room.game.getState().scores,
+            roundSummary: effect.summary,
+          });
+
+          // If game not over, start next round after an additional delay
+          if (room.game.getState().phase !== 'game-end') {
+            setTimeout(() => {
+              const nextResult = room.game.startNextRound();
+              if (nextResult.valid) {
+                for (const player of room.game.getState().players) {
+                  const playerSession = Array.from(
+                    roomManager.getAllSessions()
+                  ).find(
+                    (s) => s.playerId === player.id && s.roomId === room.id
+                  );
+
+                  if (playerSession?.socketId) {
+                    const hand = room.game.getPlayerHand(player.id);
+                    io.to(playerSession.socketId).emit('game:cards-dealt', {
+                      hand,
+                    });
+                  }
+                }
+
+                io.to(room.id).emit('game:state-update', {
+                  state: room.game.toClientState(),
+                });
+              }
+            }, 3000);
+          }
+        }
+
+        if (effect.type === 'GAME_COMPLETE') {
+          io.to(room.id).emit('game:ended', {
+            winningTeam: effect.winner,
+            finalScores: room.game.getState().scores,
+          });
+        }
+      }
+
+      // Broadcast the cleared trick (or new round state)
+      io.to(room.id).emit('game:state-update', {
+        state: room.game.toClientState(),
+      });
+    }, 1500);
+  }
 }
 
 function handleReconnect(

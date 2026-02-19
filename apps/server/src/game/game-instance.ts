@@ -229,56 +229,55 @@ export class GameInstance {
         (c) => !(c.suit === card.suit && c.rank === card.rank)
       );
       this.playerHands.set(playerId, newHand);
-
-      // If trick ended, collect it
-      if (this.state.phase === 'trick-end') {
-        const collectResult = this.dispatch({ type: 'COLLECT_TRICK' });
-
-        // If round ended, process scoring
-        const phaseAfterCollect = this.getState().phase;
-        let endRoundSideEffects: SideEffect[] = [];
-        if (phaseAfterCollect === 'round-end') {
-          const endRoundResult = this.dispatch({ type: 'END_ROUND' });
-          endRoundSideEffects = endRoundResult.sideEffects ?? [];
-
-          // Execute mod round-end hooks
-          const roundSummary = endRoundSideEffects.find(
-            (e): e is Extract<SideEffect, { type: 'ROUND_COMPLETE' }> =>
-              e.type === 'ROUND_COMPLETE'
-          )?.summary;
-
-          if (roundSummary) {
-            for (const modId of hookExecutor.getAllModIds()) {
-              const hookResult = hookExecutor.executeRoundEnd(
-                {
-                  gameState: this.state,
-                  config: this.config,
-                  roundSummary,
-                  modState: this.getModState(modId),
-                },
-                modId
-              );
-
-              if (hookResult.modState !== undefined) {
-                this.setModState(modId, hookResult.modState);
-              }
-            }
-          }
-        }
-
-        return {
-          ...result,
-          state: this.state,
-          sideEffects: [
-            ...(result.sideEffects ?? []),
-            ...(collectResult.sideEffects ?? []),
-            ...endRoundSideEffects,
-          ],
-        };
-      }
     }
 
     return result;
+  }
+
+  // Dispatches COLLECT_TRICK (and END_ROUND if the round is over). Must only
+  // be called when the game is in the 'trick-end' phase — i.e. after playCard()
+  // has returned a result containing a TRICK_COMPLETE side effect.
+  collectTrick(): ActionResult {
+    const collectResult = this.dispatch({ type: 'COLLECT_TRICK' });
+
+    // If round ended, process scoring and run mod hooks
+    let endRoundSideEffects: SideEffect[] = [];
+    if (this.getState().phase === 'round-end') {
+      const endRoundResult = this.dispatch({ type: 'END_ROUND' });
+      endRoundSideEffects = endRoundResult.sideEffects ?? [];
+
+      const roundSummary = endRoundSideEffects.find(
+        (e): e is Extract<SideEffect, { type: 'ROUND_COMPLETE' }> =>
+          e.type === 'ROUND_COMPLETE'
+      )?.summary;
+
+      if (roundSummary) {
+        for (const modId of hookExecutor.getAllModIds()) {
+          const hookResult = hookExecutor.executeRoundEnd(
+            {
+              gameState: this.state,
+              config: this.config,
+              roundSummary,
+              modState: this.getModState(modId),
+            },
+            modId
+          );
+
+          if (hookResult.modState !== undefined) {
+            this.setModState(modId, hookResult.modState);
+          }
+        }
+      }
+    }
+
+    return {
+      ...collectResult,
+      state: this.state,
+      sideEffects: [
+        ...(collectResult.sideEffects ?? []),
+        ...endRoundSideEffects,
+      ],
+    };
   }
 
   startNextRound(): ActionResult {
