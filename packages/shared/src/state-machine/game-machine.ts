@@ -163,7 +163,10 @@ function handlePlayerJoin(
     return { state, valid: false, error: 'Player already in game' };
   }
 
-  const position = state.players.length as Position;
+  const occupiedPositions = new Set(state.players.map((p) => p.position));
+  const position = ([0, 1, 2, 3] as Position[]).find(
+    (p) => !occupiedPositions.has(p)
+  )!;
   const team = getTeamForPosition(position);
 
   const newPlayer: Player = {
