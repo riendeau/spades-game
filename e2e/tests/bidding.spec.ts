@@ -12,21 +12,17 @@ test.describe('Bidding', () => {
   }) => {
     const { players } = fourPlayerBidding;
 
-    // Exactly one player should see bidding controls (See Cards or bid grid)
-    let biddersCount = 0;
+    // Exactly one player should see "It's your turn to bid!"
+    let activeBidderCount = 0;
     for (const page of players) {
-      const seeCards = page.getByRole('button', { name: 'See Cards' });
-      const blindNil = page.getByRole('button', { name: 'Bid Blind Nil' });
-      if (
-        (await seeCards.isVisible({ timeout: 2_000 }).catch(() => false)) ||
-        (await blindNil.isVisible({ timeout: 500 }).catch(() => false))
-      ) {
-        biddersCount++;
+      const yourTurn = page.getByText("It's your turn to bid!");
+      if (await yourTurn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        activeBidderCount++;
       }
     }
-    expect(biddersCount).toBe(1);
+    expect(activeBidderCount).toBe(1);
 
-    // Other players should see "Waiting for ... to bid..."
+    // Other 3 players should see "Waiting for ... to bid..."
     let waitingCount = 0;
     for (const page of players) {
       const waiting = page.getByText(/Waiting for .+ to bid/);
@@ -41,16 +37,11 @@ test.describe('Bidding', () => {
     const { players } = fourPlayerBidding;
 
     // Find the current bidder and place a bid
-    for (const page of players) {
-      const seeCards = page.getByRole('button', { name: 'See Cards' });
-      if (await seeCards.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await placeBid(page, 3);
+    const bidder = await findCurrentBidder(players);
+    await placeBid(bidder, 3);
 
-        // Should now show "Your bid: 3"
-        await expect(page.getByText('Your bid:')).toBeVisible();
-        break;
-      }
-    }
+    // Should now show "Your bid: 3"
+    await expect(bidder.getByText('Your bid:')).toBeVisible();
   });
 
   test('player can bid blind nil before seeing cards', async ({
@@ -59,16 +50,11 @@ test.describe('Bidding', () => {
     const { players } = fourPlayerBidding;
 
     // Find the current bidder
-    for (const page of players) {
-      const blindNilBtn = page.getByRole('button', { name: 'Bid Blind Nil' });
-      if (await blindNilBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await placeBlindNilBid(page);
+    const bidder = await findCurrentBidder(players);
+    await placeBlindNilBid(bidder);
 
-        // Should show "Your bid: Blind Nil"
-        await expect(page.getByText('My Bid: Blind Nil')).toBeVisible();
-        break;
-      }
-    }
+    // Should show "Your bid: Blind Nil"
+    await expect(bidder.getByText(/Your bid:.*Blind Nil/)).toBeVisible();
   });
 
   test('player can bid nil after seeing cards', async ({
@@ -77,16 +63,11 @@ test.describe('Bidding', () => {
     const { players } = fourPlayerBidding;
 
     // Find the current bidder
-    for (const page of players) {
-      const seeCards = page.getByRole('button', { name: 'See Cards' });
-      if (await seeCards.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await placeNilBid(page);
+    const bidder = await findCurrentBidder(players);
+    await placeNilBid(bidder);
 
-        // Should show nil confirmation
-        await expect(page.getByText(/Your bid:.*Nil/)).toBeVisible();
-        break;
-      }
-    }
+    // Should show nil confirmation
+    await expect(bidder.getByText(/Your bid:.*Nil/)).toBeVisible();
   });
 
   test('all 4 bids transitions to playing phase', async ({
@@ -289,19 +270,12 @@ test.describe('Bidding', () => {
  * Exported to avoid duplication with bidding-helpers.ts
  */
 async function findCurrentBidder(pages: Page[]): Promise<Page> {
-  // Poll until one page shows bidding controls
+  // Poll until one page shows "It's your turn to bid!" (only shown for the active bidder, pre-reveal)
   for (let attempt = 0; attempt < 30; attempt++) {
     for (const page of pages) {
-      // Check for "See Cards" button (pre-reveal) or "Submit Bid" button (post-reveal)
-      const seeCards = page.getByRole('button', { name: 'See Cards' });
-      const bidNil = page.getByRole('button', { name: 'Nil' });
-      const blindNil = page.getByRole('button', { name: 'Bid Blind Nil' });
+      const yourTurn = page.getByText("It's your turn to bid!");
 
-      if (
-        (await seeCards.isVisible({ timeout: 100 }).catch(() => false)) ||
-        (await bidNil.isVisible({ timeout: 100 }).catch(() => false)) ||
-        (await blindNil.isVisible({ timeout: 100 }).catch(() => false))
-      ) {
+      if (await yourTurn.isVisible({ timeout: 100 }).catch(() => false)) {
         return page;
       }
     }
