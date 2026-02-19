@@ -72,6 +72,7 @@ function PlayerSlot({
 
   return (
     <div
+      data-testid={`seat-${pos}`}
       style={{
         flex: 1,
         padding: '16px',
