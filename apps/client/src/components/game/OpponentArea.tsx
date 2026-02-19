@@ -65,7 +65,8 @@ export function OpponentArea({
         </div>
         {bid && (
           <div style={{ fontSize: '12px', marginTop: '4px' }}>
-            Bid: {bid.isNil ? 'Nil' : bid.bid} | Won: {tricksWon}
+            Bid: {bid.isBlindNil ? 'BNL' : bid.isNil ? 'Nil' : bid.bid} | Won:{' '}
+            {tricksWon}
           </div>
         )}
         {!player.connected && (
