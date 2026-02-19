@@ -177,7 +177,6 @@ export function GameTable({
             onSelectCard={setSelectedCard}
             faceDown={isBidding && !cardsRevealed}
             playableCards={playableCards}
-            isBiddingPhase={isBidding && cardsRevealed}
           />
 
           {!isBidding && (
