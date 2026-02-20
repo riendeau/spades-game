@@ -35,9 +35,13 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
     null
   );
   const [isSliding, setIsSliding] = useState(false);
+  // Tracks whether the CSS transition has visually completed. Using a ref
+  // avoids triggering extra re-renders; the cleanup effect reads it on demand.
+  const animationDoneRef = useRef(false);
 
   const trick = gameState.currentRound?.currentTrick;
 
+  // Start the slide animation when a trick winner is announced.
   useEffect(() => {
     if (!lastTrickWinner || !lastTrickPlays || lastTrickPlays.length === 0)
       return;
@@ -49,6 +53,7 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
       4) as Position;
 
     let cancelled = false;
+    animationDoneRef.current = false;
 
     setAnimatingTrick({ plays: lastTrickPlays, winnerRelPos });
     setIsSliding(false);
@@ -61,12 +66,13 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
       });
     });
 
+    // Mark animation visually complete after the CSS transition finishes.
+    // We do NOT clear animatingTrick here — we wait for the server's
+    // game:state-update (at ~1500ms) to empty currentTrick.plays first,
+    // which prevents the cards from flashing back at their original positions.
     const timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        setAnimatingTrick(null);
-        setIsSliding(false);
-      }
-    }, 700);
+      if (!cancelled) animationDoneRef.current = true;
+    }, 600);
 
     return () => {
       cancelled = true;
@@ -74,6 +80,19 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
       clearTimeout(timeoutId);
     };
   }, [lastTrickWinner]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear the frozen animation once the CSS transition is done AND the server
+  // has emptied currentTrick.plays. This prevents the flash that occurs when
+  // animatingTrick is cleared while the server still has the old plays.
+  const trickPlaysLength = trick?.plays.length ?? 0;
+  useEffect(() => {
+    if (!animatingTrick || !animationDoneRef.current) return;
+    if (trickPlaysLength === 0) {
+      setAnimatingTrick(null);
+      setIsSliding(false);
+      animationDoneRef.current = false;
+    }
+  }, [animatingTrick, trickPlaysLength]);
 
   const getRelativePosition = (pos: Position): Position => {
     return ((((pos - myPosition) % 4) + 4) % 4) as Position;
