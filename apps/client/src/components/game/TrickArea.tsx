@@ -55,27 +55,35 @@ export function TrickArea({ gameState, myPosition }: TrickAreaProps) {
     let cancelled = false;
     animationDoneRef.current = false;
 
-    setAnimatingTrick({ plays: lastTrickPlays, winnerRelPos });
-    setIsSliding(false);
+    let raf1: number;
 
-    // Double rAF: first frame paints cards at their normal positions,
-    // second frame triggers the CSS transition toward the winner.
-    const raf1 = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!cancelled) setIsSliding(true);
+    // Pause 500ms so the 4th card is visible before the slide begins.
+    const pauseId = setTimeout(() => {
+      if (cancelled) return;
+
+      setAnimatingTrick({ plays: lastTrickPlays, winnerRelPos });
+      setIsSliding(false);
+
+      // Double rAF: first frame paints cards at their normal positions,
+      // second frame triggers the CSS transition toward the winner.
+      raf1 = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelled) setIsSliding(true);
+        });
       });
-    });
+    }, 500);
 
-    // Mark animation visually complete after the CSS transition finishes.
+    // Mark animation visually complete after the pause + CSS transition.
     // We do NOT clear animatingTrick here — we wait for the server's
     // game:state-update (at ~1500ms) to empty currentTrick.plays first,
     // which prevents the cards from flashing back at their original positions.
     const timeoutId = setTimeout(() => {
       if (!cancelled) animationDoneRef.current = true;
-    }, 600);
+    }, 500 + 600);
 
     return () => {
       cancelled = true;
+      clearTimeout(pauseId);
       cancelAnimationFrame(raf1);
       clearTimeout(timeoutId);
     };
