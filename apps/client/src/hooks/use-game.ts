@@ -39,7 +39,12 @@ export function useGame() {
     });
 
     socket.on('game:trick-won', ({ winnerId }) => {
-      store.setTrickWinner(winnerId);
+      // Capture plays synchronously from current store state before any
+      // subsequent game:state-update can clear currentTrick.plays
+      const plays =
+        useGameStore.getState().gameState?.currentRound?.currentTrick.plays ??
+        [];
+      store.setTrickWinner(winnerId, plays);
       setTimeout(() => store.clearTrickWinner(), 2000);
     });
 
