@@ -9,6 +9,7 @@ interface BiddingPanelProps {
   cardsRevealed: boolean;
   onBid: (bid: number, isNil?: boolean, isBlindNil?: boolean) => void;
   onRevealCards: () => void;
+  compact?: boolean;
 }
 
 export function BiddingPanel({
@@ -17,6 +18,7 @@ export function BiddingPanel({
   cardsRevealed,
   onBid,
   onRevealCards,
+  compact = false,
 }: BiddingPanelProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
@@ -83,7 +85,7 @@ export function BiddingPanel({
       style={{
         backgroundColor: '#fff',
         borderRadius: '12px',
-        padding: '20px',
+        padding: compact ? '12px' : '20px',
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       }}
     >
@@ -125,11 +127,11 @@ export function BiddingPanel({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px',
+            gap: compact ? '8px' : '12px',
             alignItems: 'center',
           }}
         >
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: compact ? '8px' : '12px' }}>
             <Button
               variant="secondary"
               onClick={handleBlindNilBid}
@@ -175,7 +177,9 @@ export function BiddingPanel({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(7, 1fr)',
+                gridTemplateColumns: compact
+                  ? 'repeat(4, 1fr)'
+                  : 'repeat(7, 1fr)',
                 gap: '8px',
               }}
             >
@@ -189,7 +193,7 @@ export function BiddingPanel({
                     onClick={() => !isDisabled && setSelectedBid(bid)}
                     disabled={isDisabled}
                     style={{
-                      padding: '12px',
+                      padding: compact ? '8px' : '12px',
                       fontSize: '16px',
                       fontWeight: 600,
                       backgroundColor:
@@ -208,11 +212,11 @@ export function BiddingPanel({
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: compact ? '8px' : '12px' }}>
             <button
               onClick={handleNilBid}
               style={{
-                padding: '12px 24px',
+                padding: compact ? '8px 16px' : '12px 24px',
                 fontSize: '16px',
                 fontWeight: 600,
                 backgroundColor: selectedBid === 0 ? '#3b82f6' : '#f3f4f6',

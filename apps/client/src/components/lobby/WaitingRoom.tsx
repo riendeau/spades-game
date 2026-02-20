@@ -1,5 +1,6 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import React, { useEffect, useRef } from 'react';
+import { useIsMobile } from '../../hooks/use-is-mobile';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -152,6 +153,7 @@ export function WaitingRoom({
   onLeave,
   onChangeSeat,
 }: WaitingRoomProps) {
+  const isMobile = useIsMobile();
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
 
@@ -214,7 +216,13 @@ export function WaitingRoom({
   };
 
   return (
-    <div style={{ maxWidth: '500px', margin: '0 auto', padding: '40px 20px' }}>
+    <div
+      style={{
+        maxWidth: '500px',
+        margin: '0 auto',
+        padding: isMobile ? '20px 16px' : '40px 20px',
+      }}
+    >
       <h1
         style={{
           fontSize: '24px',

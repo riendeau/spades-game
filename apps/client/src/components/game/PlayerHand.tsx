@@ -10,6 +10,7 @@ interface PlayerHandProps {
   onSelectCard: (card: CardType | null) => void;
   faceDown?: boolean;
   playableCards?: CardType[];
+  compact?: boolean;
 }
 
 export function PlayerHand({
@@ -20,6 +21,7 @@ export function PlayerHand({
   onSelectCard,
   faceDown = false,
   playableCards,
+  compact = false,
 }: PlayerHandProps) {
   const isCardPlayable = (card: CardType): boolean => {
     if (!isMyTurn) return false;
@@ -57,7 +59,7 @@ export function PlayerHand({
         display: 'flex',
         justifyContent: 'center',
         gap: '-20px',
-        padding: '20px',
+        padding: compact ? '8px' : '20px',
       }}
     >
       {cards.map((card, idx) => {
@@ -68,12 +70,12 @@ export function PlayerHand({
           <div
             key={`${card.suit}-${card.rank}`}
             style={{
-              marginLeft: idx > 0 ? '-25px' : 0,
+              marginLeft: idx > 0 ? (compact ? '-35px' : '-25px') : 0,
               zIndex: isSelected ? 100 : idx,
             }}
           >
             {faceDown ? (
-              <CardBack />
+              <CardBack small={compact} />
             ) : (
               <Card
                 card={card}
@@ -83,6 +85,7 @@ export function PlayerHand({
                 selected={isSelected}
                 testId="hand-card"
                 visuallyDisabled={isMyTurn && !isCardPlayable(card)}
+                small={compact}
               />
             )}
           </div>

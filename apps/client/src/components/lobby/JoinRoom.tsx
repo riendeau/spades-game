@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useIsMobile } from '../../hooks/use-is-mobile';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -19,6 +20,7 @@ export function JoinRoom({
     initialRoomId ? 'join' : 'create'
   );
   const autoJoinAttempted = useRef(false);
+  const isMobile = useIsMobile();
 
   // Auto-join feature: check for autoName query parameter
   useEffect(() => {
@@ -58,7 +60,7 @@ export function JoinRoom({
       style={{
         maxWidth: '400px',
         margin: '0 auto',
-        padding: '40px 20px',
+        padding: isMobile ? '24px 16px' : '40px 20px',
       }}
     >
       <h1
