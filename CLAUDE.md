@@ -121,6 +121,13 @@ This typically happens if:
 - Design system uses hard-coded colors and spacing values
 - **Overlapping elements**: Avoid using `opacity` on elements that overlap (e.g., cards with negative margins). Use CSS filters (`grayscale`, `brightness`) and solid background colors instead to prevent transparency stacking artifacts
 
+### Mobile Responsiveness
+
+- **`useIsMobile` hook** (`apps/client/src/hooks/use-is-mobile.ts`): Returns `true` when `width < 768` **OR** `height < 500`. The height check is critical — landscape-orientation phones have wide viewports (>768px) but short ones (~375px), so a width-only check misses them entirely.
+- **All game components** accept a `compact` prop (passed as `compact={isMobile}` from `GameTable`) — desktop layout is completely unchanged when `isMobile` is false.
+- **`GameTable`** uses `height: 100vh` + `overflow: hidden`, so it fills the viewport exactly regardless of orientation.
+- **`WaitingRoom`** uses a 2×2 seat grid on mobile and the compass layout (North/W+E/South) on desktop. The header (Room Code + Share Link) is a single compact row on both.
+
 ### State Management
 
 - **Zustand store** in `apps/client/src/store/game-store.ts`
@@ -168,6 +175,8 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 - **Card interactions**: Use `[data-testid="hand-card"]` to target hand cards (not trick area cards)
 - **Native vs React events**: Always use Playwright's `.click()`, not `page.evaluate(() => btn.click())`
 - **Bid button clicks**: When clicking bid number buttons, use the `placeBid()` helper from `bidding-helpers.ts` instead of manual `getByRole('button', { name: '5' }).click()`. This prevents "strict mode violations" when hand cards with the same number are visible (e.g., 5 of diamonds). The helper uses more specific selectors and handles the "See Cards" step automatically.
+- **Port conflicts when running E2E locally**: E2E tests start their own dev servers on ports 3001 and 5173. If a preview server or `pnpm dev` is already running on those ports, all tests will fail. Always run `lsof -ti :3001 :5173 | xargs kill` before running E2E tests locally.
+- **UI text changes break E2E assertions**: Tests in `shareable-url.spec.ts` and others assert on visible text labels. When renaming UI strings, grep for the old text in `e2e/` and update assertions to match.
 
 ## Workflow
 
