@@ -8,8 +8,8 @@ test.describe('Shareable URL', () => {
     const page = await createPlayerPage('Alice');
     const roomCode = await createRoom(page, 'Alice');
 
-    // Should show "Share this link:" text
-    await expect(page.getByText('Share this link:')).toBeVisible();
+    // Should show "Share Link:" text
+    await expect(page.getByText('Share Link:')).toBeVisible();
 
     // Should show the URL with the room code in it
     const urlElement = page
@@ -62,8 +62,8 @@ test.describe('Shareable URL', () => {
     const p2 = await context2.newPage();
     await p2.goto(`/room/${roomCode}`);
 
-    // Should be on the join screen
-    await expect(p2.getByText('Play with friends online')).toBeVisible();
+    // Should be on the join screen (Join Game tab is pre-selected when a room code is in the URL)
+    await expect(p2.getByRole('button', { name: 'Join Game' })).toBeVisible();
 
     // The room code field should be visible and pre-filled
     const roomCodeInput = p2.getByPlaceholder('e.g. ABC123');
