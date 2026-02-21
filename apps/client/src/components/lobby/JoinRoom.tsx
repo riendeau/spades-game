@@ -74,15 +74,6 @@ export function JoinRoom({
       >
         {'\u2660'} Spades
       </h1>
-      <p
-        style={{
-          textAlign: 'center',
-          color: '#6b7280',
-          marginBottom: '32px',
-        }}
-      >
-        Play with friends online
-      </p>
 
       <div
         style={{

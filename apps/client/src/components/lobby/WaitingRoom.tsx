@@ -237,116 +237,88 @@ export function WaitingRoom({
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          marginBottom: '32px',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '24px',
+          overflow: 'hidden',
         }}
       >
+        <span
+          style={{ fontSize: '14px', color: '#6b7280', whiteSpace: 'nowrap' }}
+        >
+          Room Code:
+        </span>
+        <code
+          style={{
+            fontSize: '14px',
+            fontWeight: 700,
+            letterSpacing: '2px',
+            color: '#1f2937',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+          onClick={copyRoomCode}
+          title="Click to copy"
+        >
+          {roomId}
+        </code>
+        <span style={{ color: '#d1d5db', flexShrink: 0 }}>·</span>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
+            gap: '4px',
+            cursor: 'pointer',
+            overflow: 'hidden',
+            flex: 1,
+            minWidth: 0,
           }}
+          onClick={copyShareableUrl}
+          title="Click to copy"
         >
-          <span style={{ fontSize: '14px', color: '#6b7280' }}>Room Code:</span>
           <code
             style={{
-              fontSize: '24px',
-              fontWeight: 700,
-              letterSpacing: '3px',
-              padding: '8px 16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '8px',
-              cursor: 'pointer',
+              fontSize: '13px',
+              color: '#3b82f6',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
-            onClick={copyRoomCode}
-            title="Click to copy"
           >
-            {roomId}
+            {shareableUrl}
           </code>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span style={{ fontSize: '14px', color: '#6b7280' }}>
-            Share this link:
-          </span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              maxWidth: '100%',
-            }}
-            onClick={copyShareableUrl}
-            title="Click to copy"
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ flexShrink: 0, color: '#6b7280' }}
           >
-            <code
-              style={{
-                fontSize: '14px',
-                color: '#3b82f6',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {shareableUrl}
-            </code>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ flexShrink: 0, color: '#6b7280' }}
-            >
-              <rect x="3" y="3" width="10" height="10" rx="2" />
-              <path d="M7 3V1h6v6h-2" />
-            </svg>
-          </div>
+            <rect x="3" y="3" width="10" height="10" rx="2" />
+            <path d="M7 3V1h6v6h-2" />
+          </svg>
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '16px',
-          marginBottom: '32px',
-        }}
-      >
-        {/* North */}
-        <div style={{ width: 'calc(50% - 8px)' }}>
+      {isMobile ? (
+        /* 2×2 grid for mobile landscape */
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '12px',
+            marginBottom: '16px',
+          }}
+        >
           <PlayerSlot
             position={2}
             gameState={gameState}
             myPosition={myPosition}
             onSitHere={getSitHereHandler(2)}
-          />
-        </div>
-        {/* West and East */}
-        <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
-          <PlayerSlot
-            position={1}
-            gameState={gameState}
-            myPosition={myPosition}
-            onSitHere={getSitHereHandler(1)}
           />
           <PlayerSlot
             position={3}
@@ -354,17 +326,65 @@ export function WaitingRoom({
             myPosition={myPosition}
             onSitHere={getSitHereHandler(3)}
           />
-        </div>
-        {/* South */}
-        <div style={{ width: 'calc(50% - 8px)' }}>
           <PlayerSlot
             position={0}
             gameState={gameState}
             myPosition={myPosition}
             onSitHere={getSitHereHandler(0)}
           />
+          <PlayerSlot
+            position={1}
+            gameState={gameState}
+            myPosition={myPosition}
+            onSitHere={getSitHereHandler(1)}
+          />
         </div>
-      </div>
+      ) : (
+        /* Compass layout for desktop */
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            marginBottom: '32px',
+          }}
+        >
+          {/* North */}
+          <div style={{ width: 'calc(50% - 8px)' }}>
+            <PlayerSlot
+              position={2}
+              gameState={gameState}
+              myPosition={myPosition}
+              onSitHere={getSitHereHandler(2)}
+            />
+          </div>
+          {/* West and East */}
+          <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+            <PlayerSlot
+              position={1}
+              gameState={gameState}
+              myPosition={myPosition}
+              onSitHere={getSitHereHandler(1)}
+            />
+            <PlayerSlot
+              position={3}
+              gameState={gameState}
+              myPosition={myPosition}
+              onSitHere={getSitHereHandler(3)}
+            />
+          </div>
+          {/* South */}
+          <div style={{ width: 'calc(50% - 8px)' }}>
+            <PlayerSlot
+              position={0}
+              gameState={gameState}
+              myPosition={myPosition}
+              onSitHere={getSitHereHandler(0)}
+            />
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '12px' }}>
         <Button variant="secondary" onClick={onLeave} style={{ flex: 1 }}>
