@@ -263,6 +263,11 @@ export function WaitingRoom({
           {roomId}
         </code>
         <span style={{ color: '#d1d5db', flexShrink: 0 }}>·</span>
+        <span
+          style={{ fontSize: '14px', color: '#6b7280', whiteSpace: 'nowrap' }}
+        >
+          Share Link:
+        </span>
         <div
           style={{
             display: 'flex',
@@ -412,19 +417,6 @@ export function WaitingRoom({
         >
           🚀 Open 3 Auto-Ready Tabs (Dev)
         </Button>
-      )}
-
-      {gameState.players.length < 4 && (
-        <p
-          style={{
-            textAlign: 'center',
-            color: '#6b7280',
-            fontSize: '14px',
-            marginTop: '16px',
-          }}
-        >
-          Share the link or room code with friends to invite them
-        </p>
       )}
     </div>
   );
