@@ -11,6 +11,9 @@ export default defineConfig({
         target: 'http://localhost:3001',
         ws: true,
       },
+      '/auth': {
+        target: 'http://localhost:3001',
+      },
     },
   },
 });

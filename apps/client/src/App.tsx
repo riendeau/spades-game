@@ -1,4 +1,5 @@
 import React from 'react';
+import { LoginGate } from './components/auth/LoginGate';
 import { GameEndModal } from './components/game/GameEndModal';
 import { GameTable } from './components/game/GameTable';
 import { RoundSummaryModal } from './components/game/RoundSummaryModal';
@@ -6,7 +7,7 @@ import { JoinRoom } from './components/lobby/JoinRoom';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
 import { useGame } from './hooks/use-game';
 
-export function App() {
+function AppInner() {
   const {
     connected,
     roomId,
@@ -160,5 +161,13 @@ export function App() {
     >
       Loading...
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <LoginGate>
+      <AppInner />
+    </LoginGate>
   );
 }
