@@ -7,14 +7,6 @@ updates:
       interval: 'weekly'
       day: 'monday'
     open-pull-requests-limit: 10
-    ignore:
-      # Pin @types/node to Node LTS 22.x — keep types aligned with engines.node.
-      # Bump this when the project intentionally moves to a newer LTS.
-      - dependency-name: '@types/node'
-        update-types:
-          - 'version-update:semver-major'
-        versions:
-          - '>=23'
     groups:
       # These packages are always released together at the same version
       typescript-eslint:
