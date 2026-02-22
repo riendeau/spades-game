@@ -4,7 +4,7 @@ A real-time multiplayer Spades card game built with TypeScript, React, and Socke
 
 ## Prerequisites
 
-- Node.js >= 18
+- Node.js >= 24 (LTS)
 - [pnpm](https://pnpm.io/)
 
 ## Getting Started
