@@ -1,6 +1,5 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import React from 'react';
-import { CardBack } from '../ui/Card';
 
 interface OpponentAreaProps {
   gameState: ClientGameState;
@@ -34,7 +33,6 @@ export function OpponentArea({
 
   const isSideOpponent =
     relativePosition === 'left' || relativePosition === 'right';
-  const hideCards = true;
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -47,11 +45,6 @@ export function OpponentArea({
       : 'transparent',
     borderRadius: '12px',
     transition: 'background-color 0.2s',
-  };
-
-  const cardContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: '-15px',
   };
 
   return (
@@ -94,35 +87,6 @@ export function OpponentArea({
           <div style={{ fontSize: '11px', color: '#f59e0b' }}>Disconnected</div>
         )}
       </div>
-
-      {!hideCards && (
-        <div style={cardContainerStyle}>
-          {Array.from({ length: Math.min(player.cardCount, 5) }).map((_, i) => (
-            <div key={i} style={{ marginLeft: i > 0 ? '-30px' : 0 }}>
-              <CardBack small />
-            </div>
-          ))}
-          {player.cardCount > 5 && (
-            <div
-              style={{
-                marginLeft: '-30px',
-                width: '50px',
-                height: '75px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#e5e7eb',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#6b7280',
-              }}
-            >
-              +{player.cardCount - 5}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
