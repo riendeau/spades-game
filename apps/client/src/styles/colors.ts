@@ -8,7 +8,7 @@ function hexToRgb(hex: string): string {
 export const TEAM1_COLOR = '#3b82f6';
 export const TEAM1_RGB = hexToRgb(TEAM1_COLOR);
 
-export const TEAM2_COLOR = '#22c55e';
+export const TEAM2_COLOR = '#ef4444';
 export const TEAM2_RGB = hexToRgb(TEAM2_COLOR);
 
 export const TEAM_COLORS: Record<'team1' | 'team2', string> = {
