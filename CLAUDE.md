@@ -222,16 +222,17 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 
 **Render.yaml DB wiring:** The `DATABASE_URL` env var is populated from `fromDatabase.property: connectionString` (Render's built-in linking). All OAuth secrets (`GOOGLE_CLIENT_ID`, etc.) are `sync: false` — set them manually in the Render dashboard to avoid committing secrets.
 
+**Callback URL / trust proxy:** The passport strategy uses `callbackURL: '/auth/google/callback'` (a relative path). Passport constructs the full URL from the request's `Host` and `X-Forwarded-Proto` headers, so the same code works for any deployment — main app, preview apps, etc. — without a `GOOGLE_CALLBACK_URL` env var. `app.set('trust proxy', 1)` is required so Render's load balancer's `X-Forwarded-Proto: https` header is trusted and passport builds `https://` URLs. Each deployment's callback URL must still be registered as an authorized redirect URI in Google Console.
+
 ### Required Env Vars (production only)
 
-| Variable               | Purpose                                                                       |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| `GOOGLE_CLIENT_ID`     | Google OAuth app client ID                                                    |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth app secret                                                       |
-| `GOOGLE_CALLBACK_URL`  | Full callback URL (e.g. `https://your-app.onrender.com/auth/google/callback`) |
-| `SESSION_SECRET`       | Signs the session cookie (32+ random chars)                                   |
-| `ALLOWED_EMAILS`       | Comma-separated allowlist (e.g. `alice@gmail.com,bob@gmail.com`)              |
-| `DATABASE_URL`         | PostgreSQL connection string (auto-set by Render from DB resource)            |
+| Variable               | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `GOOGLE_CLIENT_ID`     | Google OAuth app client ID                                         |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth app secret                                            |
+| `SESSION_SECRET`       | Signs the session cookie (32+ random chars)                        |
+| `ALLOWED_EMAILS`       | Comma-separated allowlist (e.g. `alice@gmail.com,bob@gmail.com`)   |
+| `DATABASE_URL`         | PostgreSQL connection string (auto-set by Render from DB resource) |
 
 ## Dependency Management
 
