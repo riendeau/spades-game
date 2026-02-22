@@ -1,17 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
-interface AuthUser {
-  id: string;
-  email: string;
-  displayName: string;
-  pictureUrl: string | null;
-}
-
-const UserContext = createContext<AuthUser | null>(null);
-
-export function useUser(): AuthUser | null {
-  return useContext(UserContext);
-}
+import React, { useEffect, useState } from 'react';
+import type { AuthUser } from './user-context.js';
+import { UserContext } from './user-context.js';
 
 interface LoginGateProps {
   children: React.ReactNode;
