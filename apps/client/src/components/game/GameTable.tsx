@@ -38,9 +38,8 @@ export function GameTable({
   const isBidding = gameState.phase === 'bidding';
   const isPlaying = gameState.phase === 'playing';
 
-  const myPlayerId = gameState.players.find(
-    (p) => p.position === myPosition
-  )?.id;
+  const myPlayer = gameState.players.find((p) => p.position === myPosition);
+  const myPlayerId = myPlayer?.id;
 
   const playableCards = useMemo(() => {
     if (!isPlaying || !isMyTurn || !myPlayerId) return undefined;
@@ -194,6 +193,81 @@ export function GameTable({
           />
         </div>
 
+        {/* My player name badge — south position on the table */}
+        {myPlayer && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: isMobile ? '2px 6px 10px' : '8px 20px 20px',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+                padding: isMobile ? '6px' : '12px',
+                borderRadius: '10px',
+                backgroundColor: isMyTurn
+                  ? myPlayer.team === 'team1'
+                    ? 'rgba(59, 130, 246, 0.2)'
+                    : 'rgba(34, 197, 94, 0.2)'
+                  : myPlayer.team === 'team1'
+                    ? 'rgba(59, 130, 246, 0.07)'
+                    : 'rgba(34, 197, 94, 0.07)',
+                border: isMyTurn
+                  ? myPlayer.team === 'team1'
+                    ? '2px solid #3b82f6'
+                    : '2px solid #22c55e'
+                  : myPlayer.team === 'team1'
+                    ? '2px solid rgba(59, 130, 246, 0.35)'
+                    : '2px solid rgba(34, 197, 94, 0.35)',
+                boxShadow: isMyTurn
+                  ? myPlayer.team === 'team1'
+                    ? '0 0 12px rgba(59, 130, 246, 0.6)'
+                    : '0 0 12px rgba(34, 197, 94, 0.6)'
+                  : 'none',
+                transition:
+                  'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: 600,
+                  fontSize: isMobile ? '12px' : '14px',
+                  color: '#f9fafb',
+                }}
+              >
+                {myPlayer.nickname}
+              </span>
+              <span
+                style={{
+                  fontSize: isMobile ? '10px' : '12px',
+                  color: '#d1d5db',
+                }}
+              >
+                {(() => {
+                  const myBid = gameState.currentRound?.bids.find(
+                    (b) => b.playerId === myPlayerId
+                  );
+                  const bidLabel = myBid
+                    ? myBid.isBlindNil
+                      ? 'BNL'
+                      : myBid.isNil
+                        ? 'Nil'
+                        : myBid.bid
+                    : '—';
+                  const tricksWon =
+                    gameState.currentRound?.tricksWon[myPlayerId ?? ''] ?? 0;
+                  return `Bid: ${bidLabel} | Won: ${tricksWon}`;
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Bottom section with my hand */}
         <div
           style={{
@@ -223,49 +297,6 @@ export function GameTable({
               </Button>
             </div>
           )}
-
-          {/* My info */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '24px',
-              marginTop: '12px',
-              fontSize: '14px',
-            }}
-          >
-            {gameState.currentRound?.bids.find(
-              (b) =>
-                b.playerId ===
-                gameState.players.find((p) => p.position === myPosition)?.id
-            ) && (
-              <>
-                <span>
-                  My Bid:{' '}
-                  {(() => {
-                    const myBid = gameState.currentRound?.bids.find(
-                      (b) =>
-                        b.playerId ===
-                        gameState.players.find((p) => p.position === myPosition)
-                          ?.id
-                    );
-                    return myBid?.isBlindNil
-                      ? 'Blind Nil'
-                      : myBid?.isNil
-                        ? 'Nil'
-                        : myBid?.bid;
-                  })()}
-                </span>
-                <span>
-                  Tricks Won:{' '}
-                  {gameState.currentRound?.tricksWon[
-                    gameState.players.find((p) => p.position === myPosition)
-                      ?.id || ''
-                  ] || 0}
-                </span>
-              </>
-            )}
-          </div>
         </div>
       </div>
     </div>
