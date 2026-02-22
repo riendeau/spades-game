@@ -107,8 +107,10 @@ if (isProd && oauthConfigured) {
       'must all be set in the Render dashboard to enable sign-in.'
   );
 }
-app.use(passport.initialize());
-app.use(passport.session());
+const passportInit = passport.initialize();
+const passportSession = passport.session();
+app.use(passportInit);
+app.use(passportSession);
 
 // Dev bypass: auto-inject a hardcoded user so auth is transparent locally
 if (!isProd) {
@@ -138,15 +140,20 @@ if (process.env.DATABASE_URL) {
 }
 
 // --- Socket.io auth middleware ---
-io.use((socket, next) => {
-  // Share the HTTP session with Socket.io.
-  // Cast next: Socket.io's next is narrower than Express's NextFunction.
-  sessionMiddleware(
-    socket.request as Request,
-    {} as Response,
-    next as unknown as express.NextFunction
-  );
-});
+// Run session + passport middleware so socket.request.user is populated
+// from the session before the auth check below.
+const ioMiddleware =
+  (mw: express.RequestHandler) =>
+  (socket: { request: object }, next: (err?: Error) => void) =>
+    mw(
+      socket.request as Request,
+      {} as Response,
+      next as unknown as express.NextFunction
+    );
+
+io.use(ioMiddleware(sessionMiddleware));
+io.use(ioMiddleware(passportInit));
+io.use(ioMiddleware(passportSession));
 io.use((socket, next) => {
   if (!isProd) return next();
   if ((socket.request as Request).user) return next();
