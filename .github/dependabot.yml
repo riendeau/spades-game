@@ -14,7 +14,7 @@ updates:
         update-types:
           - 'version-update:semver-major'
         versions:
-          - '>=23'
+          - '>=25'
     groups:
       # These packages are always released together at the same version
       typescript-eslint:
