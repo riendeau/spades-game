@@ -12,28 +12,47 @@ declare module 'express-session' {
 
 export const authRouter: express.Router = express.Router();
 
-// Initiate Google OAuth flow
-authRouter.get(
-  '/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+const oauthConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.DATABASE_URL
 );
 
-// OAuth callback
-authRouter.get(
-  '/google/callback',
-  passport.authenticate('google', { failureMessage: true, session: true }),
-  (req, res) => {
-    // Check if the failure was due to allowlist rejection
-    const messages = req.session.messages;
-    if (messages?.includes('not_allowed')) {
-      req.session.messages = [];
-      res.redirect('/?error=not_allowed');
-      return;
-    }
-    const clientUrl = process.env.CLIENT_URL ?? '/';
-    res.redirect(clientUrl);
+// Initiate Google OAuth flow
+authRouter.get('/google', (req, res, next) => {
+  if (!oauthConfigured) {
+    res.status(503).send('OAuth not configured on this server.');
+    return;
   }
-);
+  passport.authenticate('google', { scope: ['profile', 'email'] })(
+    req,
+    res,
+    next
+  );
+});
+
+// OAuth callback
+authRouter.get('/google/callback', (req, res, next) => {
+  if (!oauthConfigured) {
+    res.status(503).send('OAuth not configured on this server.');
+    return;
+  }
+  passport.authenticate('google', { failureMessage: true, session: true })(
+    req,
+    res,
+    () => {
+      // Check if the failure was due to allowlist rejection
+      const messages = req.session.messages;
+      if (messages?.includes('not_allowed')) {
+        req.session.messages = [];
+        res.redirect('/?error=not_allowed');
+        return;
+      }
+      const clientUrl = process.env.CLIENT_URL ?? '/';
+      res.redirect(clientUrl);
+    }
+  );
+});
 
 // Logout
 authRouter.get('/logout', (req, res) => {

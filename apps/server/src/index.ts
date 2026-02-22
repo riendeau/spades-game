@@ -94,8 +94,18 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 
 // --- Passport ---
-if (isProd) {
+const oauthConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.DATABASE_URL
+);
+if (isProd && oauthConfigured) {
   configurePassport();
+} else if (isProd) {
+  console.warn(
+    'OAuth disabled — GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and DATABASE_URL ' +
+      'must all be set in the Render dashboard to enable sign-in.'
+  );
 }
 app.use(passport.initialize());
 app.use(passport.session());
