@@ -44,7 +44,7 @@ export function configurePassport(): void {
       {
         clientID: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+        callbackURL: '/auth/google/callback',
       },
       // Use void IIFE to avoid no-misused-promises on async verify callback
       (_accessToken, _refreshToken, profile, done) => {

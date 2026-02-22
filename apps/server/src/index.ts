@@ -35,6 +35,10 @@ hookExecutor.setMods(modRegistry.getAllRuleMods());
 const app = express();
 const httpServer = createServer(app);
 
+// Trust Render's reverse proxy so passport constructs https:// callback URLs
+// from X-Forwarded-Proto rather than defaulting to http://
+app.set('trust proxy', 1);
+
 // Rate limiting for all HTTP routes (Socket.io traffic is unaffected)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
