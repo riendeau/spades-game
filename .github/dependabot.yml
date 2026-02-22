@@ -27,6 +27,14 @@ updates:
           - '@eslint/*'
           - 'eslint-config-*'
           - 'eslint-plugin-*'
+      # react and react-dom are from the same monorepo and must always be on
+      # the same version; their @types/* packages track them directly
+      react-ecosystem:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
