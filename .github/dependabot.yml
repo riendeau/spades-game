@@ -35,6 +35,12 @@ updates:
           - 'react-dom'
           - '@types/react'
           - '@types/react-dom'
+      # socket.io and socket.io-client are the server/client halves of the
+      # same library and must be on the same major version (shared protocol)
+      socket-io:
+        patterns:
+          - 'socket.io'
+          - 'socket.io-client'
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
