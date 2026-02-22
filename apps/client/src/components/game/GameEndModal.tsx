@@ -1,5 +1,6 @@
 import type { ClientGameState } from '@spades/shared';
 import React from 'react';
+import { TEAM1_COLOR, TEAM2_COLOR } from '../../styles/colors';
 import { Button } from '../ui/Button';
 
 interface GameEndModalProps {
@@ -61,13 +62,13 @@ export function GameEndModal({
           }}
         >
           <div>
-            <div style={{ color: '#3b82f6', fontWeight: 600 }}>Team 1</div>
+            <div style={{ color: TEAM1_COLOR, fontWeight: 600 }}>Team 1</div>
             <div style={{ fontSize: '32px', fontWeight: 700 }}>
               {scores.team1.score}
             </div>
           </div>
           <div>
-            <div style={{ color: '#10b981', fontWeight: 600 }}>Team 2</div>
+            <div style={{ color: TEAM2_COLOR, fontWeight: 600 }}>Team 2</div>
             <div style={{ fontSize: '32px', fontWeight: 700 }}>
               {scores.team2.score}
             </div>
