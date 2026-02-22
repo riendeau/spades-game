@@ -10,65 +10,83 @@ import {
 
 export function useGame() {
   const { socket, connected } = useSocket();
-  const store = useGameStore();
+
+  // Subscribe only to state fields that drive rendering — avoids re-renders
+  // from unrelated store fields (sessionToken, nickname, lastTrickWinner).
+  const roomId = useGameStore((s) => s.roomId);
+  const myPosition = useGameStore((s) => s.myPosition);
+  const gameState = useGameStore((s) => s.gameState);
+  const myHand = useGameStore((s) => s.myHand);
+  const cardsRevealed = useGameStore((s) => s.cardsRevealed);
+  const roundSummary = useGameStore((s) => s.roundSummary);
+  const gameEnded = useGameStore((s) => s.gameEnded);
+  const error = useGameStore((s) => s.error);
 
   // Setup socket listeners
   useEffect(() => {
     if (!socket) return;
 
+    // Use getState() inside handlers so they always call the current action
+    // without the effect needing to re-run when store state changes.
+    // Actions are stable references in zustand — getState() is safe here.
     socket.on('room:created', ({ roomId, sessionToken }) => {
-      store.setSession(roomId, sessionToken, 0);
+      useGameStore.getState().setSession(roomId, sessionToken, 0);
       saveSession(roomId, sessionToken);
     });
 
     socket.on('room:joined', ({ roomId, position, sessionToken }) => {
-      store.setSession(roomId, sessionToken, position);
+      useGameStore.getState().setSession(roomId, sessionToken, position);
       saveSession(roomId, sessionToken);
     });
 
     socket.on('game:state-update', ({ state }) => {
-      store.setGameState(state);
+      useGameStore.getState().setGameState(state);
     });
 
     socket.on('game:cards-dealt', ({ hand }) => {
-      store.setHand(hand);
+      useGameStore.getState().setHand(hand);
     });
 
     socket.on('game:card-played', ({ card }) => {
-      store.removeCard(card);
+      useGameStore.getState().removeCard(card);
     });
 
     socket.on('game:trick-won', ({ winnerId }) => {
-      store.setTrickWinner(winnerId);
-      setTimeout(() => store.clearTrickWinner(), 2000);
+      const { setTrickWinner, clearTrickWinner } = useGameStore.getState();
+      setTrickWinner(winnerId);
+      setTimeout(clearTrickWinner, 2000);
     });
 
-    socket.on('game:round-end', ({ scores, roundSummary }) => {
-      store.setRoundSummary(roundSummary);
+    socket.on('game:round-end', ({ roundSummary }) => {
+      useGameStore.getState().setRoundSummary(roundSummary);
     });
 
     socket.on('game:ended', ({ winningTeam, finalScores }) => {
-      store.setGameEnded({ winner: winningTeam, scores: finalScores });
+      useGameStore
+        .getState()
+        .setGameEnded({ winner: winningTeam, scores: finalScores });
     });
 
     socket.on('reconnect:success', ({ state, hand }) => {
-      store.setGameState(state);
-      store.setHand(hand);
-      store.revealCards();
+      const { setGameState, setHand, revealCards } = useGameStore.getState();
+      setGameState(state);
+      setHand(hand);
+      revealCards();
     });
 
     socket.on('room:seat-changed', ({ newPosition }) => {
-      store.setMyPosition(newPosition);
+      useGameStore.getState().setMyPosition(newPosition);
     });
 
     socket.on('reconnect:failed', ({ reason }) => {
-      store.setError(`Reconnection failed: ${reason}`);
+      useGameStore.getState().setError(`Reconnection failed: ${reason}`);
       clearSession();
     });
 
     socket.on('error', ({ message }) => {
-      store.setError(message);
-      setTimeout(() => store.setError(null), 5000);
+      const { setError } = useGameStore.getState();
+      setError(message);
+      setTimeout(() => setError(null), 5000);
     });
 
     return () => {
@@ -112,7 +130,7 @@ export function useGame() {
   const createRoom = useCallback(
     (nickname: string) => {
       if (!socket) return;
-      store.setNickname(nickname);
+      useGameStore.getState().setNickname(nickname);
       socket.emit('room:create', { nickname });
     },
     [socket]
@@ -121,7 +139,7 @@ export function useGame() {
   const joinRoom = useCallback(
     (roomId: string, nickname: string) => {
       if (!socket) return;
-      store.setNickname(nickname);
+      useGameStore.getState().setNickname(nickname);
       socket.emit('room:join', { roomId, nickname });
     },
     [socket]
@@ -152,7 +170,7 @@ export function useGame() {
     if (!socket) return;
     socket.emit('room:leave');
     clearSession();
-    store.reset();
+    useGameStore.getState().reset();
   }, [socket]);
 
   const changeSeat = useCallback(
@@ -163,9 +181,22 @@ export function useGame() {
     [socket]
   );
 
+  // Actions are stable refs — destructure once for the return value
+  const { clearRoundSummary, revealCards, reset } = useGameStore.getState();
+
   return {
     connected,
-    ...store,
+    roomId,
+    myPosition,
+    gameState,
+    myHand,
+    cardsRevealed,
+    roundSummary,
+    gameEnded,
+    error,
+    clearRoundSummary,
+    revealCards,
+    reset,
     createRoom,
     joinRoom,
     setReady,
