@@ -7,6 +7,7 @@ import type {
   ServerToClientEvents,
 } from '@spades/shared';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { Server } from 'socket.io';
 import { hookExecutor } from './mods/hook-executor.js';
 import { loadBuiltInMods } from './mods/mod-loader.js';
@@ -24,6 +25,15 @@ hookExecutor.setMods(modRegistry.getAllRuleMods());
 
 const app = express();
 const httpServer = createServer(app);
+
+// Rate limiting for all HTTP routes (Socket.io traffic is unaffected)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // generous limit for SPA + API calls per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
 
 // Serve built client files when SERVE_CLIENT=true (for single-port production deployment).
 // When not serving the client, enable CORS for the Vite dev server origin.
