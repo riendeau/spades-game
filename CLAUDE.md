@@ -216,7 +216,7 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 
 **Async passport callbacks:** `passport-google-oauth20` verify callbacks and `passport.deserializeUser` must **not** be declared `async` — the rule `@typescript-eslint/no-misused-promises` will fire. Use the `void (async () => { ... })().catch(done)` IIFE pattern for the verify callback, and a promise chain (`.then().catch()`) for `deserializeUser`.
 
-**Session middleware + Socket.io:** `sessionMiddleware` is a `RequestHandler`. Socket.io's `next` is `(err?: ExtendedError) => void`, which is narrower. Cast it: `next as unknown as express.NextFunction`.
+**Session middleware + Socket.io:** All three middleware handlers — `sessionMiddleware`, `passport.initialize()`, and `passport.session()` — must run in the `io.use()` chain, not just `sessionMiddleware`. `passport.session()` is what reads `session.passport.user` and calls `deserializeUser()` to populate `socket.request.user`. Without it, the user is never deserialized, every Socket.io connection is rejected as `Unauthorized`, and the client gets stuck on "Connecting...". Store the passport handlers before `app.use()` so they can be reused in `io.use()`. Socket.io's `next` is narrower than Express's `NextFunction` — cast it: `next as unknown as express.NextFunction`.
 
 **Cookie scoping in dev:** The Vite dev server proxies both `/socket.io` and `/auth` to port 3001. This keeps cookies scoped to `localhost:5173` so the OAuth callback cookie and the Socket.io connection cookie are the same origin. No `changeOrigin` needed — keeping the `Host: localhost:5173` header is intentional.
 
