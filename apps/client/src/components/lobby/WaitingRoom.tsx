@@ -1,6 +1,7 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import React, { useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
+import { TEAM_COLORS } from '../../styles/colors';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -17,11 +18,6 @@ const POSITION_LABELS: Record<Position, string> = {
   1: 'West',
   2: 'North',
   3: 'East',
-};
-
-const TEAM_COLORS: Record<'team1' | 'team2', string> = {
-  team1: '#3b82f6',
-  team2: '#10b981',
 };
 
 // Fun name generator for auto-join feature

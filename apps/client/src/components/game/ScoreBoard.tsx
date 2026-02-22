@@ -1,5 +1,6 @@
 import type { ClientGameState } from '@spades/shared';
 import React from 'react';
+import { TEAM1_COLOR, TEAM2_COLOR } from '../../styles/colors';
 
 interface ScoreBoardProps {
   gameState: ClientGameState;
@@ -38,7 +39,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
       >
         <div
           style={{
-            backgroundColor: '#3b82f6',
+            backgroundColor: TEAM1_COLOR,
             borderRadius: '6px',
             padding: '3px 8px',
             color: '#fff',
@@ -56,7 +57,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
         </div>
         <div
           style={{
-            backgroundColor: '#10b981',
+            backgroundColor: TEAM2_COLOR,
             borderRadius: '6px',
             padding: '3px 8px',
             color: '#fff',
@@ -91,7 +92,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
         <div
           style={{
-            backgroundColor: '#3b82f6',
+            backgroundColor: TEAM1_COLOR,
             borderRadius: '8px',
             padding: '8px 12px',
             color: '#fff',
@@ -109,7 +110,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
 
         <div
           style={{
-            backgroundColor: '#10b981',
+            backgroundColor: TEAM2_COLOR,
             borderRadius: '8px',
             padding: '8px 12px',
             color: '#fff',

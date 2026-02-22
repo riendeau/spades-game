@@ -1,5 +1,6 @@
 import type { RoundSummary, ClientGameState } from '@spades/shared';
 import React from 'react';
+import { TEAM_COLORS } from '../../styles/colors';
 import { Button } from '../ui/Button';
 
 interface RoundSummaryModalProps {
@@ -48,7 +49,7 @@ export function RoundSummaryModal({
         >
           {(['team1', 'team2'] as const).map((teamId) => {
             const result = summary[teamId];
-            const teamColor = teamId === 'team1' ? '#3b82f6' : '#10b981';
+            const teamColor = TEAM_COLORS[teamId];
 
             return (
               <div key={teamId}>

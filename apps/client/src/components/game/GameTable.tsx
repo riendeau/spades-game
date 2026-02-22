@@ -6,6 +6,7 @@ import type {
 import { getPlayableCards } from '@spades/shared';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
+import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 import { BiddingPanel } from '../bidding/BiddingPanel';
 import { Button } from '../ui/Button';
 import { OpponentArea } from './OpponentArea';
@@ -210,24 +211,12 @@ export function GameTable({
                 gap: '2px',
                 padding: isMobile ? '6px' : '12px',
                 borderRadius: '10px',
-                backgroundColor: isMyTurn
-                  ? myPlayer.team === 'team1'
-                    ? 'rgba(59, 130, 246, 0.2)'
-                    : 'rgba(34, 197, 94, 0.2)'
-                  : myPlayer.team === 'team1'
-                    ? 'rgba(59, 130, 246, 0.07)'
-                    : 'rgba(34, 197, 94, 0.07)',
+                backgroundColor: `rgba(${TEAM_RGB[myPlayer.team]}, ${isMyTurn ? 0.2 : 0.07})`,
                 border: isMyTurn
-                  ? myPlayer.team === 'team1'
-                    ? '2px solid #3b82f6'
-                    : '2px solid #22c55e'
-                  : myPlayer.team === 'team1'
-                    ? '2px solid rgba(59, 130, 246, 0.35)'
-                    : '2px solid rgba(34, 197, 94, 0.35)',
+                  ? `2px solid ${TEAM_COLORS[myPlayer.team]}`
+                  : `2px solid rgba(${TEAM_RGB[myPlayer.team]}, 0.35)`,
                 boxShadow: isMyTurn
-                  ? myPlayer.team === 'team1'
-                    ? '0 0 12px rgba(59, 130, 246, 0.6)'
-                    : '0 0 12px rgba(34, 197, 94, 0.6)'
+                  ? `0 0 12px rgba(${TEAM_RGB[myPlayer.team]}, 0.6)`
                   : 'none',
                 transition:
                   'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',

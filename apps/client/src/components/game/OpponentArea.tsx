@@ -1,5 +1,6 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import React from 'react';
+import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 
 interface OpponentAreaProps {
   gameState: ClientGameState;
@@ -40,25 +41,13 @@ export function OpponentArea({
     alignItems: 'center',
     gap: compact ? (isSideOpponent ? '4px' : '6px') : '12px',
     padding: compact ? (isSideOpponent ? '4px 2px' : '6px') : '12px',
-    backgroundColor: isCurrentPlayer
-      ? player.team === 'team1'
-        ? 'rgba(59, 130, 246, 0.2)'
-        : 'rgba(34, 197, 94, 0.2)'
-      : player.team === 'team1'
-        ? 'rgba(59, 130, 246, 0.07)'
-        : 'rgba(34, 197, 94, 0.07)',
+    backgroundColor: `rgba(${TEAM_RGB[player.team]}, ${isCurrentPlayer ? 0.2 : 0.07})`,
     borderRadius: '12px',
     border: isCurrentPlayer
-      ? player.team === 'team1'
-        ? '2px solid #3b82f6'
-        : '2px solid #22c55e'
-      : player.team === 'team1'
-        ? '2px solid rgba(59, 130, 246, 0.35)'
-        : '2px solid rgba(34, 197, 94, 0.35)',
+      ? `2px solid ${TEAM_COLORS[player.team]}`
+      : `2px solid rgba(${TEAM_RGB[player.team]}, 0.35)`,
     boxShadow: isCurrentPlayer
-      ? player.team === 'team1'
-        ? '0 0 12px rgba(59, 130, 246, 0.6)'
-        : '0 0 12px rgba(34, 197, 94, 0.6)'
+      ? `0 0 12px rgba(${TEAM_RGB[player.team]}, 0.6)`
       : 'none',
     transition: 'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
   };
