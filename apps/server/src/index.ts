@@ -71,7 +71,7 @@ if (servingClient) {
   app.use(BASE_PATH, express.static(clientDistPath));
 
   // SPA fallback: serve index.html for any non-API, non-file request under BASE_PATH
-  app.get(`${BASE_PATH}*`, (_req, res) => {
+  app.get(`${BASE_PATH}*path`, (_req, res) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 
