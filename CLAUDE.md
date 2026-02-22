@@ -195,7 +195,7 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 
 - **ESLint 10**: Project uses ESLint 10 with flat config (`eslint.config.js`). Three plugins (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-import`) haven't declared ESLint 10 peer support yet — they're wrapped with `fixupPluginRules()` from `@eslint/compat` to shim removed APIs like `context.getFilename()`.
 - **Vite 6 / Vitest 3**: Client uses Vite 6. Use Vitest 3 (not 2) across all packages — Vitest 2 internally re-installs Vite 5 even when Vite 6 is present, which reintroduces old transitive deps.
-- **pnpm.overrides**: `qs` is pinned to `>=6.14.2` to fix a transitive vulnerability from Express's `body-parser` dependency.
+- **pnpm.overrides**: None currently needed. Express 4.x pins `qs ~6.14.0`, which naturally resolves to the patched `6.14.2`.
 - **pnpm.onlyBuiltDependencies**: `esbuild` is listed here so its postinstall script (which downloads the native binary) runs when the version changes.
 
 ### Upgrading ESLint plugins to ESLint 10
