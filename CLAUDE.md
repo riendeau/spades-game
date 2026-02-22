@@ -194,7 +194,7 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 ### Toolchain Versions (as of 2026-02)
 
 - **ESLint 10**: Project uses ESLint 10 with flat config (`eslint.config.js`). Three plugins (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-import`) haven't declared ESLint 10 peer support yet — they're wrapped with `fixupPluginRules()` from `@eslint/compat` to shim removed APIs like `context.getFilename()`.
-- **Vite 6 / Vitest 3**: Client uses Vite 6. Use Vitest 3 (not 2) across all packages — Vitest 2 internally re-installs Vite 5 even when Vite 6 is present, which reintroduces old transitive deps.
+- **Vite 7 / Vitest 4**: Client uses Vite 7. Use Vitest 4 across all packages. Vite 7 requires Node `^20.19.0 || >=22.12.0` — the project `engines` field reflects this. (Historical note: Vitest 2 used to re-install Vite 5 as a transitive dep; that concern is no longer relevant.)
 - **pnpm.overrides**: None currently needed. Express 4.x pins `qs ~6.14.0`, which naturally resolves to the patched `6.14.2`.
 - **pnpm.onlyBuiltDependencies**: `esbuild` is listed here so its postinstall script (which downloads the native binary) runs when the version changes.
 
