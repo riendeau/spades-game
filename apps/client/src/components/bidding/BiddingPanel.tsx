@@ -85,7 +85,7 @@ export function BiddingPanel({
       style={{
         backgroundColor: '#fff',
         borderRadius: '12px',
-        padding: compact ? '12px' : '20px',
+        padding: compact ? '8px' : '20px',
         boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
       }}
     >
@@ -94,7 +94,7 @@ export function BiddingPanel({
           style={{
             textAlign: 'center',
             color: '#6b7280',
-            padding: '20px',
+            padding: compact ? '8px' : '20px',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
@@ -242,7 +242,7 @@ export function BiddingPanel({
           style={{
             textAlign: 'center',
             color: '#6b7280',
-            padding: '20px',
+            padding: compact ? '8px' : '20px',
           }}
         >
           Waiting for{' '}

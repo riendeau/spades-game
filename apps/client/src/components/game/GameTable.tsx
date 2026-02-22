@@ -102,7 +102,7 @@ export function GameTable({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          padding: isMobile ? '8px' : '16px',
+          padding: isMobile ? '4px 8px' : '16px',
         }}
       >
         <ScoreBoard gameState={gameState} compact={isMobile} />
@@ -131,7 +131,7 @@ export function GameTable({
           style={{
             display: 'flex',
             justifyContent: 'center',
-            padding: isMobile ? '6px' : '20px',
+            padding: isMobile ? '2px 6px' : '20px',
           }}
         >
           <OpponentArea
@@ -163,7 +163,10 @@ export function GameTable({
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             {isBidding ? (
               <div
-                style={{ maxWidth: isMobile ? '100%' : '500px', width: '100%' }}
+                style={{
+                  maxWidth: isMobile ? '360px' : '500px',
+                  width: '100%',
+                }}
               >
                 <BiddingPanel
                   gameState={gameState}

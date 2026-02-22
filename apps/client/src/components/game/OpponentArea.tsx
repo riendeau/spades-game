@@ -34,14 +34,14 @@ export function OpponentArea({
 
   const isSideOpponent =
     relativePosition === 'left' || relativePosition === 'right';
-  const hideCards = compact && isSideOpponent;
+  const hideCards = true;
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: relativePosition === 'top' ? 'column' : 'row',
     alignItems: 'center',
-    gap: compact && isSideOpponent ? '4px' : '12px',
-    padding: compact && isSideOpponent ? '4px 2px' : '12px',
+    gap: compact ? (isSideOpponent ? '4px' : '6px') : '12px',
+    padding: compact ? (isSideOpponent ? '4px 2px' : '6px') : '12px',
     backgroundColor: isCurrentPlayer
       ? 'rgba(59, 130, 246, 0.1)'
       : 'transparent',
@@ -65,7 +65,7 @@ export function OpponentArea({
         <div
           style={{
             fontWeight: 600,
-            fontSize: compact && isSideOpponent ? '11px' : '14px',
+            fontSize: compact ? (isSideOpponent ? '11px' : '12px') : '14px',
             color: player.connected ? '#1f2937' : '#9ca3af',
           }}
         >
@@ -73,7 +73,7 @@ export function OpponentArea({
         </div>
         <div
           style={{
-            fontSize: compact && isSideOpponent ? '10px' : '12px',
+            fontSize: compact ? '10px' : '12px',
             color: '#6b7280',
           }}
         >
@@ -82,8 +82,8 @@ export function OpponentArea({
         {bid && (
           <div
             style={{
-              fontSize: compact && isSideOpponent ? '10px' : '12px',
-              marginTop: '4px',
+              fontSize: compact ? '10px' : '12px',
+              marginTop: '2px',
             }}
           >
             Bid: {bid.isBlindNil ? 'BNL' : bid.isNil ? 'Nil' : bid.bid} | Won:{' '}
