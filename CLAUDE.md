@@ -189,6 +189,25 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 - **Port conflicts when running E2E locally**: E2E tests start their own dev servers on ports 3001 and 5173. If a preview server or `pnpm dev` is already running on those ports, all tests will fail. Always run `lsof -ti :3001 :5173 | xargs kill` before running E2E tests locally.
 - **UI text changes break E2E assertions**: Tests in `shareable-url.spec.ts` and others assert on visible text labels. When renaming UI strings, grep for the old text in `e2e/` and update assertions to match.
 
+## Dependency Management
+
+### Toolchain Versions (as of 2026-02)
+
+- **ESLint 10**: Project uses ESLint 10 with flat config (`eslint.config.js`). Three plugins (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-import`) haven't declared ESLint 10 peer support yet — they're wrapped with `fixupPluginRules()` from `@eslint/compat` to shim removed APIs like `context.getFilename()`.
+- **Vite 6 / Vitest 3**: Client uses Vite 6. Use Vitest 3 (not 2) across all packages — Vitest 2 internally re-installs Vite 5 even when Vite 6 is present, which reintroduces old transitive deps.
+- **pnpm.overrides**: None currently needed. Express 4.x pins `qs ~6.14.0`, which naturally resolves to the patched `6.14.2`.
+- **pnpm.onlyBuiltDependencies**: `esbuild` is listed here so its postinstall script (which downloads the native binary) runs when the version changes.
+
+### Upgrading ESLint plugins to ESLint 10
+
+When a plugin causes `context.getFilename is not a function` or similar errors on ESLint 10, wrap it:
+
+```js
+import { fixupPluginRules } from '@eslint/compat';
+// In eslint.config.js:
+plugins: { 'plugin-name': fixupPluginRules(thePlugin) }
+```
+
 ## Workflow
 
 After every bug fix or feature implementation:

@@ -1,4 +1,5 @@
 // @ts-check
+import { fixupPluginRules } from '@eslint/compat';
 import js from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
@@ -78,8 +79,8 @@ export default tseslint.config(
   {
     files: ['apps/client/**/*.tsx', 'apps/client/**/*.ts'],
     plugins: {
-      react: reactPlugin,
-      'react-hooks': reactHooksPlugin,
+      react: fixupPluginRules(reactPlugin),
+      'react-hooks': fixupPluginRules(reactHooksPlugin),
       'react-refresh': reactRefreshPlugin,
     },
     settings: {
@@ -105,7 +106,7 @@ export default tseslint.config(
   // Import plugin rules for all files
   {
     plugins: {
-      import: importPlugin,
+      import: fixupPluginRules(importPlugin),
     },
     rules: {
       'import/order': [

@@ -22,9 +22,15 @@
       "prettier --write"
     ]
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
   "devDependencies": {
+    "@eslint/compat": "^2.0.2",
     "@eslint/js": "^10.0.1",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
@@ -34,7 +40,7 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "typescript": "^5.3.3",
-    "typescript-eslint": "^8.55.0"
+    "typescript-eslint": "^8.56.0"
   },
   "engines": {
     "node": ">=18.0.0"
