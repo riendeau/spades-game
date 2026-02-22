@@ -121,6 +121,17 @@ This typically happens if:
 - Design system uses hard-coded colors and spacing values
 - **Overlapping elements**: Avoid using `opacity` on elements that overlap (e.g., cards with negative margins). Use CSS filters (`grayscale`, `brightness`) and solid background colors instead to prevent transparency stacking artifacts
 
+### Player Badge Design System
+
+All four player positions (three opponents + the local player) use a consistent badge style:
+
+- **Team colors**: team1 = blue (`#3b82f6`), team2 = green (`#22c55e`)
+- **Active player**: full-saturation border + background tint + `box-shadow` glow in team color
+- **Inactive players**: faded border (`rgba(..., 0.35)`) + very subtle background tint (`rgba(..., 0.07)`)
+- **Player names**: near-white (`#f9fafb`) for legibility on the dark green table; gray (`#9ca3af`) when disconnected
+- **Bid/Won line**: always shown under every player name — displays `—` for bid until a bid is placed
+- **Local player badge**: rendered between the trick area and hand section (south table position), styled identically to `OpponentArea` badges. Padding should match `OpponentArea`'s `12px` desktop / `6px` mobile to keep visual consistency.
+
 ### Mobile Responsiveness
 
 - **`useIsMobile` hook** (`apps/client/src/hooks/use-is-mobile.ts`): Returns `true` when `width < 768` **OR** `height < 500`. The height check is critical — landscape-orientation phones have wide viewports (>768px) but short ones (~375px), so a width-only check misses them entirely.

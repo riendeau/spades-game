@@ -41,10 +41,26 @@ export function OpponentArea({
     gap: compact ? (isSideOpponent ? '4px' : '6px') : '12px',
     padding: compact ? (isSideOpponent ? '4px 2px' : '6px') : '12px',
     backgroundColor: isCurrentPlayer
-      ? 'rgba(59, 130, 246, 0.1)'
-      : 'transparent',
+      ? player.team === 'team1'
+        ? 'rgba(59, 130, 246, 0.2)'
+        : 'rgba(34, 197, 94, 0.2)'
+      : player.team === 'team1'
+        ? 'rgba(59, 130, 246, 0.07)'
+        : 'rgba(34, 197, 94, 0.07)',
     borderRadius: '12px',
-    transition: 'background-color 0.2s',
+    border: isCurrentPlayer
+      ? player.team === 'team1'
+        ? '2px solid #3b82f6'
+        : '2px solid #22c55e'
+      : player.team === 'team1'
+        ? '2px solid rgba(59, 130, 246, 0.35)'
+        : '2px solid rgba(34, 197, 94, 0.35)',
+    boxShadow: isCurrentPlayer
+      ? player.team === 'team1'
+        ? '0 0 12px rgba(59, 130, 246, 0.6)'
+        : '0 0 12px rgba(34, 197, 94, 0.6)'
+      : 'none',
+    transition: 'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
   };
 
   return (
@@ -59,7 +75,7 @@ export function OpponentArea({
           style={{
             fontWeight: 600,
             fontSize: compact ? (isSideOpponent ? '11px' : '12px') : '14px',
-            color: player.connected ? '#1f2937' : '#9ca3af',
+            color: player.connected ? '#f9fafb' : '#9ca3af',
           }}
         >
           {player.nickname}
@@ -67,22 +83,14 @@ export function OpponentArea({
         <div
           style={{
             fontSize: compact ? '10px' : '12px',
-            color: '#6b7280',
+            marginTop: '2px',
+            color: '#d1d5db',
           }}
         >
-          {player.team === 'team1' ? 'Team 1' : 'Team 2'}
+          Bid:{' '}
+          {bid ? (bid.isBlindNil ? 'BNL' : bid.isNil ? 'Nil' : bid.bid) : '—'} |
+          Won: {tricksWon}
         </div>
-        {bid && (
-          <div
-            style={{
-              fontSize: compact ? '10px' : '12px',
-              marginTop: '2px',
-            }}
-          >
-            Bid: {bid.isBlindNil ? 'BNL' : bid.isNil ? 'Nil' : bid.bid} | Won:{' '}
-            {tricksWon}
-          </div>
-        )}
         {!player.connected && (
           <div style={{ fontSize: '11px', color: '#f59e0b' }}>Disconnected</div>
         )}
