@@ -1,0 +1,36 @@
+version: 2
+updates:
+  # JavaScript/TypeScript dependencies (pnpm workspace)
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 10
+    groups:
+      # These packages are always released together at the same version
+      typescript-eslint:
+        patterns:
+          - 'typescript-eslint'
+          - '@typescript-eslint/*'
+      # Vite, its React plugin, and Vitest are tightly coupled across major versions
+      vite-ecosystem:
+        patterns:
+          - 'vite'
+          - '@vitejs/*'
+          - 'vitest'
+          - '@vitest/*'
+      # ESLint core and its official packages
+      eslint-ecosystem:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'eslint-config-*'
+          - 'eslint-plugin-*'
+
+  # GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
