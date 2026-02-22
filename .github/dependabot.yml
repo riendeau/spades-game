@@ -27,6 +27,20 @@ updates:
           - '@eslint/*'
           - 'eslint-config-*'
           - 'eslint-plugin-*'
+      # react and react-dom are from the same monorepo and must always be on
+      # the same version; their @types/* packages track them directly
+      react-ecosystem:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
+      # socket.io and socket.io-client are the server/client halves of the
+      # same library and must be on the same major version (shared protocol)
+      socket-io:
+        patterns:
+          - 'socket.io'
+          - 'socket.io-client'
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
@@ -34,3 +48,7 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
