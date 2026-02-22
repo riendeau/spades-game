@@ -5,6 +5,7 @@ import type {
 } from '@spades/shared';
 import { getPlayableCards } from '@spades/shared';
 import React, { useState, useMemo, useEffect } from 'react';
+import { useIsMobile } from '../../hooks/use-is-mobile';
 import { BiddingPanel } from '../bidding/BiddingPanel';
 import { Button } from '../ui/Button';
 import { OpponentArea } from './OpponentArea';
@@ -32,6 +33,7 @@ export function GameTable({
   onRevealCards,
 }: GameTableProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
+  const isMobile = useIsMobile();
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const isBidding = gameState.phase === 'bidding';
   const isPlaying = gameState.phase === 'playing';
@@ -100,25 +102,43 @@ export function GameTable({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          padding: '16px',
+          padding: isMobile ? '4px 8px' : '16px',
         }}
       >
-        <ScoreBoard gameState={gameState} />
-        <div style={{ color: '#fff', fontSize: '14px', opacity: 0.8 }}>
+        <ScoreBoard gameState={gameState} compact={isMobile} />
+        <div
+          style={{
+            color: '#fff',
+            fontSize: isMobile ? '12px' : '14px',
+            opacity: 0.8,
+          }}
+        >
           Room: {gameState.id}
         </div>
       </div>
 
       {/* Game area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}
+      >
         {/* Top opponent */}
         <div
-          style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: isMobile ? '2px 6px' : '20px',
+          }}
         >
           <OpponentArea
             gameState={gameState}
             myPosition={myPosition}
             relativePosition="top"
+            compact={isMobile}
           />
         </div>
 
@@ -129,28 +149,40 @@ export function GameTable({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 20px',
+            padding: isMobile ? '0 6px' : '0 20px',
+            minHeight: 0,
           }}
         >
           <OpponentArea
             gameState={gameState}
             myPosition={myPosition}
             relativePosition="left"
+            compact={isMobile}
           />
 
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             {isBidding ? (
-              <div style={{ maxWidth: '500px', width: '100%' }}>
+              <div
+                style={{
+                  maxWidth: isMobile ? '360px' : '500px',
+                  width: '100%',
+                }}
+              >
                 <BiddingPanel
                   gameState={gameState}
                   myPosition={myPosition}
                   cardsRevealed={cardsRevealed}
                   onBid={onBid}
                   onRevealCards={onRevealCards}
+                  compact={isMobile}
                 />
               </div>
             ) : (
-              <TrickArea gameState={gameState} myPosition={myPosition} />
+              <TrickArea
+                gameState={gameState}
+                myPosition={myPosition}
+                compact={isMobile}
+              />
             )}
           </div>
 
@@ -158,6 +190,7 @@ export function GameTable({
             gameState={gameState}
             myPosition={myPosition}
             relativePosition="right"
+            compact={isMobile}
           />
         </div>
 
@@ -165,7 +198,7 @@ export function GameTable({
         <div
           style={{
             backgroundColor: 'rgba(0,0,0,0.2)',
-            padding: '20px',
+            padding: isMobile ? '12px 12px' : '20px',
             borderRadius: '20px 20px 0 0',
           }}
         >
@@ -177,6 +210,7 @@ export function GameTable({
             onSelectCard={setSelectedCard}
             faceDown={isBidding && !cardsRevealed}
             playableCards={playableCards}
+            compact={isMobile}
           />
 
           {!isBidding && (

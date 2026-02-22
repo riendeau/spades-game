@@ -55,6 +55,6 @@ test.describe('Waiting Room', () => {
     await p1.getByRole('button', { name: 'Leave' }).click();
 
     // Should be back on the join/create screen
-    await expect(p1.getByText('Play with friends online')).toBeVisible();
+    await expect(p1.getByRole('heading', { name: '♠ Spades' })).toBeVisible();
   });
 });

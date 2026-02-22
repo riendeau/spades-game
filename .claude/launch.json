@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "SERVE_CLIENT=true pnpm --filter @spades/server dev"
+      ],
+      "port": 3001
+    }
+  ],
+  "autoVerify": false
+}
