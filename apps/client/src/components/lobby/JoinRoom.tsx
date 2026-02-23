@@ -7,14 +7,16 @@ interface JoinRoomProps {
   onCreateRoom: (nickname: string) => void;
   onJoinRoom: (roomId: string, nickname: string) => void;
   initialRoomId?: string;
+  initialNickname?: string;
 }
 
 export function JoinRoom({
   onCreateRoom,
   onJoinRoom,
   initialRoomId,
+  initialNickname,
 }: JoinRoomProps) {
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(initialNickname ?? '');
   const [roomId, setRoomId] = useState(initialRoomId || '');
   const [mode, setMode] = useState<'create' | 'join'>(
     initialRoomId ? 'join' : 'create'

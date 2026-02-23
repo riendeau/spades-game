@@ -1,5 +1,6 @@
 import React from 'react';
 import { LoginGate } from './components/auth/LoginGate';
+import { useUser } from './components/auth/user-context';
 import { GameEndModal } from './components/game/GameEndModal';
 import { GameTable } from './components/game/GameTable';
 import { RoundSummaryModal } from './components/game/RoundSummaryModal';
@@ -8,6 +9,7 @@ import { WaitingRoom } from './components/lobby/WaitingRoom';
 import { useGame } from './hooks/use-game';
 
 function AppInner() {
+  const user = useUser();
   const {
     connected,
     roomId,
@@ -85,6 +87,7 @@ function AppInner() {
           onCreateRoom={createRoom}
           onJoinRoom={joinRoom}
           initialRoomId={urlRoomId}
+          initialNickname={user?.displayName}
         />
       </div>
     );
