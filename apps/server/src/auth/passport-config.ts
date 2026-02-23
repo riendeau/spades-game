@@ -56,7 +56,7 @@ export function configurePassport(): void {
             return;
           }
 
-          const displayName = profile.displayName;
+          const displayName = profile.name?.givenName ?? profile.displayName;
           const pictureUrl = profile.photos?.[0]?.value ?? null;
 
           const result = await pool.query<User>(
