@@ -9,7 +9,6 @@ import type {
 export interface ScoreCalculation {
   baseScore: number;
   bags: number;
-  bagPenalty: number;
   nilBonus: number;
   totalScore: number;
 }
@@ -54,7 +53,6 @@ export function calculateRoundScore(
   return {
     baseScore,
     bags,
-    bagPenalty: 0,
     nilBonus,
     totalScore: baseScore + nilBonus,
   };

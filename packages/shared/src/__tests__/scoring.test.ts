@@ -81,7 +81,6 @@ describe('Scoring', () => {
       const roundCalc = {
         baseScore: 52,
         bags: 2,
-        bagPenalty: 0,
         nilBonus: 0,
         totalScore: 52,
       };
@@ -103,7 +102,6 @@ describe('Scoring', () => {
       const roundCalc = {
         baseScore: 53,
         bags: 3,
-        bagPenalty: 0,
         nilBonus: 0,
         totalScore: 53,
       };
@@ -127,7 +125,6 @@ describe('Scoring', () => {
       const roundCalc = {
         baseScore: 53,
         bags: 3,
-        bagPenalty: 0,
         nilBonus: 0,
         totalScore: 53,
       };
