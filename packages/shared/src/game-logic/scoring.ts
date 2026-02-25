@@ -18,12 +18,10 @@ export function calculateRoundScore(
   bid: number,
   tricks: number,
   nilBids: PlayerBid[],
-  playerTricks: Record<PlayerId, number>,
-  _config: GameConfig
+  playerTricks: Record<PlayerId, number>
 ): ScoreCalculation {
   let baseScore = 0;
   let bags = 0;
-  const bagPenalty = 0;
   let nilBonus = 0;
 
   // Handle nil bids first
@@ -56,9 +54,9 @@ export function calculateRoundScore(
   return {
     baseScore,
     bags,
-    bagPenalty,
+    bagPenalty: 0,
     nilBonus,
-    totalScore: baseScore + nilBonus - bagPenalty,
+    totalScore: baseScore + nilBonus,
   };
 }
 
@@ -115,8 +113,7 @@ export function createRoundSummary(
       regularBid,
       teamTricks,
       nilBids,
-      playerTricks,
-      config
+      playerTricks
     );
 
     const nilResults = nilBids.map((nb) => ({

@@ -512,13 +512,7 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
       0
     );
 
-    return calculateRoundScore(
-      regularBid,
-      teamTricks,
-      nilBids,
-      playerTricks,
-      config
-    );
+    return calculateRoundScore(regularBid, teamTricks, nilBids, playerTricks);
   };
 
   const team1Calc = calculateTeamScore('team1');
