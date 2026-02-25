@@ -11,7 +11,7 @@ export const test = base.extend<GameFixtures>({
   createPlayerPage: async ({ browser }, use) => {
     const contexts: BrowserContext[] = [];
 
-    const factory = async (nickname: string): Promise<Page> => {
+    const factory = async (_nickname: string): Promise<Page> => {
       const context = await browser.newContext();
       contexts.push(context);
       const page = await context.newPage();

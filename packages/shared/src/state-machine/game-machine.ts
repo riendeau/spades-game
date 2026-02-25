@@ -319,7 +319,7 @@ function handleMakeBid(
   bid: number,
   isNil: boolean,
   isBlindNil: boolean,
-  config: GameConfig
+  _config: GameConfig
 ): ActionResult {
   if (state.phase !== 'bidding') {
     return { state, valid: false, error: 'Not in bidding phase' };
@@ -364,7 +364,7 @@ function handlePlayCard(
   state: GameState,
   playerId: PlayerId,
   card: Card,
-  config: GameConfig
+  _config: GameConfig
 ): ActionResult {
   if (state.phase !== 'playing') {
     return { state, valid: false, error: 'Not in playing phase' };
@@ -436,7 +436,7 @@ function handlePlayCard(
 
 function handleCollectTrick(
   state: GameState,
-  config: GameConfig
+  _config: GameConfig
 ): ActionResult {
   if (state.phase !== 'trick-end') {
     return { state, valid: false, error: 'Not in trick-end phase' };

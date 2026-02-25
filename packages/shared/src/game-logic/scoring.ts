@@ -6,8 +6,6 @@ import type {
   PlayerBid,
   TeamScore,
 } from '../types/player.js';
-import { getPositionsForTeam } from '../types/player.js';
-
 export interface ScoreCalculation {
   baseScore: number;
   bags: number;
@@ -21,7 +19,7 @@ export function calculateRoundScore(
   tricks: number,
   nilBids: PlayerBid[],
   playerTricks: Record<PlayerId, number>,
-  config: GameConfig
+  _config: GameConfig
 ): ScoreCalculation {
   let baseScore = 0;
   let bags = 0;
@@ -98,7 +96,6 @@ export function createRoundSummary(
   const round = gameState.currentRound!;
 
   const createTeamResult = (teamId: TeamId): TeamRoundResult => {
-    const positions = getPositionsForTeam(teamId);
     const teamPlayers = gameState.players.filter((p) => p.team === teamId);
     const teamBids = round.bids.filter((b) =>
       teamPlayers.some((p) => p.id === b.playerId)
