@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { processAction, canTransition } from '../state-machine/game-machine';
-import {
-  createInitialGameState,
-  DEFAULT_GAME_CONFIG,
-} from '../types/game-state';
+import { createInitialGameState } from '../types/game-state';
 
 describe('Game State Machine', () => {
   describe('canTransition', () => {

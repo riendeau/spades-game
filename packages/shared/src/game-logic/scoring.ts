@@ -6,36 +6,21 @@ import type {
   PlayerBid,
   TeamScore,
 } from '../types/player.js';
-import { getTeamForPosition, getPositionsForTeam } from '../types/player.js';
-
 export interface ScoreCalculation {
   baseScore: number;
   bags: number;
-  bagPenalty: number;
   nilBonus: number;
   totalScore: number;
-}
-
-export function calculateTeamBid(bids: PlayerBid[], teamId: TeamId): number {
-  const positions = getPositionsForTeam(teamId);
-  return bids
-    .filter((b) => {
-      const player = bids.find((bid) => bid.playerId === b.playerId);
-      return player && !b.isNil && !b.isBlindNil;
-    })
-    .reduce((sum, b) => sum + b.bid, 0);
 }
 
 export function calculateRoundScore(
   bid: number,
   tricks: number,
   nilBids: PlayerBid[],
-  playerTricks: Record<PlayerId, number>,
-  config: GameConfig
+  playerTricks: Record<PlayerId, number>
 ): ScoreCalculation {
   let baseScore = 0;
   let bags = 0;
-  const bagPenalty = 0;
   let nilBonus = 0;
 
   // Handle nil bids first
@@ -68,9 +53,8 @@ export function calculateRoundScore(
   return {
     baseScore,
     bags,
-    bagPenalty,
     nilBonus,
-    totalScore: baseScore + nilBonus - bagPenalty,
+    totalScore: baseScore + nilBonus,
   };
 }
 
@@ -108,7 +92,6 @@ export function createRoundSummary(
   const round = gameState.currentRound!;
 
   const createTeamResult = (teamId: TeamId): TeamRoundResult => {
-    const positions = getPositionsForTeam(teamId);
     const teamPlayers = gameState.players.filter((p) => p.team === teamId);
     const teamBids = round.bids.filter((b) =>
       teamPlayers.some((p) => p.id === b.playerId)
@@ -128,8 +111,7 @@ export function createRoundSummary(
       regularBid,
       teamTricks,
       nilBids,
-      playerTricks,
-      config
+      playerTricks
     );
 
     const nilResults = nilBids.map((nb) => ({

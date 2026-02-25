@@ -7,7 +7,7 @@ test.describe('Seat switching', () => {
   test('"Sit here" buttons appear on empty seats but not on own seat', async ({
     createPlayerPage,
   }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     await createRoom(p1, 'Alice');
 
     // With 1 player at South (0), the other 3 seats should have "Sit here"
@@ -33,7 +33,7 @@ test.describe('Seat switching', () => {
   test('clicking "Sit here" moves the player to that seat', async ({
     createPlayerPage,
   }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     await createRoom(p1, 'Alice');
 
     // Alice starts at South (0)
@@ -65,14 +65,14 @@ test.describe('Seat switching', () => {
   test('"Sit here" button count decreases as more players join', async ({
     createPlayerPage,
   }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
     // 1 player: 3 empty seats
     await expect(p1.getByRole('button', { name: 'Sit here' })).toHaveCount(3);
 
     // Bob joins
-    const p2 = await createPlayerPage('Bob');
+    const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'Bob');
 
     // Both players now see 2 "Sit here" buttons
@@ -80,7 +80,7 @@ test.describe('Seat switching', () => {
     await expect(p2.getByRole('button', { name: 'Sit here' })).toHaveCount(2);
 
     // Charlie joins
-    const p3 = await createPlayerPage('Charlie');
+    const p3 = await createPlayerPage();
     await joinRoom(p3, roomCode, 'Charlie');
 
     // 1 seat left
@@ -106,7 +106,7 @@ test.describe('Seat switching', () => {
     // used state.players.length as the next position, causing a collision when
     // the existing player had switched away from their initial seat.
 
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
     // Alice starts at South (0), then moves to West (1)
@@ -117,7 +117,7 @@ test.describe('Seat switching', () => {
     await expect(p1.getByTestId('seat-1')).toContainText('Alice');
 
     // Bob joins — should be assigned to South (0), the first free seat, NOT West (1)
-    const p2 = await createPlayerPage('Bob');
+    const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'Bob');
 
     // Verify from Bob's perspective
@@ -140,7 +140,7 @@ test.describe('Seat switching', () => {
     // seat the switcher moved to. Confirm both players see a clean layout
     // with distinct seats and no duplication.
 
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
     // Alice moves from South (0) to East (3)
@@ -150,7 +150,7 @@ test.describe('Seat switching', () => {
       .click();
     await expect(p1.getByTestId('seat-3')).toContainText('Alice');
 
-    const p2 = await createPlayerPage('Bob');
+    const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'Bob');
 
     // Bob should land on South (0) — the first free seat

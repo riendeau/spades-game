@@ -7,7 +7,6 @@ import type {
 import { validatePlay, validateBid } from '@spades/shared';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
-import { hookExecutor } from '../mods/hook-executor.js';
 import { roomManager } from '../rooms/room-manager.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;

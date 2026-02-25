@@ -1,11 +1,11 @@
 import { test, expect } from '../fixtures/game-fixtures';
-import { createRoom, joinRoom } from '../helpers/room-helpers';
+import { createRoom } from '../helpers/room-helpers';
 
 test.describe('Waiting Room', () => {
   test('ready button is disabled with fewer than 4 players', async ({
     createPlayerPage,
   }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     await createRoom(p1, 'Alice');
 
     await expect(
@@ -49,7 +49,7 @@ test.describe('Waiting Room', () => {
   });
 
   test('player can leave the waiting room', async ({ createPlayerPage }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     await createRoom(p1, 'Alice');
 
     await p1.getByRole('button', { name: 'Leave' }).click();

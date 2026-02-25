@@ -1,7 +1,6 @@
 import { test, expect } from '../fixtures/game-fixtures';
 import { completeAllBids } from '../helpers/bidding-helpers';
 import {
-  playFirstCard,
   playCurrentPlayerCard,
   completeTrick,
   findCurrentPlayer,
