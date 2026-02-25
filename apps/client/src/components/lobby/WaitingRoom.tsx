@@ -193,11 +193,11 @@ export function WaitingRoom({
   }, [isReady, gameState.players.length, onReady]);
 
   const copyRoomCode = () => {
-    navigator.clipboard.writeText(roomId);
+    void navigator.clipboard.writeText(roomId);
   };
 
   const copyShareableUrl = () => {
-    navigator.clipboard.writeText(shareableUrl);
+    void navigator.clipboard.writeText(shareableUrl);
   };
 
   const openAutoReadyTabs = () => {
