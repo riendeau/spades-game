@@ -5,7 +5,7 @@ test.describe('Error Handling', () => {
   test('empty nickname disables submit button', async ({
     createPlayerPage,
   }) => {
-    const page = await createPlayerPage('_unused');
+    const page = await createPlayerPage();
 
     // Clear the nickname field (should be empty by default)
     const nicknameInput = page.getByPlaceholder('Enter your nickname');
@@ -17,7 +17,7 @@ test.describe('Error Handling', () => {
   });
 
   test('empty room code disables join button', async ({ createPlayerPage }) => {
-    const page = await createPlayerPage('_unused');
+    const page = await createPlayerPage();
 
     await page.getByRole('button', { name: 'Join Game' }).click();
     await page.getByPlaceholder('Enter your nickname').fill('Alice');
@@ -29,20 +29,20 @@ test.describe('Error Handling', () => {
   });
 
   test('fifth player cannot join a full room', async ({ createPlayerPage }) => {
-    const p1 = await createPlayerPage('P1');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'P1');
 
-    const p2 = await createPlayerPage('P2');
+    const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'P2');
 
-    const p3 = await createPlayerPage('P3');
+    const p3 = await createPlayerPage();
     await joinRoom(p3, roomCode, 'P3');
 
-    const p4 = await createPlayerPage('P4');
+    const p4 = await createPlayerPage();
     await joinRoom(p4, roomCode, 'P4');
 
     // Fifth player tries to join
-    const p5 = await createPlayerPage('P5');
+    const p5 = await createPlayerPage();
     await p5.getByRole('button', { name: 'Join Game' }).click();
     await p5.getByPlaceholder('Enter your nickname').fill('P5');
     await p5.getByPlaceholder('e.g. ABC123').fill(roomCode);

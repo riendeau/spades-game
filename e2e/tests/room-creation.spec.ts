@@ -5,7 +5,7 @@ test.describe('Room Creation', () => {
   test('creating a room shows the waiting room with a 6-character code', async ({
     createPlayerPage,
   }) => {
-    const page = await createPlayerPage('Alice');
+    const page = await createPlayerPage();
     const roomCode = await createRoom(page, 'Alice');
 
     await expect(page.getByText('Waiting Room')).toBeVisible();
@@ -15,10 +15,10 @@ test.describe('Room Creation', () => {
   test('second player can join with room code', async ({
     createPlayerPage,
   }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
-    const p2 = await createPlayerPage('Bob');
+    const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'Bob');
 
     // Both players should see each other
@@ -27,7 +27,7 @@ test.describe('Room Creation', () => {
   });
 
   test('invalid room code shows error', async ({ createPlayerPage }) => {
-    const page = await createPlayerPage('Alice');
+    const page = await createPlayerPage();
     await page.getByRole('button', { name: 'Join Game' }).click();
     await page.getByPlaceholder('Enter your nickname').fill('Alice');
     await page.getByPlaceholder('e.g. ABC123').fill('ZZZZZ9');
@@ -42,16 +42,16 @@ test.describe('Room Creation', () => {
   test('four players can all join the same room', async ({
     createPlayerPage,
   }) => {
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
-    const p2 = await createPlayerPage('Bob');
+    const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'Bob');
 
-    const p3 = await createPlayerPage('Charlie');
+    const p3 = await createPlayerPage();
     await joinRoom(p3, roomCode, 'Charlie');
 
-    const p4 = await createPlayerPage('Diana');
+    const p4 = await createPlayerPage();
     await joinRoom(p4, roomCode, 'Diana');
 
     // Player 1 should see all four players

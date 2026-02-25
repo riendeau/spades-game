@@ -2,7 +2,7 @@ import { test as base, type Page, type BrowserContext } from '@playwright/test';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 interface GameFixtures {
-  createPlayerPage: (nickname: string) => Promise<Page>;
+  createPlayerPage: () => Promise<Page>;
   fourPlayerRoom: { players: Page[]; roomCode: string };
   fourPlayerBidding: { players: Page[]; roomCode: string };
 }
@@ -11,7 +11,7 @@ export const test = base.extend<GameFixtures>({
   createPlayerPage: async ({ browser }, use) => {
     const contexts: BrowserContext[] = [];
 
-    const factory = async (_nickname: string): Promise<Page> => {
+    const factory = async (): Promise<Page> => {
       const context = await browser.newContext();
       contexts.push(context);
       const page = await context.newPage();
