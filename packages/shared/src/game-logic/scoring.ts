@@ -6,7 +6,7 @@ import type {
   PlayerBid,
   TeamScore,
 } from '../types/player.js';
-import { getTeamForPosition, getPositionsForTeam } from '../types/player.js';
+import { getPositionsForTeam } from '../types/player.js';
 
 export interface ScoreCalculation {
   baseScore: number;
@@ -14,16 +14,6 @@ export interface ScoreCalculation {
   bagPenalty: number;
   nilBonus: number;
   totalScore: number;
-}
-
-export function calculateTeamBid(bids: PlayerBid[], teamId: TeamId): number {
-  const positions = getPositionsForTeam(teamId);
-  return bids
-    .filter((b) => {
-      const player = bids.find((bid) => bid.playerId === b.playerId);
-      return player && !b.isNil && !b.isBlindNil;
-    })
-    .reduce((sum, b) => sum + b.bid, 0);
 }
 
 export function calculateRoundScore(
