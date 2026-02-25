@@ -14,10 +14,13 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
     <>
       R{gameState.currentRound.roundNumber} · T
       {gameState.currentRound.tricksWon
-        ? Object.values(gameState.currentRound.tricksWon).reduce(
-            (a, b) => a + b,
-            0
-          ) + 1
+        ? Math.min(
+            Object.values(gameState.currentRound.tricksWon).reduce(
+              (a, b) => a + b,
+              0
+            ) + 1,
+            13
+          )
         : 1}
       /13
       {gameState.currentRound.spadesBroken && ' · ♠'}
