@@ -3,7 +3,6 @@ import {
   determineTrickWinner,
   addPlayToTrick,
   isTrickComplete,
-  getHighestCardInTrick,
   hasSpadeBeenPlayedInTrick,
 } from '../game-logic/trick';
 import type { Trick } from '../types/game-state';

@@ -1,4 +1,3 @@
-import type { ThemeMod } from '@spades/shared';
 import React, { createContext, useContext, useState } from 'react';
 
 interface ModInfo {

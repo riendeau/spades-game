@@ -1,11 +1,6 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
-interface PlayerPage {
-  page: Page;
-  context: BrowserContext;
-}
-
 interface GameFixtures {
   createPlayerPage: (nickname: string) => Promise<Page>;
   fourPlayerRoom: { players: Page[]; roomCode: string };

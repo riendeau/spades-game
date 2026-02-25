@@ -1,4 +1,3 @@
-import type { GameState, Card, Position } from '@spades/shared';
 import { createInitialGameState, DEFAULT_GAME_CONFIG } from '@spades/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { GameInstance } from '../game/game-instance.js';

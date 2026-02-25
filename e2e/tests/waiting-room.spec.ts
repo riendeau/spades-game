@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/game-fixtures';
-import { createRoom, joinRoom } from '../helpers/room-helpers';
+import { createRoom } from '../helpers/room-helpers';
 
 test.describe('Waiting Room', () => {
   test('ready button is disabled with fewer than 4 players', async ({

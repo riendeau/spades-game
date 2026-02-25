@@ -1,8 +1,4 @@
-import {
-  allBidsComplete,
-  getNextBidder,
-  createBid,
-} from '../game-logic/bidding.js';
+import { createBid } from '../game-logic/bidding.js';
 import {
   createDeck,
   dealCards,
@@ -14,24 +10,11 @@ import {
   checkGameEnd,
   createRoundSummary,
 } from '../game-logic/scoring.js';
-import {
-  addPlayToTrick,
-  isTrickComplete,
-  determineTrickWinner,
-} from '../game-logic/trick.js';
+import { addPlayToTrick, isTrickComplete } from '../game-logic/trick.js';
 import type { Card } from '../types/card.js';
-import type {
-  GameState,
-  GamePhase,
-  GameConfig,
-  Trick,
-} from '../types/game-state.js';
-import {
-  DEFAULT_GAME_CONFIG,
-  createEmptyTrick,
-  createRoundState,
-} from '../types/game-state.js';
-import type { Player, PlayerId, Position, PlayerBid } from '../types/player.js';
+import type { GameState, GamePhase, GameConfig } from '../types/game-state.js';
+import { DEFAULT_GAME_CONFIG } from '../types/game-state.js';
+import type { Player, PlayerId, Position } from '../types/player.js';
 import { getTeamForPosition } from '../types/player.js';
 
 export type GameAction =
