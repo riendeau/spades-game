@@ -209,7 +209,7 @@ export function GameTable({
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '2px',
-                padding: isMobile ? '6px' : '12px',
+                padding: isMobile ? '6px' : '16px',
                 borderRadius: '10px',
                 backgroundColor: `rgba(${TEAM_RGB[myPlayer.team]}, ${isMyTurn ? 0.2 : 0.07})`,
                 border: isMyTurn
@@ -225,7 +225,7 @@ export function GameTable({
               <span
                 style={{
                   fontWeight: 600,
-                  fontSize: isMobile ? '12px' : '14px',
+                  fontSize: isMobile ? '12px' : '18px',
                   color: '#f9fafb',
                 }}
               >
@@ -233,7 +233,7 @@ export function GameTable({
               </span>
               <span
                 style={{
-                  fontSize: isMobile ? '10px' : '12px',
+                  fontSize: isMobile ? '10px' : '14px',
                   color: '#d1d5db',
                 }}
               >

@@ -16,9 +16,9 @@ export function TrickArea({
   const trick = gameState.currentRound?.currentTrick;
   if (!trick) return null;
 
-  const width = compact ? 180 : 250;
-  const height = compact ? 150 : 200;
-  const offset = compact ? 8 : 10;
+  const width = compact ? 180 : 320;
+  const height = compact ? 150 : 280;
+  const offset = compact ? 8 : 15;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -59,7 +59,7 @@ export function TrickArea({
               ...getPositionStyle(relPos),
             }}
           >
-            <Card card={play.card} small testId="trick-card" />
+            <Card card={play.card} small={compact} testId="trick-card" />
           </div>
         );
       })}

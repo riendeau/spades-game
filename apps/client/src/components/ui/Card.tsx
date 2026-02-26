@@ -49,8 +49,8 @@ export function Card({
       disabled={disabled}
       data-testid={testId}
       style={{
-        width: small ? '50px' : '70px',
-        height: small ? '75px' : '100px',
+        width: small ? '50px' : '90px',
+        height: small ? '75px' : '130px',
         backgroundColor: showDisabled ? '#e8e8e8' : '#fff',
         border: selected ? '3px solid #3b82f6' : '1px solid #ccc',
         borderRadius: '8px',
@@ -59,7 +59,7 @@ export function Card({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: small ? '14px' : '18px',
+        fontSize: small ? '14px' : '22px',
         fontWeight: 'bold',
         color,
         boxShadow: selected
@@ -73,7 +73,7 @@ export function Card({
       }}
     >
       <span>{card.rank}</span>
-      <span style={{ fontSize: small ? '20px' : '28px' }}>{symbol}</span>
+      <span style={{ fontSize: small ? '20px' : '36px' }}>{symbol}</span>
     </button>
   );
 }
@@ -82,8 +82,8 @@ export function CardBack({ small }: { small?: boolean }) {
   return (
     <div
       style={{
-        width: small ? '50px' : '70px',
-        height: small ? '75px' : '100px',
+        width: small ? '50px' : '90px',
+        height: small ? '75px' : '130px',
         backgroundColor: '#1e40af',
         border: '1px solid #1e3a8a',
         borderRadius: '8px',
@@ -94,7 +94,7 @@ export function CardBack({ small }: { small?: boolean }) {
           'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)',
       }}
     >
-      <span style={{ color: '#fff', fontSize: small ? '20px' : '28px' }}>
+      <span style={{ color: '#fff', fontSize: small ? '20px' : '36px' }}>
         {'\u2660'}
       </span>
     </div>
