@@ -6,9 +6,17 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from '@spades/shared';
+import connectPgSimple from 'connect-pg-simple';
 import express from 'express';
+import type { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
+import passport from 'passport';
 import { Server } from 'socket.io';
+import { authRouter } from './auth/auth-routes.js';
+import { DEV_USER, configurePassport } from './auth/passport-config.js';
+import { pool } from './db/client.js';
+import { createTables } from './db/schema.js';
 import { hookExecutor } from './mods/hook-executor.js';
 import { loadBuiltInMods } from './mods/mod-loader.js';
 import { modRegistry } from './mods/mod-registry.js';
@@ -16,6 +24,7 @@ import { setupSocketHandlers } from './socket/handler.js';
 
 const PORT = process.env.PORT || 3001;
 const BASE_PATH = process.env.BASE_PATH || '/';
+const isProd = process.env.NODE_ENV === 'production';
 
 // Load mods
 loadBuiltInMods();
@@ -26,6 +35,10 @@ hookExecutor.setMods(modRegistry.getAllRuleMods());
 const app = express();
 const httpServer = createServer(app);
 
+// Trust Render's reverse proxy so passport constructs https:// callback URLs
+// from X-Forwarded-Proto rather than defaulting to http://
+app.set('trust proxy', 1);
+
 // Rate limiting for all HTTP routes (Socket.io traffic is unaffected)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -34,6 +47,11 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use(limiter);
+
+// Health check — always public, before auth middleware
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
 
 // Serve built client files when SERVE_CLIENT=true (for single-port production deployment).
 // When not serving the client, enable CORS for the Vite dev server origin.
@@ -53,14 +71,93 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
       },
 });
 
-// Health check (always at root for monitoring)
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: Date.now() });
+// --- Session middleware (shared with Socket.io) ---
+// In dev without DATABASE_URL, use the default in-memory store so pnpm dev
+// works without a local PostgreSQL instance.
+const PgSession = connectPgSimple(session);
+const sessionStore =
+  isProd && process.env.DATABASE_URL
+    ? new PgSession({ pool, createTableIfMissing: true })
+    : undefined;
+
+const sessionMiddleware = session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET ?? 'dev-secret-do-not-use-in-prod',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: isProd,
+    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  },
+});
+app.use(sessionMiddleware);
+
+// --- Passport ---
+const oauthConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.DATABASE_URL
+);
+if (isProd && oauthConfigured) {
+  configurePassport();
+} else if (isProd) {
+  console.warn(
+    'OAuth disabled — GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and DATABASE_URL ' +
+      'must all be set in the Render dashboard to enable sign-in.'
+  );
+}
+const passportInit = passport.initialize();
+const passportSession = passport.session();
+app.use(passportInit);
+app.use(passportSession);
+
+// Dev bypass: auto-inject a hardcoded user so auth is transparent locally
+if (!isProd) {
+  app.use((req, _res, next) => {
+    if (!req.user) req.user = DEV_USER;
+    next();
+  });
+}
+
+// --- Auth routes (public) ---
+app.use('/auth', authRouter);
+
+// --- Protect /api/* routes ---
+app.use('/api', (req, res, next) => {
+  if (req.user) return next();
+  res.status(401).json({ error: 'Unauthorized' });
 });
 
 // Get available mods
 app.get(`${BASE_PATH}api/mods`, (_req, res) => {
   res.json(modRegistry.getModList());
+});
+
+// --- DB schema (only when DATABASE_URL is set) ---
+if (process.env.DATABASE_URL) {
+  await createTables();
+}
+
+// --- Socket.io auth middleware ---
+// Run session + passport middleware so socket.request.user is populated
+// from the session before the auth check below.
+const ioMiddleware =
+  (mw: express.RequestHandler) =>
+  (socket: { request: object }, next: (err?: Error) => void) =>
+    mw(
+      socket.request as Request,
+      {} as Response,
+      next as unknown as express.NextFunction
+    );
+
+io.use(ioMiddleware(sessionMiddleware));
+io.use(ioMiddleware(passportInit));
+io.use(ioMiddleware(passportSession));
+io.use((socket, next) => {
+  if (!isProd) return next();
+  if ((socket.request as Request).user) return next();
+  next(new Error('Unauthorized'));
 });
 
 // Setup socket handlers

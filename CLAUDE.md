@@ -189,6 +189,51 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 - **Port conflicts when running E2E locally**: E2E tests start their own dev servers on ports 3001 and 5173. If a preview server or `pnpm dev` is already running on those ports, all tests will fail. Always run `lsof -ti :3001 :5173 | xargs kill` before running E2E tests locally.
 - **UI text changes break E2E assertions**: Tests in `shareable-url.spec.ts` and others assert on visible text labels. When renaming UI strings, grep for the old text in `e2e/` and update assertions to match.
 
+## Authentication
+
+### Architecture
+
+**Session strategy:** `express-session` with a PostgreSQL store (`connect-pg-simple`) in production. The same session middleware is shared with Socket.io by calling it directly in `io.use()`. In dev (no `DATABASE_URL`), the default in-memory store is used — no Postgres required locally.
+
+**Dev bypass:** When `NODE_ENV !== 'production'`, a middleware after passport auto-injects `DEV_USER` into every request, and the Socket.io auth check is skipped entirely. `GET /auth/me` returns `DEV_USER` so `LoginGate` immediately renders the app. `pnpm dev` requires no Google credentials or local database.
+
+**What is/isn't protected:**
+
+- **Protected (server-side):** `/api/*` routes, Socket.io connections (production only)
+- **Public:** `/health`, `/auth/*`, all static files (needed to load the React app before LoginGate renders)
+
+### Key Files
+
+- `apps/server/src/auth/passport-config.ts` — Google OAuth strategy + `Express.User` global augmentation
+- `apps/server/src/auth/auth-routes.ts` — Express router for `/auth/google`, `/auth/google/callback`, `/auth/logout`, `/auth/me`
+- `apps/server/src/db/client.ts` — `pg.Pool` from `DATABASE_URL`
+- `apps/server/src/db/schema.ts` — `createTables()` (idempotent; only runs when `DATABASE_URL` is set)
+- `apps/client/src/components/auth/LoginGate.tsx` — Fetches `/auth/me` on mount; shows Google sign-in UI to unauthenticated users; exposes user via `UserContext`
+
+### Gotchas
+
+**`Express.User` augmentation:** `passport-config.ts` uses `declare global { namespace Express { interface User { ... } } }` to type `req.user` across the whole server. This pattern requires TypeScript namespace syntax, which the `@typescript-eslint/no-namespace` rule flags. The workaround is a `// eslint-disable-next-line` placed on the `namespace Express {` line _inside_ the `declare global {}` block — not on the `declare global {` line itself.
+
+**Async passport callbacks:** `passport-google-oauth20` verify callbacks and `passport.deserializeUser` must **not** be declared `async` — the rule `@typescript-eslint/no-misused-promises` will fire. Use the `void (async () => { ... })().catch(done)` IIFE pattern for the verify callback, and a promise chain (`.then().catch()`) for `deserializeUser`.
+
+**Session middleware + Socket.io:** All three middleware handlers — `sessionMiddleware`, `passport.initialize()`, and `passport.session()` — must run in the `io.use()` chain, not just `sessionMiddleware`. `passport.session()` is what reads `session.passport.user` and calls `deserializeUser()` to populate `socket.request.user`. Without it, the user is never deserialized, every Socket.io connection is rejected as `Unauthorized`, and the client gets stuck on "Connecting...". Store the passport handlers before `app.use()` so they can be reused in `io.use()`. Socket.io's `next` is narrower than Express's `NextFunction` — cast it: `next as unknown as express.NextFunction`.
+
+**Cookie scoping in dev:** The Vite dev server proxies both `/socket.io` and `/auth` to port 3001. This keeps cookies scoped to `localhost:5173` so the OAuth callback cookie and the Socket.io connection cookie are the same origin. No `changeOrigin` needed — keeping the `Host: localhost:5173` header is intentional.
+
+**Render.yaml DB wiring:** The `DATABASE_URL` env var is populated from `fromDatabase.property: connectionString` (Render's built-in linking). All OAuth secrets (`GOOGLE_CLIENT_ID`, etc.) are `sync: false` — set them manually in the Render dashboard to avoid committing secrets.
+
+**Callback URL / trust proxy:** The passport strategy uses `callbackURL: '/auth/google/callback'` (a relative path). Passport constructs the full URL from the request's `Host` and `X-Forwarded-Proto` headers, so the same code works for any deployment — main app, preview apps, etc. — without a `GOOGLE_CALLBACK_URL` env var. `app.set('trust proxy', 1)` is required so Render's load balancer's `X-Forwarded-Proto: https` header is trusted and passport builds `https://` URLs. Each deployment's callback URL must still be registered as an authorized redirect URI in Google Console.
+
+### Required Env Vars (production only)
+
+| Variable               | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `GOOGLE_CLIENT_ID`     | Google OAuth app client ID                                         |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth app secret                                            |
+| `SESSION_SECRET`       | Signs the session cookie (32+ random chars)                        |
+| `ALLOWED_EMAILS`       | Comma-separated allowlist (e.g. `alice@gmail.com,bob@gmail.com`)   |
+| `DATABASE_URL`         | PostgreSQL connection string (auto-set by Render from DB resource) |
+
 ## Dependency Management
 
 ### Toolchain Versions (as of 2026-02)
