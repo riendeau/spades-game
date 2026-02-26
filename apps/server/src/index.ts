@@ -20,6 +20,7 @@ import { createTables } from './db/schema.js';
 import { hookExecutor } from './mods/hook-executor.js';
 import { loadBuiltInMods } from './mods/mod-loader.js';
 import { modRegistry } from './mods/mod-registry.js';
+import { roomManager } from './rooms/room-manager.js';
 import { setupSocketHandlers } from './socket/handler.js';
 
 const PORT = process.env.PORT || 3001;
@@ -190,12 +191,26 @@ httpServer.on('error', (err: NodeJS.ErrnoException) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Spades server running on port ${PORT}`);
+  console.log(
+    `[server] started at=${new Date().toISOString()} port=${PORT} env=${process.env.NODE_ENV ?? 'development'}`
+  );
 });
+
+// Heartbeat: log room/session counts every 5 minutes
+const heartbeatInterval = setInterval(
+  () => {
+    roomManager.logHeartbeat();
+  },
+  5 * 60 * 1000
+);
 
 // Graceful shutdown handling
 const shutdown = (signal: string) => {
-  console.log(`\n${signal} received, shutting down gracefully...`);
+  console.log(
+    `\n[server] ${signal} received, shutting down (rooms=${roomManager.getRoomCount()} sessions=${roomManager.getSessionCount()})`
+  );
+
+  clearInterval(heartbeatInterval);
 
   // Forcefully disconnect all Socket.io clients immediately
   io.disconnectSockets();
@@ -207,7 +222,7 @@ const shutdown = (signal: string) => {
   // Exit immediately after initiating shutdown
   // This prevents tsx watch from force-killing before cleanup completes
   setTimeout(() => {
-    console.log('Server shutdown complete');
+    console.log('[server] shutdown complete');
     process.exit(0);
   }, 100);
 };

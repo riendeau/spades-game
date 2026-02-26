@@ -68,6 +68,9 @@ export function useGame() {
     });
 
     socket.on('reconnect:success', ({ state, hand }) => {
+      console.log(
+        `[game] reconnect:success phase=${state.phase} hand=${hand.length} cards`
+      );
       const { setGameState, setHand, revealCards } = useGameStore.getState();
       setGameState(state);
       setHand(hand);
@@ -79,11 +82,13 @@ export function useGame() {
     });
 
     socket.on('reconnect:failed', ({ reason }) => {
+      console.warn(`[game] reconnect:failed reason=${reason}`);
       useGameStore.getState().setError(`Reconnection failed: ${reason}`);
       clearSession();
     });
 
-    socket.on('error', ({ message }) => {
+    socket.on('error', ({ code, message }) => {
+      console.error(`[game] error code=${code} message=${message}`);
       const { setError } = useGameStore.getState();
       setError(message);
       setTimeout(() => setError(null), 5000);
@@ -120,10 +125,15 @@ export function useGame() {
 
     const session = loadSession();
     if (session) {
+      console.log(
+        `[game] emitting player:reconnect room=${session.roomId} token=${session.sessionToken.slice(0, 8)}… socket=${socket.id}`
+      );
       socket.emit('player:reconnect', {
         sessionToken: session.sessionToken,
         roomId: session.roomId,
       });
+    } else {
+      console.log('[game] no saved session, skipping reconnect');
     }
   }, [socket, connected]);
 

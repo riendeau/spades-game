@@ -14,7 +14,9 @@ type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 export function setupSocketHandlers(io: TypedServer): void {
   io.on('connection', (socket: TypedSocket) => {
-    console.log(`Client connected: ${socket.id}`);
+    console.log(
+      `[socket] connected id=${socket.id} transport=${socket.conn.transport.name}`
+    );
 
     socket.on('room:create', ({ nickname }) => {
       handleCreateRoom(socket, nickname);
@@ -134,6 +136,9 @@ function handleJoinRoom(
 function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
+    console.error(
+      `[socket] SESSION_NOT_FOUND in handlePlayerReady socket=${socket.id}`
+    );
     socket.emit('error', {
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
@@ -195,7 +200,16 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
 
 function handlePlayerLeave(socket: TypedSocket, io: TypedServer): void {
   const session = roomManager.getSessionBySocketId(socket.id);
-  if (!session) return;
+  if (!session) {
+    console.warn(
+      `[socket] handlePlayerLeave: no session for socket=${socket.id}`
+    );
+    return;
+  }
+
+  console.log(
+    `[socket] player leaving token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId}`
+  );
 
   const room = roomManager.getRoom(session.roomId);
   if (!room) return;
@@ -220,6 +234,9 @@ function handleBid(
 ): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
+    console.error(
+      `[socket] SESSION_NOT_FOUND in handleBid socket=${socket.id}`
+    );
     socket.emit('error', {
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
@@ -281,6 +298,9 @@ function handlePlayCard(
 ): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
+    console.error(
+      `[socket] SESSION_NOT_FOUND in handlePlayCard socket=${socket.id}`
+    );
     socket.emit('error', {
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
@@ -407,19 +427,30 @@ function handleReconnect(
   sessionToken: string,
   roomId: string
 ): void {
+  console.log(
+    `[reconnect] attempt token=${sessionToken.slice(0, 8)}… room=${roomId} socket=${socket.id}`
+  );
+
   if (!roomManager.isSessionValid(sessionToken)) {
+    console.warn(
+      `[reconnect] FAILED: session invalid/expired token=${sessionToken.slice(0, 8)}…`
+    );
     socket.emit('reconnect:failed', { reason: 'Session expired' });
     return;
   }
 
   const session = roomManager.getSession(sessionToken);
   if (session?.roomId !== roomId) {
+    console.warn(
+      `[reconnect] FAILED: room mismatch token=${sessionToken.slice(0, 8)}… expected=${roomId} actual=${session?.roomId ?? 'no-session'}`
+    );
     socket.emit('reconnect:failed', { reason: 'Invalid session' });
     return;
   }
 
   const room = roomManager.getRoom(roomId);
   if (!room) {
+    console.warn(`[reconnect] FAILED: room not found room=${roomId}`);
     socket.emit('reconnect:failed', { reason: 'Room no longer exists' });
     return;
   }
@@ -434,6 +465,10 @@ function handleReconnect(
 
   // Get player's hand
   const hand = room.game.getPlayerHand(session.playerId);
+
+  console.log(
+    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} hand=${hand.length} cards`
+  );
 
   socket.emit('reconnect:success', {
     state: room.game.toClientState(),
@@ -454,6 +489,9 @@ function handleChangeSeat(
 ): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
+    console.error(
+      `[socket] SESSION_NOT_FOUND in handleChangeSeat socket=${socket.id}`
+    );
     socket.emit('error', {
       code: 'SESSION_NOT_FOUND',
       message: 'Session not found',
@@ -486,7 +524,14 @@ function handleChangeSeat(
 
 function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
   const session = roomManager.markSessionDisconnected(socket.id);
-  if (!session) return;
+  if (!session) {
+    console.warn(`[socket] disconnected id=${socket.id} — no session mapped`);
+    return;
+  }
+
+  console.log(
+    `[socket] disconnected id=${socket.id} token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId}`
+  );
 
   const room = roomManager.getRoom(session.roomId);
   if (!room) return;
@@ -499,6 +544,4 @@ function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
   io.to(session.roomId).emit('game:state-update', {
     state: room.game.toClientState(),
   });
-
-  console.log(`Client disconnected: ${socket.id}, player: ${session.playerId}`);
 }
