@@ -10,19 +10,19 @@ import type { TeamScore, PlayerBid } from '../types/player';
 describe('Scoring', () => {
   describe('calculateRoundScore', () => {
     it('should score 10 points per bid when making bid exactly', () => {
-      const result = calculateRoundScore(4, 4, [], {}, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(4, 4, [], {});
       expect(result.baseScore).toBe(40);
       expect(result.bags).toBe(0);
     });
 
     it('should add bags when exceeding bid', () => {
-      const result = calculateRoundScore(4, 6, [], {}, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(4, 6, [], {});
       expect(result.baseScore).toBe(42);
       expect(result.bags).toBe(2);
     });
 
     it('should score negative when set (under bid)', () => {
-      const result = calculateRoundScore(5, 3, [], {}, DEFAULT_GAME_CONFIG);
+      const result = calculateRoundScore(5, 3, [], {});
       expect(result.baseScore).toBe(-50);
       expect(result.bags).toBe(0);
     });
@@ -33,13 +33,7 @@ describe('Scoring', () => {
       ];
       const playerTricks = { p1: 0 };
 
-      const result = calculateRoundScore(
-        0,
-        0,
-        nilBids,
-        playerTricks,
-        DEFAULT_GAME_CONFIG
-      );
+      const result = calculateRoundScore(0, 0, nilBids, playerTricks);
       expect(result.nilBonus).toBe(100);
     });
 
@@ -49,13 +43,7 @@ describe('Scoring', () => {
       ];
       const playerTricks = { p1: 2 };
 
-      const result = calculateRoundScore(
-        0,
-        2,
-        nilBids,
-        playerTricks,
-        DEFAULT_GAME_CONFIG
-      );
+      const result = calculateRoundScore(0, 2, nilBids, playerTricks);
       expect(result.nilBonus).toBe(-100);
     });
 
@@ -65,13 +53,7 @@ describe('Scoring', () => {
       ];
       const playerTricks = { p1: 0 };
 
-      const result = calculateRoundScore(
-        0,
-        0,
-        nilBids,
-        playerTricks,
-        DEFAULT_GAME_CONFIG
-      );
+      const result = calculateRoundScore(0, 0, nilBids, playerTricks);
       expect(result.nilBonus).toBe(200);
     });
 
@@ -81,13 +63,7 @@ describe('Scoring', () => {
       ];
       const playerTricks = { p1: 1 };
 
-      const result = calculateRoundScore(
-        0,
-        1,
-        nilBids,
-        playerTricks,
-        DEFAULT_GAME_CONFIG
-      );
+      const result = calculateRoundScore(0, 1, nilBids, playerTricks);
       expect(result.nilBonus).toBe(-200);
     });
   });
@@ -105,7 +81,6 @@ describe('Scoring', () => {
       const roundCalc = {
         baseScore: 52,
         bags: 2,
-        bagPenalty: 0,
         nilBonus: 0,
         totalScore: 52,
       };
@@ -127,7 +102,6 @@ describe('Scoring', () => {
       const roundCalc = {
         baseScore: 53,
         bags: 3,
-        bagPenalty: 0,
         nilBonus: 0,
         totalScore: 53,
       };
@@ -151,7 +125,6 @@ describe('Scoring', () => {
       const roundCalc = {
         baseScore: 53,
         bags: 3,
-        bagPenalty: 0,
         nilBonus: 0,
         totalScore: 53,
       };

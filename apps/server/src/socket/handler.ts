@@ -7,7 +7,6 @@ import type {
 import { validatePlay, validateBid } from '@spades/shared';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
-import { hookExecutor } from '../mods/hook-executor.js';
 import { roomManager } from '../rooms/room-manager.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -69,7 +68,7 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
   }
 
   const session = roomManager.createSession(room.id, playerId, socket.id);
-  socket.join(room.id);
+  void socket.join(room.id);
 
   socket.emit('room:created', {
     roomId: room.id,
@@ -108,7 +107,7 @@ function handleJoinRoom(
   }
 
   const session = roomManager.createSession(room.id, playerId, socket.id);
-  socket.join(room.id);
+  void socket.join(room.id);
   roomManager.touchRoom(room.id);
 
   const player = room.game.getState().players.find((p) => p.id === playerId);
@@ -202,7 +201,7 @@ function handlePlayerLeave(socket: TypedSocket, io: TypedServer): void {
   if (!room) return;
 
   room.game.removePlayer(session.playerId);
-  socket.leave(session.roomId);
+  void socket.leave(session.roomId);
 
   io.to(session.roomId).emit('room:player-left', {
     playerId: session.playerId,
@@ -427,7 +426,7 @@ function handleReconnect(
 
   // Update session with new socket
   roomManager.updateSessionSocket(sessionToken, socket.id);
-  socket.join(roomId);
+  void socket.join(roomId);
 
   // Reconnect player in game
   room.game.reconnectPlayer(session.playerId);

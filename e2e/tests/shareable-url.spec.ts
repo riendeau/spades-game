@@ -5,7 +5,7 @@ test.describe('Shareable URL', () => {
   test('waiting room displays shareable URL after room creation', async ({
     createPlayerPage,
   }) => {
-    const page = await createPlayerPage('Alice');
+    const page = await createPlayerPage();
     const roomCode = await createRoom(page, 'Alice');
 
     // Should show "Share Link:" text
@@ -26,7 +26,7 @@ test.describe('Shareable URL', () => {
   test('clicking shareable URL copies it to clipboard', async ({
     createPlayerPage,
   }) => {
-    const page = await createPlayerPage('Alice');
+    const page = await createPlayerPage();
     const roomCode = await createRoom(page, 'Alice');
 
     // Grant clipboard permissions
@@ -54,7 +54,7 @@ test.describe('Shareable URL', () => {
     browser,
   }) => {
     // Player 1 creates a room
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
     // Player 2 navigates directly to the shareable URL
@@ -78,7 +78,7 @@ test.describe('Shareable URL', () => {
     browser,
   }) => {
     // Player 1 creates a room
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
     // Player 2 navigates to shareable URL and joins
@@ -129,7 +129,7 @@ test.describe('Shareable URL', () => {
     browser,
   }) => {
     // Player 1 creates a room
-    const p1 = await createPlayerPage('Alice');
+    const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
     // Player 2 navigates to lowercase version of URL

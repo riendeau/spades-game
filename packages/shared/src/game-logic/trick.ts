@@ -1,5 +1,5 @@
 import type { Card } from '../types/card.js';
-import { compareCards, RANK_VALUES } from '../types/card.js';
+import { compareCards } from '../types/card.js';
 import type { Trick } from '../types/game-state.js';
 import type { PlayerId, PlayerTrickPlay } from '../types/player.js';
 

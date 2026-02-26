@@ -1,6 +1,4 @@
 import {
-  suicideSpadesMod,
-  jokerSpadesMod,
   antiElevenMod,
   classicTheme,
   neonTheme,
@@ -10,8 +8,7 @@ import { modRegistry } from './mod-registry.js';
 
 export function loadBuiltInMods(): void {
   // Load rule mods
-  // modRegistry.registerRuleMod(suicideSpadesMod); // Kept as reference example only
-  // modRegistry.registerRuleMod(jokerSpadesMod); // Kept as reference example only
+  // Reference implementations (inactive): see packages/mods/src/rules/suicide-spades.ts, joker-spades.ts
   modRegistry.registerRuleMod(antiElevenMod);
 
   // Load theme mods

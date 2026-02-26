@@ -1,5 +1,5 @@
 import type { ClientGameState, Position } from '@spades/shared';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { TEAM_COLORS } from '../../styles/colors';
 import { Button } from '../ui/Button';
@@ -150,6 +150,7 @@ export function WaitingRoom({
   onChangeSeat,
 }: WaitingRoomProps) {
   const isMobile = useIsMobile();
+  const [copyError, setCopyError] = useState<string | null>(null);
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
 
@@ -192,12 +193,17 @@ export function WaitingRoom({
     }
   }, [isReady, gameState.players.length, onReady]);
 
+  const handleCopyError = () => {
+    setCopyError('Could not copy — please copy manually.');
+    setTimeout(() => setCopyError(null), 3000);
+  };
+
   const copyRoomCode = () => {
-    navigator.clipboard.writeText(roomId);
+    navigator.clipboard.writeText(roomId).catch(handleCopyError);
   };
 
   const copyShareableUrl = () => {
-    navigator.clipboard.writeText(shareableUrl);
+    navigator.clipboard.writeText(shareableUrl).catch(handleCopyError);
   };
 
   const openAutoReadyTabs = () => {
@@ -304,6 +310,19 @@ export function WaitingRoom({
           </svg>
         </div>
       </div>
+
+      {copyError && (
+        <div
+          style={{
+            fontSize: '13px',
+            color: '#ef4444',
+            marginBottom: '16px',
+            textAlign: 'center',
+          }}
+        >
+          {copyError}
+        </div>
+      )}
 
       {isMobile ? (
         /* 2×2 grid for mobile landscape */

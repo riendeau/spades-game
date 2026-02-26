@@ -1,8 +1,4 @@
-import {
-  allBidsComplete,
-  getNextBidder,
-  createBid,
-} from '../game-logic/bidding.js';
+import { createBid } from '../game-logic/bidding.js';
 import {
   createDeck,
   dealCards,
@@ -14,24 +10,11 @@ import {
   checkGameEnd,
   createRoundSummary,
 } from '../game-logic/scoring.js';
-import {
-  addPlayToTrick,
-  isTrickComplete,
-  determineTrickWinner,
-} from '../game-logic/trick.js';
+import { addPlayToTrick, isTrickComplete } from '../game-logic/trick.js';
 import type { Card } from '../types/card.js';
-import type {
-  GameState,
-  GamePhase,
-  GameConfig,
-  Trick,
-} from '../types/game-state.js';
-import {
-  DEFAULT_GAME_CONFIG,
-  createEmptyTrick,
-  createRoundState,
-} from '../types/game-state.js';
-import type { Player, PlayerId, Position, PlayerBid } from '../types/player.js';
+import type { GameState, GamePhase, GameConfig } from '../types/game-state.js';
+import { DEFAULT_GAME_CONFIG } from '../types/game-state.js';
+import type { Player, PlayerId, Position } from '../types/player.js';
 import { getTeamForPosition } from '../types/player.js';
 
 export type GameAction =
@@ -336,7 +319,7 @@ function handleMakeBid(
   bid: number,
   isNil: boolean,
   isBlindNil: boolean,
-  config: GameConfig
+  _config: GameConfig
 ): ActionResult {
   if (state.phase !== 'bidding') {
     return { state, valid: false, error: 'Not in bidding phase' };
@@ -381,7 +364,7 @@ function handlePlayCard(
   state: GameState,
   playerId: PlayerId,
   card: Card,
-  config: GameConfig
+  _config: GameConfig
 ): ActionResult {
   if (state.phase !== 'playing') {
     return { state, valid: false, error: 'Not in playing phase' };
@@ -453,7 +436,7 @@ function handlePlayCard(
 
 function handleCollectTrick(
   state: GameState,
-  config: GameConfig
+  _config: GameConfig
 ): ActionResult {
   if (state.phase !== 'trick-end') {
     return { state, valid: false, error: 'Not in trick-end phase' };
@@ -529,13 +512,7 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
       0
     );
 
-    return calculateRoundScore(
-      regularBid,
-      teamTricks,
-      nilBids,
-      playerTricks,
-      config
-    );
+    return calculateRoundScore(regularBid, teamTricks, nilBids, playerTricks);
   };
 
   const team1Calc = calculateTeamScore('team1');

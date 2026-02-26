@@ -199,7 +199,7 @@ const shutdown = (signal: string) => {
 
   // Forcefully disconnect all Socket.io clients immediately
   io.disconnectSockets();
-  io.close();
+  void io.close();
 
   // Close HTTP server (don't wait for callback)
   httpServer.close();
