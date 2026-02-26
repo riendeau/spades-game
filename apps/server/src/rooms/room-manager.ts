@@ -84,6 +84,11 @@ export class RoomManager {
 
     this.sessions.set(sessionToken, session);
     this.socketToSession.set(socketId, sessionToken);
+
+    console.log(
+      `[session] created token=${sessionToken.slice(0, 8)}… player=${playerId.slice(0, 8)}… room=${roomId} socket=${socketId} (sessions=${this.sessions.size} socketMap=${this.socketToSession.size})`
+    );
+
     return session;
   }
 
@@ -93,12 +98,26 @@ export class RoomManager {
 
   getSessionBySocketId(socketId: string): PlayerSession | undefined {
     const token = this.socketToSession.get(socketId);
-    return token ? this.sessions.get(token) : undefined;
+    if (!token) {
+      console.warn(
+        `[session] lookup FAILED socket=${socketId} — not in socketToSession map (socketMap=${this.socketToSession.size} sessions=${this.sessions.size})`
+      );
+      return undefined;
+    }
+    const session = this.sessions.get(token);
+    if (!session) {
+      console.error(
+        `[session] MAP INCONSISTENCY socket=${socketId} → token=${token.slice(0, 8)}… but token not in sessions map! (sessions=${this.sessions.size})`
+      );
+      return undefined;
+    }
+    return session;
   }
 
   updateSessionSocket(sessionToken: string, socketId: string): void {
     const session = this.sessions.get(sessionToken);
     if (session) {
+      const oldSocketId = session.socketId;
       // Remove old socket mapping
       if (session.socketId) {
         this.socketToSession.delete(session.socketId);
@@ -106,6 +125,14 @@ export class RoomManager {
       session.socketId = socketId;
       session.disconnectedAt = null;
       this.socketToSession.set(socketId, sessionToken);
+
+      console.log(
+        `[session] socket updated token=${sessionToken.slice(0, 8)}… oldSocket=${oldSocketId ?? 'none'} newSocket=${socketId}`
+      );
+    } else {
+      console.warn(
+        `[session] updateSessionSocket: token=${sessionToken.slice(0, 8)}… NOT FOUND in sessions map`
+      );
     }
   }
 
@@ -115,17 +142,33 @@ export class RoomManager {
       session.disconnectedAt = Date.now();
       session.socketId = null;
       this.socketToSession.delete(socketId);
+
+      console.log(
+        `[session] marking disconnected token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId} socket=${socketId}`
+      );
+    } else {
+      console.warn(
+        `[session] markDisconnected: no session for socket=${socketId}`
+      );
     }
     return session;
   }
 
   isSessionValid(sessionToken: string): boolean {
     const session = this.sessions.get(sessionToken);
-    if (!session) return false;
+    if (!session) {
+      console.warn(
+        `[session] isSessionValid: token=${sessionToken.slice(0, 8)}… NOT FOUND (sessions=${this.sessions.size})`
+      );
+      return false;
+    }
 
     if (session.disconnectedAt) {
       const elapsed = Date.now() - session.disconnectedAt;
       if (elapsed > DISCONNECT_GRACE_PERIOD_MS) {
+        console.warn(
+          `[session] isSessionValid: token=${sessionToken.slice(0, 8)}… EXPIRED (elapsed=${Math.round(elapsed / 1000)}s, grace=${DISCONNECT_GRACE_PERIOD_MS / 1000}s)`
+        );
         return false;
       }
     }
@@ -158,6 +201,8 @@ export class RoomManager {
 
   private cleanup(): void {
     const now = Date.now();
+    let deletedRooms = 0;
+    let deletedSessions = 0;
 
     // Clean up expired rooms
     for (const [roomId, room] of this.rooms) {
@@ -165,7 +210,11 @@ export class RoomManager {
         // Only delete if game hasn't started or is finished
         const phase = room.game.getState().phase;
         if (phase === 'waiting' || phase === 'game-end') {
+          console.log(
+            `[cleanup] deleting room=${roomId} phase=${phase} idle=${Math.round((now - room.lastActivity) / 1000)}s`
+          );
           this.deleteRoom(roomId);
+          deletedRooms++;
         }
       }
     }
@@ -176,12 +225,37 @@ export class RoomManager {
         session.disconnectedAt &&
         now - session.disconnectedAt > DISCONNECT_GRACE_PERIOD_MS
       ) {
+        console.log(
+          `[cleanup] deleting session token=${token.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId} disconnected=${Math.round((now - session.disconnectedAt) / 1000)}s ago`
+        );
         if (session.socketId) {
           this.socketToSession.delete(session.socketId);
         }
         this.sessions.delete(token);
+        deletedSessions++;
       }
     }
+
+    if (deletedRooms > 0 || deletedSessions > 0) {
+      console.log(
+        `[cleanup] summary: deleted ${deletedRooms} rooms, ${deletedSessions} sessions (remaining: ${this.rooms.size} rooms, ${this.sessions.size} sessions)`
+      );
+    }
+  }
+
+  logHeartbeat(): void {
+    let connected = 0;
+    let disconnected = 0;
+    for (const session of this.sessions.values()) {
+      if (session.disconnectedAt) {
+        disconnected++;
+      } else {
+        connected++;
+      }
+    }
+    console.log(
+      `[heartbeat] rooms=${this.rooms.size} sessions=${this.sessions.size} (connected=${connected} disconnected=${disconnected})`
+    );
   }
 
   getRoomCount(): number {

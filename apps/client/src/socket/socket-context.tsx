@@ -33,11 +33,32 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     newSocket.on('connect', () => {
+      console.log(`[socket] connected id=${newSocket.id}`);
       setConnected(true);
     });
 
-    newSocket.on('disconnect', () => {
+    newSocket.on('disconnect', (reason) => {
+      console.log(`[socket] disconnected id=${newSocket.id} reason=${reason}`);
       setConnected(false);
+    });
+
+    // Manager-level reconnection events
+    newSocket.io.on('reconnect_attempt', (attempt) => {
+      console.log(`[socket] reconnect_attempt #${attempt}`);
+    });
+
+    newSocket.io.on('reconnect', (attempt) => {
+      console.log(
+        `[socket] reconnected after ${attempt} attempt(s) id=${newSocket.id}`
+      );
+    });
+
+    newSocket.io.on('reconnect_error', (err) => {
+      console.log(`[socket] reconnect_error: ${err.message}`);
+    });
+
+    newSocket.io.on('reconnect_failed', () => {
+      console.log('[socket] reconnect_failed: all attempts exhausted');
     });
 
     setSocket(newSocket);
