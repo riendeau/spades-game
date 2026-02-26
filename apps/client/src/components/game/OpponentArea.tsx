@@ -39,8 +39,8 @@ export function OpponentArea({
     display: 'flex',
     flexDirection: relativePosition === 'top' ? 'column' : 'row',
     alignItems: 'center',
-    gap: compact ? (isSideOpponent ? '4px' : '6px') : '12px',
-    padding: compact ? (isSideOpponent ? '4px 2px' : '6px') : '12px',
+    gap: compact ? (isSideOpponent ? '4px' : '6px') : '16px',
+    padding: compact ? (isSideOpponent ? '4px 2px' : '6px') : '16px',
     backgroundColor: `rgba(${TEAM_RGB[player.team]}, ${isCurrentPlayer ? 0.2 : 0.07})`,
     borderRadius: '12px',
     border: isCurrentPlayer
@@ -57,13 +57,13 @@ export function OpponentArea({
       <div
         style={{
           textAlign: 'center',
-          minWidth: compact && isSideOpponent ? '48px' : '80px',
+          minWidth: compact && isSideOpponent ? '48px' : '110px',
         }}
       >
         <div
           style={{
             fontWeight: 600,
-            fontSize: compact ? (isSideOpponent ? '11px' : '12px') : '14px',
+            fontSize: compact ? (isSideOpponent ? '11px' : '12px') : '18px',
             color: player.connected ? '#f9fafb' : '#9ca3af',
           }}
         >
@@ -71,7 +71,7 @@ export function OpponentArea({
         </div>
         <div
           style={{
-            fontSize: compact ? '10px' : '12px',
+            fontSize: compact ? '10px' : '14px',
             marginTop: '2px',
             color: '#d1d5db',
           }}

@@ -60,7 +60,7 @@ export function PlayerHand({
         justifyContent: 'center',
         gap: '-20px',
         padding: compact ? '8px' : '20px',
-        minHeight: compact ? '91px' : '140px',
+        minHeight: compact ? '91px' : '170px',
       }}
     >
       {cards.map((card, idx) => {
