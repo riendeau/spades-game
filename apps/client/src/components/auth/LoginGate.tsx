@@ -111,7 +111,7 @@ export function LoginGate({ children }: LoginGateProps) {
           )}
 
           <a
-            href="/auth/google"
+            href={`/auth/google${window.location.pathname !== '/' ? `?returnTo=${encodeURIComponent(window.location.pathname)}` : ''}`}
             style={{
               display: 'flex',
               alignItems: 'center',
