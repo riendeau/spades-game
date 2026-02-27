@@ -7,6 +7,7 @@ import { DEV_USER } from './passport-config.js';
 declare module 'express-session' {
   interface SessionData {
     messages?: string[];
+    returnTo?: string;
   }
 }
 
@@ -24,6 +25,17 @@ authRouter.get('/google', (req, res, next) => {
     res.status(503).send('OAuth not configured on this server.');
     return;
   }
+
+  // Preserve the original URL so we can redirect back after login
+  const returnTo = req.query.returnTo;
+  if (
+    typeof returnTo === 'string' &&
+    returnTo.startsWith('/') &&
+    !returnTo.startsWith('//')
+  ) {
+    req.session.returnTo = returnTo;
+  }
+
   passport.authenticate('google', { scope: ['profile', 'email'] })(
     req,
     res,
@@ -48,8 +60,9 @@ authRouter.get('/google/callback', (req, res, next) => {
         res.redirect('/?error=not_allowed');
         return;
       }
-      const clientUrl = process.env.CLIENT_URL ?? '/';
-      res.redirect(clientUrl);
+      const returnTo = req.session.returnTo;
+      delete req.session.returnTo;
+      res.redirect(returnTo ?? '/');
     }
   );
 });
