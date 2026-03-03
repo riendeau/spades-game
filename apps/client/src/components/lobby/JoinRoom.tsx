@@ -70,12 +70,26 @@ export function JoinRoom({
           fontSize: '32px',
           fontWeight: 700,
           textAlign: 'center',
-          marginBottom: '8px',
+          marginBottom: '4px',
           color: '#1f2937',
         }}
       >
-        {'\u2660'} Spades
+        {'\u2660'} 2p4de5 {'\u2660'}
       </h1>
+
+      <p
+        style={{
+          textAlign: 'center',
+          fontStyle: 'italic',
+          fontSize: '13px',
+          letterSpacing: '0.05em',
+          color: '#6b7280',
+          marginBottom: '24px',
+          fontFamily: 'Georgia, "Times New Roman", serif',
+        }}
+      >
+        lites nostrae nunc introrsum spectant
+      </p>
 
       <div
         style={{
