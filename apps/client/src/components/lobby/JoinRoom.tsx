@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
+import { LOBBY_MOTTO, LOBBY_TITLE } from '../../lobby-branding';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -70,12 +71,26 @@ export function JoinRoom({
           fontSize: '32px',
           fontWeight: 700,
           textAlign: 'center',
-          marginBottom: '8px',
+          marginBottom: '4px',
           color: '#1f2937',
         }}
       >
-        {'\u2660'} Spades
+        {LOBBY_TITLE}
       </h1>
+
+      <p
+        style={{
+          textAlign: 'center',
+          fontStyle: 'italic',
+          fontSize: '13px',
+          letterSpacing: '0.05em',
+          color: '#6b7280',
+          marginBottom: '24px',
+          fontFamily: 'Georgia, "Times New Roman", serif',
+        }}
+      >
+        {LOBBY_MOTTO}
+      </p>
 
       <div
         style={{
