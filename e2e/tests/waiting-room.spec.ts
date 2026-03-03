@@ -1,4 +1,4 @@
-import { LOBBY_TITLE } from '../constants';
+import { LOBBY_TITLE } from '../../apps/client/src/lobby-branding';
 import { test, expect } from '../fixtures/game-fixtures';
 import { createRoom } from '../helpers/room-helpers';
 

@@ -1,5 +1,5 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
-import { LOBBY_TITLE } from '../constants';
+import { LOBBY_TITLE } from '../../apps/client/src/lobby-branding';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 interface GameFixtures {
