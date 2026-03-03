@@ -1,6 +1,8 @@
+declare const process: { env: Record<string, string | undefined> };
+
 import type { RoundEndContext, RoundSummary } from '@spades/shared';
 import { createInitialGameState, DEFAULT_GAME_CONFIG } from '@spades/shared';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { scoreEffectsMod } from '../rules/score-effects.js';
 
 function makeContext(team1Score: number, team2Score: number): RoundEndContext {
@@ -38,6 +40,18 @@ function makeContext(team1Score: number, team2Score: number): RoundEndContext {
 
 describe('scoreEffectsMod', () => {
   const onRoundEnd = scoreEffectsMod.hooks.onRoundEnd!;
+  let originalEnv: string | undefined;
+
+  // Set production mode so tests exercise the score-matching logic
+  // (dev mode fires a random effect every round instead)
+  beforeEach(() => {
+    originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+  });
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalEnv;
+  });
 
   it('returns bowling-strike effect when team1 score is 345', () => {
     const result = onRoundEnd(makeContext(345, 100));
