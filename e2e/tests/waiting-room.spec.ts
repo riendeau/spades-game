@@ -1,3 +1,4 @@
+import { LOBBY_TITLE } from '../constants';
 import { test, expect } from '../fixtures/game-fixtures';
 import { createRoom } from '../helpers/room-helpers';
 
@@ -55,6 +56,6 @@ test.describe('Waiting Room', () => {
     await p1.getByRole('button', { name: 'Leave' }).click();
 
     // Should be back on the join/create screen
-    await expect(p1.getByRole('heading', { name: '♠ Spades' })).toBeVisible();
+    await expect(p1.getByRole('heading', { name: LOBBY_TITLE })).toBeVisible();
   });
 });

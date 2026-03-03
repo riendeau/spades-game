@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
+import { LOBBY_MOTTO, LOBBY_TITLE } from '../../lobby-branding';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -74,7 +75,7 @@ export function JoinRoom({
           color: '#1f2937',
         }}
       >
-        {'\u2660'} 2p4de5 {'\u2660'}
+        {LOBBY_TITLE}
       </h1>
 
       <p
@@ -88,7 +89,7 @@ export function JoinRoom({
           fontFamily: 'Georgia, "Times New Roman", serif',
         }}
       >
-        lites nostrae nunc introrsum spectant
+        {LOBBY_MOTTO}
       </p>
 
       <div
