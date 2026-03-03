@@ -19,6 +19,7 @@ export function useGame() {
   const myHand = useGameStore((s) => s.myHand);
   const cardsRevealed = useGameStore((s) => s.cardsRevealed);
   const roundSummary = useGameStore((s) => s.roundSummary);
+  const roundEffects = useGameStore((s) => s.roundEffects);
   const gameEnded = useGameStore((s) => s.gameEnded);
   const error = useGameStore((s) => s.error);
 
@@ -57,8 +58,11 @@ export function useGame() {
       setTimeout(clearTrickWinner, 2000);
     });
 
-    socket.on('game:round-end', ({ roundSummary }) => {
+    socket.on('game:round-end', ({ roundSummary, effects }) => {
       useGameStore.getState().setRoundSummary(roundSummary);
+      if (effects?.length) {
+        useGameStore.getState().setRoundEffects(effects);
+      }
     });
 
     socket.on('game:ended', ({ winningTeam, finalScores }) => {
@@ -192,7 +196,8 @@ export function useGame() {
   );
 
   // Actions are stable refs — destructure once for the return value
-  const { clearRoundSummary, revealCards, reset } = useGameStore.getState();
+  const { clearRoundSummary, clearRoundEffects, revealCards, reset } =
+    useGameStore.getState();
 
   return {
     connected,
@@ -202,9 +207,11 @@ export function useGame() {
     myHand,
     cardsRevealed,
     roundSummary,
+    roundEffects,
     gameEnded,
     error,
     clearRoundSummary,
+    clearRoundEffects,
     revealCards,
     reset,
     createRoom,

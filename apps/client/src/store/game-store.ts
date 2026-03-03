@@ -2,6 +2,7 @@ import type {
   Card,
   ClientGameState,
   Position,
+  RoundEffect,
   RoundSummary,
 } from '@spades/shared';
 import { create } from 'zustand';
@@ -20,6 +21,7 @@ interface GameStore {
   // UI state
   lastTrickWinner: string | null;
   roundSummary: RoundSummary | null;
+  roundEffects: RoundEffect[];
   error: string | null;
   gameEnded: {
     winner: 'team1' | 'team2';
@@ -41,6 +43,8 @@ interface GameStore {
   clearTrickWinner: () => void;
   setRoundSummary: (summary: RoundSummary) => void;
   clearRoundSummary: () => void;
+  setRoundEffects: (effects: RoundEffect[]) => void;
+  clearRoundEffects: () => void;
   setError: (error: string | null) => void;
   setGameEnded: (data: {
     winner: 'team1' | 'team2';
@@ -60,6 +64,7 @@ const initialState = {
   myHand: [],
   lastTrickWinner: null,
   roundSummary: null,
+  roundEffects: [],
   error: null,
   gameEnded: null,
   cardsRevealed: false,
@@ -91,6 +96,10 @@ export const useGameStore = create<GameStore>((set) => ({
   setRoundSummary: (summary) => set({ roundSummary: summary }),
 
   clearRoundSummary: () => set({ roundSummary: null }),
+
+  setRoundEffects: (effects) => set({ roundEffects: effects }),
+
+  clearRoundEffects: () => set({ roundEffects: [] }),
 
   setError: (error) => set({ error }),
 

@@ -1,5 +1,6 @@
 import type { Card } from './card.js';
 import type { GameState } from './game-state.js';
+import type { RoundEffect } from './mod.js';
 import type { PlayerId, Position } from './player.js';
 
 // Client -> Server Events
@@ -49,6 +50,7 @@ export interface ServerToClientEvents {
   'game:round-end': (data: {
     scores: GameState['scores'];
     roundSummary: RoundSummary;
+    effects?: RoundEffect[];
   }) => void;
   'game:ended': (data: {
     winningTeam: 'team1' | 'team2';

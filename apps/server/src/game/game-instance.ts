@@ -5,6 +5,7 @@ import {
   type PlayerId,
   type Position,
   type ClientGameState,
+  type RoundEffect,
   processAction,
   DEFAULT_GAME_CONFIG,
   type GameAction,
@@ -18,6 +19,7 @@ export class GameInstance {
   private config: GameConfig;
   private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
+  private roundEffects: RoundEffect[] = [];
 
   constructor(
     initialState: GameState,
@@ -41,6 +43,10 @@ export class GameInstance {
 
   getModState(modId: string): unknown {
     return this.modState.get(modId);
+  }
+
+  getRoundEffects(): RoundEffect[] {
+    return this.roundEffects;
   }
 
   setModState(modId: string, state: unknown): void {
@@ -253,6 +259,8 @@ export class GameInstance {
       )?.summary;
 
       if (roundSummary) {
+        this.roundEffects = [];
+
         for (const modId of hookExecutor.getAllModIds()) {
           const hookResult = hookExecutor.executeRoundEnd(
             {
@@ -266,6 +274,10 @@ export class GameInstance {
 
           if (hookResult.modState !== undefined) {
             this.setModState(modId, hookResult.modState);
+          }
+
+          if (hookResult.effects) {
+            this.roundEffects.push(...hookResult.effects);
           }
         }
       }

@@ -1,7 +1,7 @@
 import type { Card } from './card.js';
 import type { RoundSummary } from './events.js';
 import type { GameState, GameConfig } from './game-state.js';
-import type { PlayerId, PlayerBid } from './player.js';
+import type { PlayerId, PlayerBid, TeamId } from './player.js';
 
 // Mod metadata
 export interface ModInfo {
@@ -63,8 +63,15 @@ export interface RoundEndContext {
   modState: unknown;
 }
 
+export interface RoundEffect {
+  id: string;
+  teamId?: TeamId;
+  data?: Record<string, unknown>;
+}
+
 export interface RoundEndResult {
   modState?: unknown;
+  effects?: RoundEffect[];
 }
 
 export interface CalculateDisabledBidsContext {
