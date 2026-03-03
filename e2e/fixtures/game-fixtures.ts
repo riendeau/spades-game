@@ -1,4 +1,5 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
+import { LOBBY_TITLE } from '../../apps/client/src/lobby-branding';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 interface GameFixtures {
@@ -16,7 +17,7 @@ export const test = base.extend<GameFixtures>({
       contexts.push(context);
       const page = await context.newPage();
       await page.goto('/');
-      await page.getByText('Spades').waitFor();
+      await page.getByRole('heading', { name: LOBBY_TITLE }).waitFor();
       return page;
     };
 
@@ -36,7 +37,7 @@ export const test = base.extend<GameFixtures>({
       contexts.push(context);
       const page = await context.newPage();
       await page.goto('/');
-      await page.getByText('Spades').waitFor();
+      await page.getByRole('heading', { name: LOBBY_TITLE }).waitFor();
       return page;
     };
 
@@ -67,7 +68,7 @@ export const test = base.extend<GameFixtures>({
       contexts.push(context);
       const page = await context.newPage();
       await page.goto('/');
-      await page.getByText('Spades').waitFor();
+      await page.getByRole('heading', { name: LOBBY_TITLE }).waitFor();
       return page;
     };
 
