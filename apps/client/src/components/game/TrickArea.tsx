@@ -1,5 +1,10 @@
-import type { ClientGameState, Position } from '@spades/shared';
+import type {
+  Card as CardType,
+  ClientGameState,
+  Position,
+} from '@spades/shared';
 import React from 'react';
+import { useGameStore } from '../../store/game-store';
 import { Card } from '../ui/Card';
 
 const slideKeyframes = `
@@ -23,6 +28,22 @@ const slideKeyframes = `
   15% { opacity: 1; }
   100% { transform: rotate(var(--rot-end)); opacity: 1; }
 }
+@keyframes collect-to-south {
+  0% { transform: rotate(var(--rot-end)); opacity: 1; }
+  100% { transform: translateY(var(--slide-dist)) rotate(calc(var(--rot-end) + 12deg)); opacity: 0; }
+}
+@keyframes collect-to-north {
+  0% { transform: rotate(var(--rot-end)); opacity: 1; }
+  100% { transform: translateY(calc(-1 * var(--slide-dist))) rotate(calc(var(--rot-end) - 12deg)); opacity: 0; }
+}
+@keyframes collect-to-west {
+  0% { transform: rotate(var(--rot-end)); opacity: 1; }
+  100% { transform: translateX(calc(-1 * var(--slide-dist-x))) rotate(calc(var(--rot-end) - 12deg)); opacity: 0; }
+}
+@keyframes collect-to-east {
+  0% { transform: rotate(var(--rot-end)); opacity: 1; }
+  100% { transform: translateX(var(--slide-dist-x)) rotate(calc(var(--rot-end) + 12deg)); opacity: 0; }
+}
 `;
 
 const getAnimationName = (relPos: Position): string => {
@@ -34,6 +55,22 @@ const getAnimationName = (relPos: Position): string => {
   };
   return names[relPos];
 };
+
+const getCollectAnimationName = (winnerRelPos: Position): string => {
+  const names: Record<Position, string> = {
+    0: 'collect-to-south',
+    1: 'collect-to-west',
+    2: 'collect-to-north',
+    3: 'collect-to-east',
+  };
+  return names[winnerRelPos];
+};
+
+interface CollectingState {
+  plays: { playerId: string; card: CardType }[];
+  rotations: Map<string, { start: number; end: number }>;
+  winnerRelPos: Position;
+}
 
 interface TrickAreaProps {
   gameState: ClientGameState;
@@ -48,6 +85,7 @@ export function TrickArea({
 }: TrickAreaProps) {
   const trick = gameState.currentRound?.currentTrick;
   const plays = trick?.plays ?? [];
+  const lastTrickWinner = useGameStore((s) => s.lastTrickWinner);
 
   // Generate random rotations for new plays in a layout effect (before paint)
   const rotationsRef = React.useRef(
@@ -55,6 +93,39 @@ export function TrickArea({
   );
   const [, rerender] = React.useState(0);
 
+  // Collection animation state
+  const [collecting, setCollecting] = React.useState<CollectingState | null>(
+    null
+  );
+  const prevPlaysRef = React.useRef(plays);
+
+  // Collection detection — declared BEFORE rotation-generation effect
+  // so it can snapshot rotations before they're cleared
+  React.useLayoutEffect(() => {
+    const prevPlays = prevPlaysRef.current;
+    prevPlaysRef.current = plays;
+
+    // Detect transition from non-empty → empty plays with a known winner
+    if (prevPlays.length > 0 && plays.length === 0 && lastTrickWinner) {
+      const winnerPlayer = gameState.players.find(
+        (p) => p.id === lastTrickWinner
+      );
+      if (winnerPlayer) {
+        const winnerRelPos = ((winnerPlayer.position - myPosition + 4) %
+          4) as Position;
+        setCollecting({
+          plays: prevPlays.map((p) => ({ playerId: p.playerId, card: p.card })),
+          rotations: new Map(rotationsRef.current),
+          winnerRelPos,
+        });
+        const timer = setTimeout(() => setCollecting(null), 400);
+        return () => clearTimeout(timer);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plays.length, lastTrickWinner]);
+
+  // Rotation generation effect
   React.useLayoutEffect(() => {
     const currentIds = new Set(plays.map((p) => p.playerId));
     for (const key of rotationsRef.current.keys()) {
@@ -78,7 +149,7 @@ export function TrickArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on plays length to avoid ref churn
   }, [plays.length]);
 
-  if (!trick) return null;
+  if (!trick && !collecting) return null;
 
   const width = compact ? 180 : 320;
   const height = compact ? 150 : 280;
@@ -108,6 +179,12 @@ export function TrickArea({
     return positions[relPos];
   };
 
+  // Determine which plays to render
+  const displayPlays = collecting ? collecting.plays : (trick?.plays ?? []);
+  const collectAnimName = collecting
+    ? getCollectAnimationName(collecting.winnerRelPos)
+    : null;
+
   return (
     <div
       data-testid="trick-area"
@@ -123,16 +200,15 @@ export function TrickArea({
       }
     >
       <style>{slideKeyframes}</style>
-      {trick.plays.map((play) => {
+      {displayPlays.map((play) => {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
 
         const relPos = getRelativePosition(player.position);
 
-        const rot = rotationsRef.current.get(play.playerId) ?? {
-          start: 0,
-          end: 0,
-        };
+        const rot = collecting
+          ? (collecting.rotations.get(play.playerId) ?? { start: 0, end: 0 })
+          : (rotationsRef.current.get(play.playerId) ?? { start: 0, end: 0 });
 
         return (
           <div
@@ -145,7 +221,9 @@ export function TrickArea({
             <div
               style={
                 {
-                  animation: `${getAnimationName(relPos)} 350ms ease-out forwards`,
+                  animation: collecting
+                    ? `${collectAnimName} 400ms ease-in forwards`
+                    : `${getAnimationName(relPos)} 350ms ease-out forwards`,
                   '--rot-start': `${rot.start}deg`,
                   '--rot-end': `${rot.end}deg`,
                 } as React.CSSProperties
