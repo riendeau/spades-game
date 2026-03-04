@@ -14,7 +14,7 @@ type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 function getClientState(room: Room): ClientGameState {
-  const state = getClientState(room);
+  const state = room.game.toClientState();
   const abandonedIds = roomManager.getAbandonedPlayerIds(room.id);
 
   if (abandonedIds.length > 0) {
