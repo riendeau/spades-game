@@ -44,36 +44,55 @@ const getAnimationName = (relPos: Position): string => {
   return names[relPos];
 };
 
-// Compute per-card translate offset so all cards converge toward a single
-// point near the winner's edge of the trick area.
-const getCollectOffset = (
-  cardRelPos: Position,
-  winnerRelPos: Position,
+// Card slot position relative to trick-area center (mirrors getPositionStyle)
+const getSlotOffset = (
+  relPos: Position,
   width: number,
-  height: number,
   offset: number,
   gap: number
-): { x: number; y: number; rot: number } => {
-  // Approximate card center offsets from trick-area center
-  const cardPos: Record<Position, { x: number; y: number }> = {
+): { x: number; y: number } => {
+  const slots: Record<Position, { x: number; y: number }> = {
     0: { x: 0, y: gap }, // south — centered, slightly below middle
     1: { x: -(width / 2 - offset), y: 0 }, // west — near left edge
     2: { x: 0, y: -gap }, // north — centered, slightly above middle
     3: { x: width / 2 - offset, y: 0 }, // east — near right edge
   };
+  return slots[relPos];
+};
 
-  // Convergence point near the winner's edge
-  const target: Record<Position, { x: number; y: number }> = {
-    0: { x: 0, y: height * 0.7 },
-    1: { x: -width * 0.8, y: 0 },
-    2: { x: 0, y: -height * 0.7 },
-    3: { x: width * 0.8, y: 0 },
+// Slide-in translate offset per position (matches the slide-from-* keyframes)
+const getSlideInOffset = (
+  relPos: Position,
+  slideDist: number,
+  slideDistX: number
+): { x: number; y: number } => {
+  const offsets: Record<Position, { x: number; y: number }> = {
+    0: { x: 0, y: slideDist }, // south: enters from below
+    1: { x: -slideDistX, y: 0 }, // west: enters from left
+    2: { x: 0, y: -slideDist }, // north: enters from above
+    3: { x: slideDistX, y: 0 }, // east: enters from right
   };
+  return offsets[relPos];
+};
 
-  const card = cardPos[cardRelPos];
-  const tgt = target[winnerRelPos];
-  const x = tgt.x - card.x;
-  const y = tgt.y - card.y;
+// Per-card collect offset: all cards converge on the winner's slide-in origin
+// (i.e. winnerSlot + winnerSlideInOffset), so the convergence point is always
+// identical to where the winner's card entered from.
+const getCollectOffset = (
+  cardRelPos: Position,
+  winnerRelPos: Position,
+  width: number,
+  offset: number,
+  gap: number,
+  slideDist: number,
+  slideDistX: number
+): { x: number; y: number; rot: number } => {
+  const card = getSlotOffset(cardRelPos, width, offset, gap);
+  const winnerSlot = getSlotOffset(winnerRelPos, width, offset, gap);
+  const winnerEntry = getSlideInOffset(winnerRelPos, slideDist, slideDistX);
+
+  const x = winnerSlot.x + winnerEntry.x - card.x;
+  const y = winnerSlot.y + winnerEntry.y - card.y;
 
   // Slight rotation in the dominant travel direction
   const rot = Math.abs(x) > Math.abs(y) ? (x > 0 ? 12 : -12) : y > 0 ? 8 : -8;
@@ -170,6 +189,8 @@ export function TrickArea({
   const height = compact ? 150 : 280;
   const offset = compact ? 8 : 15;
   const gap = compact ? 4 : 10;
+  const slideDist = compact ? 80 : 150;
+  const slideDistX = compact ? 120 : 220;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -206,8 +227,8 @@ export function TrickArea({
           width: `${width}px`,
           height: `${height}px`,
           margin: '0 auto',
-          '--slide-dist': compact ? '80px' : '150px',
-          '--slide-dist-x': compact ? '120px' : '220px',
+          '--slide-dist': `${slideDist}px`,
+          '--slide-dist-x': `${slideDistX}px`,
         } as React.CSSProperties
       }
     >
@@ -244,9 +265,10 @@ export function TrickArea({
                           relPos,
                           collecting.winnerRelPos,
                           width,
-                          height,
                           offset,
-                          gap
+                          gap,
+                          slideDist,
+                          slideDistX
                         );
                         return {
                           '--collect-x': `${c.x}px`,
