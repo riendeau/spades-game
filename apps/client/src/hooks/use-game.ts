@@ -39,9 +39,17 @@ export function useGame() {
 
     socket.on('room:joined', ({ roomId, position, sessionToken }) => {
       const store = useGameStore.getState();
+      const wasSelectingSeat = !!store.availableSeats;
       store.setSession(roomId, sessionToken, position);
       store.clearAvailableSeats();
       saveSession(roomId, sessionToken);
+
+      // Auto-reveal cards for mid-game seat replacement. setTimeout(0)
+      // ensures this runs after the game:cards-dealt handler (which
+      // resets cardsRevealed to false via setHand).
+      if (wasSelectingSeat) {
+        setTimeout(() => useGameStore.getState().revealCards(), 0);
+      }
     });
 
     socket.on('game:state-update', ({ state }) => {
@@ -49,18 +57,7 @@ export function useGame() {
     });
 
     socket.on('game:cards-dealt', ({ hand }) => {
-      const store = useGameStore.getState();
-      store.setHand(hand);
-      // Auto-reveal cards for mid-game joins (bidding is past or in progress)
-      const phase = store.gameState?.phase;
-      if (
-        phase &&
-        phase !== 'dealing' &&
-        phase !== 'waiting' &&
-        phase !== 'ready'
-      ) {
-        store.revealCards();
-      }
+      useGameStore.getState().setHand(hand);
     });
 
     socket.on('game:card-played', ({ playerId, card }) => {
