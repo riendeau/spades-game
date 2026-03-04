@@ -2,6 +2,39 @@ import type { ClientGameState, Position } from '@spades/shared';
 import React from 'react';
 import { Card } from '../ui/Card';
 
+const slideKeyframes = `
+@keyframes slide-from-south {
+  0% { transform: translateY(var(--slide-dist)) rotate(12deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes slide-from-north {
+  0% { transform: translateY(calc(-1 * var(--slide-dist))) rotate(-12deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes slide-from-west {
+  0% { transform: translateX(calc(-1 * var(--slide-dist))) rotate(-12deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes slide-from-east {
+  0% { transform: translateX(var(--slide-dist)) rotate(12deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+`;
+
+const getAnimationName = (relPos: Position): string => {
+  const names: Record<Position, string> = {
+    0: 'slide-from-south',
+    1: 'slide-from-west',
+    2: 'slide-from-north',
+    3: 'slide-from-east',
+  };
+  return names[relPos];
+};
+
 interface TrickAreaProps {
   gameState: ClientGameState;
   myPosition: Position;
@@ -47,13 +80,17 @@ export function TrickArea({
   return (
     <div
       data-testid="trick-area"
-      style={{
-        position: 'relative',
-        width: `${width}px`,
-        height: `${height}px`,
-        margin: '0 auto',
-      }}
+      style={
+        {
+          position: 'relative',
+          width: `${width}px`,
+          height: `${height}px`,
+          margin: '0 auto',
+          '--slide-dist': compact ? '80px' : '150px',
+        } as React.CSSProperties
+      }
     >
+      <style>{slideKeyframes}</style>
       {trick.plays.map((play) => {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
@@ -68,7 +105,13 @@ export function TrickArea({
               ...getPositionStyle(relPos),
             }}
           >
-            <Card card={play.card} small={compact} testId="trick-card" />
+            <div
+              style={{
+                animation: `${getAnimationName(relPos)} 350ms ease-out`,
+              }}
+            >
+              <Card card={play.card} small={compact} testId="trick-card" />
+            </div>
           </div>
         );
       })}
