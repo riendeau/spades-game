@@ -48,8 +48,14 @@ export function useGame() {
       useGameStore.getState().setHand(hand);
     });
 
-    socket.on('game:card-played', ({ card }) => {
-      useGameStore.getState().removeCard(card);
+    socket.on('game:card-played', ({ playerId, card }) => {
+      const { myPosition, gameState } = useGameStore.getState();
+      const localPlayer = gameState?.players.find(
+        (p) => p.position === myPosition
+      );
+      if (localPlayer?.id === playerId) {
+        useGameStore.getState().removeCard(card);
+      }
     });
 
     socket.on('game:trick-won', ({ winnerId }) => {
