@@ -25,7 +25,11 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "minimatch@3": "3.1.4",
+      "minimatch@10": "10.2.3"
+    }
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.2",
