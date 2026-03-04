@@ -19,6 +19,7 @@ export function TrickArea({
   const width = compact ? 180 : 320;
   const height = compact ? 150 : 280;
   const offset = compact ? 8 : 15;
+  const gap = compact ? 4 : 10;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -27,9 +28,17 @@ export function TrickArea({
 
   const getPositionStyle = (relPos: Position): React.CSSProperties => {
     const positions: Record<Position, React.CSSProperties> = {
-      0: { bottom: `${offset}px`, left: '50%', transform: 'translateX(-50%)' },
+      0: {
+        top: `calc(50% + ${gap}px)`,
+        left: '50%',
+        transform: 'translateX(-50%)',
+      },
       1: { top: '50%', left: `${offset}px`, transform: 'translateY(-50%)' },
-      2: { top: `${offset}px`, left: '50%', transform: 'translateX(-50%)' },
+      2: {
+        bottom: `calc(50% + ${gap}px)`,
+        left: '50%',
+        transform: 'translateX(-50%)',
+      },
       3: { top: '50%', right: `${offset}px`, transform: 'translateY(-50%)' },
     };
     return positions[relPos];
