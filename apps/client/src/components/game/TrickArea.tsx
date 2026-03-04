@@ -1,5 +1,10 @@
-import type { ClientGameState, Position } from '@spades/shared';
+import type {
+  Card as CardType,
+  ClientGameState,
+  Position,
+} from '@spades/shared';
 import React from 'react';
+import { useGameStore } from '../../store/game-store';
 import { Card } from '../ui/Card';
 
 const slideKeyframes = `
@@ -23,6 +28,10 @@ const slideKeyframes = `
   15% { opacity: 1; }
   100% { transform: rotate(var(--rot-end)); opacity: 1; }
 }
+@keyframes collect {
+  0% { transform: rotate(var(--rot-end)); opacity: 1; }
+  100% { transform: translate(var(--collect-x), var(--collect-y)) rotate(calc(var(--rot-end) + var(--collect-rot))); opacity: 0; }
+}
 `;
 
 const getAnimationName = (relPos: Position): string => {
@@ -34,6 +43,68 @@ const getAnimationName = (relPos: Position): string => {
   };
   return names[relPos];
 };
+
+// Card slot position relative to trick-area center (mirrors getPositionStyle)
+const getSlotOffset = (
+  relPos: Position,
+  width: number,
+  offset: number,
+  gap: number
+): { x: number; y: number } => {
+  const slots: Record<Position, { x: number; y: number }> = {
+    0: { x: 0, y: gap }, // south — centered, slightly below middle
+    1: { x: -(width / 2 - offset), y: 0 }, // west — near left edge
+    2: { x: 0, y: -gap }, // north — centered, slightly above middle
+    3: { x: width / 2 - offset, y: 0 }, // east — near right edge
+  };
+  return slots[relPos];
+};
+
+// Slide-in translate offset per position (matches the slide-from-* keyframes)
+const getSlideInOffset = (
+  relPos: Position,
+  slideDist: number,
+  slideDistX: number
+): { x: number; y: number } => {
+  const offsets: Record<Position, { x: number; y: number }> = {
+    0: { x: 0, y: slideDist }, // south: enters from below
+    1: { x: -slideDistX, y: 0 }, // west: enters from left
+    2: { x: 0, y: -slideDist }, // north: enters from above
+    3: { x: slideDistX, y: 0 }, // east: enters from right
+  };
+  return offsets[relPos];
+};
+
+// Per-card collect offset: all cards converge on the winner's slide-in origin
+// (i.e. winnerSlot + winnerSlideInOffset), so the convergence point is always
+// identical to where the winner's card entered from.
+const getCollectOffset = (
+  cardRelPos: Position,
+  winnerRelPos: Position,
+  width: number,
+  offset: number,
+  gap: number,
+  slideDist: number,
+  slideDistX: number
+): { x: number; y: number; rot: number } => {
+  const card = getSlotOffset(cardRelPos, width, offset, gap);
+  const winnerSlot = getSlotOffset(winnerRelPos, width, offset, gap);
+  const winnerEntry = getSlideInOffset(winnerRelPos, slideDist, slideDistX);
+
+  const x = winnerSlot.x + winnerEntry.x - card.x;
+  const y = winnerSlot.y + winnerEntry.y - card.y;
+
+  // Slight rotation in the dominant travel direction
+  const rot = Math.abs(x) > Math.abs(y) ? (x > 0 ? 12 : -12) : y > 0 ? 8 : -8;
+
+  return { x, y, rot };
+};
+
+interface CollectingState {
+  plays: { playerId: string; card: CardType }[];
+  rotations: Map<string, { start: number; end: number }>;
+  winnerRelPos: Position;
+}
 
 interface TrickAreaProps {
   gameState: ClientGameState;
@@ -48,6 +119,7 @@ export function TrickArea({
 }: TrickAreaProps) {
   const trick = gameState.currentRound?.currentTrick;
   const plays = trick?.plays ?? [];
+  const lastTrickWinner = useGameStore((s) => s.lastTrickWinner);
 
   // Generate random rotations for new plays in a layout effect (before paint)
   const rotationsRef = React.useRef(
@@ -55,6 +127,39 @@ export function TrickArea({
   );
   const [, rerender] = React.useState(0);
 
+  // Collection animation state
+  const [collecting, setCollecting] = React.useState<CollectingState | null>(
+    null
+  );
+  const prevPlaysRef = React.useRef(plays);
+
+  // Collection detection — declared BEFORE rotation-generation effect
+  // so it can snapshot rotations before they're cleared
+  React.useLayoutEffect(() => {
+    const prevPlays = prevPlaysRef.current;
+    prevPlaysRef.current = plays;
+
+    // Detect transition from non-empty → empty plays with a known winner
+    if (prevPlays.length > 0 && plays.length === 0 && lastTrickWinner) {
+      const winnerPlayer = gameState.players.find(
+        (p) => p.id === lastTrickWinner
+      );
+      if (winnerPlayer) {
+        const winnerRelPos = ((winnerPlayer.position - myPosition + 4) %
+          4) as Position;
+        setCollecting({
+          plays: prevPlays.map((p) => ({ playerId: p.playerId, card: p.card })),
+          rotations: new Map(rotationsRef.current),
+          winnerRelPos,
+        });
+        const timer = setTimeout(() => setCollecting(null), 400);
+        return () => clearTimeout(timer);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plays.length, lastTrickWinner]);
+
+  // Rotation generation effect
   React.useLayoutEffect(() => {
     const currentIds = new Set(plays.map((p) => p.playerId));
     for (const key of rotationsRef.current.keys()) {
@@ -78,12 +183,14 @@ export function TrickArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on plays length to avoid ref churn
   }, [plays.length]);
 
-  if (!trick) return null;
+  if (!trick && !collecting) return null;
 
   const width = compact ? 180 : 320;
   const height = compact ? 150 : 280;
   const offset = compact ? 8 : 15;
   const gap = compact ? 4 : 10;
+  const slideDist = compact ? 80 : 150;
+  const slideDistX = compact ? 120 : 220;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -108,6 +215,9 @@ export function TrickArea({
     return positions[relPos];
   };
 
+  // Determine which plays to render
+  const displayPlays = collecting ? collecting.plays : (trick?.plays ?? []);
+
   return (
     <div
       data-testid="trick-area"
@@ -117,22 +227,21 @@ export function TrickArea({
           width: `${width}px`,
           height: `${height}px`,
           margin: '0 auto',
-          '--slide-dist': compact ? '80px' : '150px',
-          '--slide-dist-x': compact ? '120px' : '220px',
+          '--slide-dist': `${slideDist}px`,
+          '--slide-dist-x': `${slideDistX}px`,
         } as React.CSSProperties
       }
     >
       <style>{slideKeyframes}</style>
-      {trick.plays.map((play) => {
+      {displayPlays.map((play) => {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
 
         const relPos = getRelativePosition(player.position);
 
-        const rot = rotationsRef.current.get(play.playerId) ?? {
-          start: 0,
-          end: 0,
-        };
+        const rot = collecting
+          ? (collecting.rotations.get(play.playerId) ?? { start: 0, end: 0 })
+          : (rotationsRef.current.get(play.playerId) ?? { start: 0, end: 0 });
 
         return (
           <div
@@ -145,9 +254,29 @@ export function TrickArea({
             <div
               style={
                 {
-                  animation: `${getAnimationName(relPos)} 350ms ease-out forwards`,
+                  animation: collecting
+                    ? 'collect 400ms ease-in forwards'
+                    : `${getAnimationName(relPos)} 350ms ease-out forwards`,
                   '--rot-start': `${rot.start}deg`,
                   '--rot-end': `${rot.end}deg`,
+                  ...(collecting
+                    ? (() => {
+                        const c = getCollectOffset(
+                          relPos,
+                          collecting.winnerRelPos,
+                          width,
+                          offset,
+                          gap,
+                          slideDist,
+                          slideDistX
+                        );
+                        return {
+                          '--collect-x': `${c.x}px`,
+                          '--collect-y': `${c.y}px`,
+                          '--collect-rot': `${c.rot}deg`,
+                        };
+                      })()
+                    : {}),
                 } as React.CSSProperties
               }
             >
