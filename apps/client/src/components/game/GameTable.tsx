@@ -104,11 +104,70 @@ export function GameTable({
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'flex-start',
+          alignItems: isMobile ? 'center' : 'flex-start',
           padding: isMobile ? '4px 8px' : '16px',
+          position: 'relative',
         }}
       >
         <ScoreBoard gameState={gameState} compact={isMobile} />
+        {isMobile &&
+          (() => {
+            const partnerPos = ((myPosition + 2) % 4) as Position;
+            const partner = gameState.players.find(
+              (p) => p.position === partnerPos
+            );
+            if (!partner) return null;
+            const isPartnerTurn =
+              gameState.currentPlayerPosition === partnerPos;
+            const partnerBid = gameState.currentRound?.bids.find(
+              (b) => b.playerId === partner.id
+            );
+            const partnerTricksWon =
+              gameState.currentRound?.tricksWon[partner.id] ?? 0;
+            const bidLabel = partnerBid
+              ? partnerBid.isBlindNil
+                ? 'BNL'
+                : partnerBid.isNil
+                  ? 'Nil'
+                  : partnerBid.bid
+              : '—';
+            return (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1px',
+                  padding: '3px 8px',
+                  borderRadius: '8px',
+                  backgroundColor: `rgba(${TEAM_RGB[partner.team]}, ${isPartnerTurn ? 0.2 : 0.07})`,
+                  border: isPartnerTurn
+                    ? `2px solid ${TEAM_COLORS[partner.team]}`
+                    : `2px solid rgba(${TEAM_RGB[partner.team]}, 0.35)`,
+                  boxShadow: isPartnerTurn
+                    ? `0 0 12px rgba(${TEAM_RGB[partner.team]}, 0.6)`
+                    : 'none',
+                }}
+              >
+                <span
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '11px',
+                    color: partner.connected ? '#f9fafb' : '#9ca3af',
+                  }}
+                >
+                  {partner.nickname}
+                </span>
+                <span style={{ fontSize: '9px', color: '#d1d5db' }}>
+                  Bid: {bidLabel} | Won: {partnerTricksWon}
+                </span>
+              </div>
+            );
+          })()}
         <div
           style={{
             color: '#fff',
@@ -129,22 +188,24 @@ export function GameTable({
           minHeight: 0,
         }}
       >
-        {/* Top opponent */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            padding: isMobile ? '2px 6px' : '20px',
-          }}
-        >
-          <OpponentArea
-            gameState={gameState}
-            myPosition={myPosition}
-            relativePosition="top"
-            compact={isMobile}
-            onOpenSeat={onOpenSeat}
-          />
-        </div>
+        {/* Top opponent (desktop only — on mobile it's in the top bar) */}
+        {!isMobile && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '20px',
+            }}
+          >
+            <OpponentArea
+              gameState={gameState}
+              myPosition={myPosition}
+              relativePosition="top"
+              compact={false}
+              onOpenSeat={onOpenSeat}
+            />
+          </div>
+        )}
 
         {/* Middle section with left opponent, trick area, right opponent */}
         <div
@@ -171,6 +232,8 @@ export function GameTable({
                 style={{
                   maxWidth: isMobile ? '360px' : '500px',
                   width: '100%',
+                  position: 'relative',
+                  zIndex: 10,
                 }}
               >
                 <BiddingPanel
@@ -282,7 +345,7 @@ export function GameTable({
             compact={isMobile}
           />
 
-          {!isBidding && (
+          {!isBidding && !isMobile && (
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
               <Button
                 onClick={handlePlaySelected}
