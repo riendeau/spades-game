@@ -164,12 +164,12 @@ export function BiddingPanel({
         </div>
       ) : isMyTurn ? (
         <>
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: compact ? '8px' : '16px' }}>
             <div
               style={{
-                fontSize: '14px',
+                fontSize: compact ? '12px' : '14px',
                 color: '#6b7280',
-                marginBottom: '8px',
+                marginBottom: compact ? '4px' : '8px',
               }}
             >
               Select your bid:
@@ -177,10 +177,8 @@ export function BiddingPanel({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: compact
-                  ? 'repeat(4, 1fr)'
-                  : 'repeat(7, 1fr)',
-                gap: '8px',
+                gridTemplateColumns: 'repeat(7, 1fr)',
+                gap: compact ? '4px' : '8px',
               }}
             >
               {Array.from({ length: 13 }, (_, i) => i + 1).map((bid) => {
@@ -193,14 +191,14 @@ export function BiddingPanel({
                     onClick={() => !isDisabled && setSelectedBid(bid)}
                     disabled={isDisabled}
                     style={{
-                      padding: compact ? '8px' : '12px',
-                      fontSize: '16px',
+                      padding: compact ? '4px 2px' : '12px',
+                      fontSize: compact ? '14px' : '16px',
                       fontWeight: 600,
                       backgroundColor:
                         selectedBid === bid ? '#3b82f6' : '#f3f4f6',
                       color: selectedBid === bid ? '#fff' : '#374151',
                       border: 'none',
-                      borderRadius: '8px',
+                      borderRadius: compact ? '6px' : '8px',
                       cursor: isDisabled ? 'not-allowed' : 'pointer',
                       opacity: isDisabled ? 0.4 : 1,
                     }}
@@ -216,8 +214,8 @@ export function BiddingPanel({
             <button
               onClick={handleNilBid}
               style={{
-                padding: compact ? '8px 16px' : '12px 24px',
-                fontSize: '16px',
+                padding: compact ? '4px 12px' : '12px 24px',
+                fontSize: compact ? '14px' : '16px',
                 fontWeight: 600,
                 backgroundColor: selectedBid === 0 ? '#3b82f6' : '#f3f4f6',
                 color: selectedBid === 0 ? '#fff' : '#374151',

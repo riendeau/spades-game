@@ -56,42 +56,50 @@ export function PlayerHand({
   return (
     <div
       style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '-20px',
+        overflowX: compact ? 'auto' : 'visible',
         padding: compact ? '8px' : '20px',
         minHeight: compact ? '91px' : '170px',
       }}
     >
-      {cards.map((card, idx) => {
-        const isSelected =
-          selectedCard?.suit === card.suit && selectedCard?.rank === card.rank;
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          width: compact ? 'max-content' : undefined,
+          minWidth: compact ? '100%' : undefined,
+        }}
+      >
+        {cards.map((card, idx) => {
+          const isSelected =
+            selectedCard?.suit === card.suit &&
+            selectedCard?.rank === card.rank;
 
-        return (
-          <div
-            key={`${card.suit}-${card.rank}`}
-            style={{
-              marginLeft: idx > 0 ? (compact ? '-35px' : '-25px') : 0,
-              zIndex: isSelected ? 100 : idx,
-            }}
-          >
-            {faceDown ? (
-              <CardBack small={compact} />
-            ) : (
-              <Card
-                card={card}
-                onClick={() => handleCardClick(card)}
-                onDoubleClick={() => handleCardDoubleClick(card)}
-                disabled={!isCardPlayable(card)}
-                selected={isSelected}
-                testId="hand-card"
-                visuallyDisabled={isMyTurn && !isCardPlayable(card)}
-                small={compact}
-              />
-            )}
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={`${card.suit}-${card.rank}`}
+              style={{
+                marginLeft: idx > 0 ? (compact ? '-12px' : '-25px') : 0,
+                zIndex: isSelected ? 100 : idx,
+              }}
+            >
+              {faceDown ? (
+                <CardBack small={compact} />
+              ) : (
+                <Card
+                  card={card}
+                  onClick={() => handleCardClick(card)}
+                  onDoubleClick={() => handleCardDoubleClick(card)}
+                  disabled={!isCardPlayable(card)}
+                  selected={isSelected}
+                  testId="hand-card"
+                  visuallyDisabled={isMyTurn && !isCardPlayable(card)}
+                  small={compact}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
