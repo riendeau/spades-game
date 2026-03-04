@@ -27,6 +27,8 @@ export class RoomManager {
   private sessions = new Map<string, PlayerSession>();
   private socketToSession = new Map<string, string>();
 
+  onSessionAbandoned?: (roomId: string, playerId: string) => void;
+
   constructor() {
     // Cleanup expired rooms periodically
     setInterval(() => this.cleanup(), 60000);
@@ -199,6 +201,48 @@ export class RoomManager {
     }
   }
 
+  getAbandonedPlayerIds(roomId: string): string[] {
+    const room = this.rooms.get(roomId.toUpperCase());
+    if (!room) return [];
+
+    const phase = room.game.getState().phase;
+    if (phase === 'waiting' || phase === 'game-end') return [];
+
+    const disconnectedPlayers = room.game
+      .getState()
+      .players.filter((p) => !p.connected);
+
+    return disconnectedPlayers
+      .filter((player) => {
+        // Check if any valid session exists for this player
+        for (const session of this.sessions.values()) {
+          if (
+            session.roomId === roomId.toUpperCase() &&
+            session.playerId === player.id
+          ) {
+            return !this.isSessionValid(session.sessionToken);
+          }
+        }
+        // No session at all — abandoned
+        return true;
+      })
+      .map((p) => p.id);
+  }
+
+  deleteSessionsForPlayer(playerId: string): void {
+    for (const [token, session] of this.sessions) {
+      if (session.playerId === playerId) {
+        if (session.socketId) {
+          this.socketToSession.delete(session.socketId);
+        }
+        this.sessions.delete(token);
+        console.log(
+          `[session] deleted for replacement token=${token.slice(0, 8)}… player=${playerId.slice(0, 8)}…`
+        );
+      }
+    }
+  }
+
   private cleanup(): void {
     const now = Date.now();
     let deletedRooms = 0;
@@ -228,11 +272,23 @@ export class RoomManager {
         console.log(
           `[cleanup] deleting session token=${token.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId} disconnected=${Math.round((now - session.disconnectedAt) / 1000)}s ago`
         );
+
+        // Check if player is in an active game before deleting session
+        const room = this.rooms.get(session.roomId);
+        const phase = room?.game.getState().phase;
+        const isActiveGame =
+          phase && phase !== 'waiting' && phase !== 'game-end';
+
         if (session.socketId) {
           this.socketToSession.delete(session.socketId);
         }
         this.sessions.delete(token);
         deletedSessions++;
+
+        // Notify handler so it can broadcast the seat becoming open
+        if (isActiveGame && this.onSessionAbandoned) {
+          this.onSessionAbandoned(session.roomId, session.playerId);
+        }
       }
     }
 

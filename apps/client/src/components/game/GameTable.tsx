@@ -1,6 +1,7 @@
 import type {
   Card as CardType,
   ClientGameState,
+  PlayerId,
   Position,
 } from '@spades/shared';
 import { getPlayableCards } from '@spades/shared';
@@ -22,6 +23,7 @@ interface GameTableProps {
   onPlayCard: (card: CardType) => void;
   onBid: (bid: number, isNil?: boolean, isBlindNil?: boolean) => void;
   onRevealCards: () => void;
+  onOpenSeat?: (playerId: PlayerId) => void;
 }
 
 export function GameTable({
@@ -32,6 +34,7 @@ export function GameTable({
   onPlayCard,
   onBid,
   onRevealCards,
+  onOpenSeat,
 }: GameTableProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const isMobile = useIsMobile();
@@ -139,6 +142,7 @@ export function GameTable({
             myPosition={myPosition}
             relativePosition="top"
             compact={isMobile}
+            onOpenSeat={onOpenSeat}
           />
         </div>
 
@@ -158,6 +162,7 @@ export function GameTable({
             myPosition={myPosition}
             relativePosition="left"
             compact={isMobile}
+            onOpenSeat={onOpenSeat}
           />
 
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
@@ -191,6 +196,7 @@ export function GameTable({
             myPosition={myPosition}
             relativePosition="right"
             compact={isMobile}
+            onOpenSeat={onOpenSeat}
           />
         </div>
 

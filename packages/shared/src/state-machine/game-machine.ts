@@ -36,7 +36,8 @@ export type GameAction =
   | { type: 'COLLECT_TRICK' }
   | { type: 'END_ROUND' }
   | { type: 'START_NEXT_ROUND' }
-  | { type: 'PLAYER_CHANGE_SEAT'; playerId: PlayerId; newPosition: Position };
+  | { type: 'PLAYER_CHANGE_SEAT'; playerId: PlayerId; newPosition: Position }
+  | { type: 'PLAYER_REPLACE'; playerId: PlayerId; nickname: string };
 
 export interface ActionResult {
   state: GameState;
@@ -123,6 +124,9 @@ export function processAction(
         action.playerId,
         action.newPosition
       );
+
+    case 'PLAYER_REPLACE':
+      return handlePlayerReplace(newState, action.playerId, action.nickname);
 
     default:
       return { state, valid: false, error: 'Unknown action' };
@@ -576,6 +580,30 @@ function handlePlayerChangeSeat(
     position: newPosition,
     team: getTeamForPosition(newPosition),
   };
+
+  return {
+    state: { ...state, players: newPlayers },
+    valid: true,
+  };
+}
+
+function handlePlayerReplace(
+  state: GameState,
+  playerId: PlayerId,
+  nickname: string
+): ActionResult {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex === -1) {
+    return { state, valid: false, error: 'Player not found' };
+  }
+
+  const player = state.players[playerIndex];
+  if (player.connected) {
+    return { state, valid: false, error: 'Player is still connected' };
+  }
+
+  const newPlayers = [...state.players];
+  newPlayers[playerIndex] = { ...player, connected: true, nickname };
 
   return {
     state: { ...state, players: newPlayers },

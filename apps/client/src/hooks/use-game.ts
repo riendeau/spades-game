@@ -1,4 +1,4 @@
-import type { Card, Position } from '@spades/shared';
+import type { Card, PlayerId, Position } from '@spades/shared';
 import { useEffect, useCallback } from 'react';
 import { useSocket } from '../socket/socket-context';
 import {
@@ -22,6 +22,8 @@ export function useGame() {
   const roundEffects = useGameStore((s) => s.roundEffects);
   const gameEnded = useGameStore((s) => s.gameEnded);
   const error = useGameStore((s) => s.error);
+  const availableSeats = useGameStore((s) => s.availableSeats);
+  const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
 
   // Setup socket listeners
   useEffect(() => {
@@ -36,8 +38,18 @@ export function useGame() {
     });
 
     socket.on('room:joined', ({ roomId, position, sessionToken }) => {
-      useGameStore.getState().setSession(roomId, sessionToken, position);
+      const store = useGameStore.getState();
+      const wasSelectingSeat = !!store.availableSeats;
+      store.setSession(roomId, sessionToken, position);
+      store.clearAvailableSeats();
       saveSession(roomId, sessionToken);
+
+      // Auto-reveal cards for mid-game seat replacement. setTimeout(0)
+      // ensures this runs after the game:cards-dealt handler (which
+      // resets cardsRevealed to false via setHand).
+      if (wasSelectingSeat) {
+        setTimeout(() => useGameStore.getState().revealCards(), 0);
+      }
     });
 
     socket.on('game:state-update', ({ state }) => {
@@ -91,6 +103,14 @@ export function useGame() {
       useGameStore.getState().setMyPosition(newPosition);
     });
 
+    socket.on('room:seats-available', ({ roomId, seats }) => {
+      useGameStore.getState().setAvailableSeats(roomId, seats);
+    });
+
+    socket.on('room:seat-opened', () => {
+      // Informational — the real data comes via game:state-update
+    });
+
     socket.on('reconnect:failed', ({ reason }) => {
       console.warn(`[game] reconnect:failed reason=${reason}`);
       useGameStore.getState().setError(`Reconnection failed: ${reason}`);
@@ -114,6 +134,8 @@ export function useGame() {
       socket.off('game:round-end');
       socket.off('game:ended');
       socket.off('room:seat-changed');
+      socket.off('room:seats-available');
+      socket.off('room:seat-opened');
       socket.off('reconnect:success');
       socket.off('reconnect:failed');
       socket.off('error');
@@ -201,6 +223,22 @@ export function useGame() {
     [socket]
   );
 
+  const openSeat = useCallback(
+    (playerId: PlayerId) => {
+      if (!socket) return;
+      socket.emit('player:open-seat', { playerId });
+    },
+    [socket]
+  );
+
+  const selectSeat = useCallback(
+    (roomId: string, position: Position, nickname: string) => {
+      if (!socket) return;
+      socket.emit('room:select-seat', { roomId, position, nickname });
+    },
+    [socket]
+  );
+
   // Actions are stable refs — destructure once for the return value
   const { clearRoundSummary, clearRoundEffects, revealCards, reset } =
     useGameStore.getState();
@@ -216,6 +254,8 @@ export function useGame() {
     roundEffects,
     gameEnded,
     error,
+    availableSeats,
+    seatSelectRoomId,
     clearRoundSummary,
     clearRoundEffects,
     revealCards,
@@ -227,5 +267,7 @@ export function useGame() {
     playCard,
     leaveRoom,
     changeSeat,
+    openSeat,
+    selectSeat,
   };
 }

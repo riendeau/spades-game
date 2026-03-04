@@ -7,6 +7,12 @@ import type {
 } from '@spades/shared';
 import { create } from 'zustand';
 
+export interface AvailableSeat {
+  position: Position;
+  team: 'team1' | 'team2';
+  previousNickname: string;
+}
+
 interface GameStore {
   // Session state
   roomId: string | null;
@@ -28,6 +34,8 @@ interface GameStore {
     scores: ClientGameState['scores'];
   } | null;
   cardsRevealed: boolean;
+  availableSeats: AvailableSeat[] | null;
+  seatSelectRoomId: string | null;
 
   // Actions
   setSession: (
@@ -52,6 +60,8 @@ interface GameStore {
   }) => void;
   setMyPosition: (position: Position) => void;
   revealCards: () => void;
+  setAvailableSeats: (roomId: string, seats: AvailableSeat[]) => void;
+  clearAvailableSeats: () => void;
   reset: () => void;
 }
 
@@ -68,6 +78,8 @@ const initialState = {
   error: null,
   gameEnded: null,
   cardsRevealed: false,
+  availableSeats: null,
+  seatSelectRoomId: null,
 };
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -108,6 +120,12 @@ export const useGameStore = create<GameStore>((set) => ({
   setMyPosition: (position) => set({ myPosition: position }),
 
   revealCards: () => set({ cardsRevealed: true }),
+
+  setAvailableSeats: (roomId, seats) =>
+    set({ availableSeats: seats, seatSelectRoomId: roomId }),
+
+  clearAvailableSeats: () =>
+    set({ availableSeats: null, seatSelectRoomId: null }),
 
   reset: () => set(initialState),
 }));

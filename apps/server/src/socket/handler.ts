@@ -1,18 +1,45 @@
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
+  ClientGameState,
   Card,
   Position,
 } from '@spades/shared';
 import { validatePlay, validateBid } from '@spades/shared';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
-import { roomManager } from '../rooms/room-manager.js';
+import { roomManager, type Room } from '../rooms/room-manager.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
+function getClientState(room: Room): ClientGameState {
+  const state = room.game.toClientState();
+  const abandonedIds = roomManager.getAbandonedPlayerIds(room.id);
+
+  if (abandonedIds.length > 0) {
+    return {
+      ...state,
+      players: state.players.map((p) => ({
+        ...p,
+        openForReplacement: abandonedIds.includes(p.id) ? true : undefined,
+      })),
+    };
+  }
+
+  return state;
+}
+
 export function setupSocketHandlers(io: TypedServer): void {
+  // When a session expires for a player in an active game, broadcast the
+  // updated state so remaining clients see the seat as "open".
+  roomManager.onSessionAbandoned = (roomId: string) => {
+    const room = roomManager.getRoom(roomId);
+    if (room) {
+      io.to(roomId).emit('game:state-update', { state: getClientState(room) });
+    }
+  };
+
   io.on('connection', (socket: TypedSocket) => {
     console.log(
       `[socket] connected id=${socket.id} transport=${socket.conn.transport.name}`
@@ -50,6 +77,14 @@ export function setupSocketHandlers(io: TypedServer): void {
       handleChangeSeat(socket, io, newPosition);
     });
 
+    socket.on('player:open-seat', ({ playerId }) => {
+      handleOpenSeat(socket, io, playerId);
+    });
+
+    socket.on('room:select-seat', ({ roomId, position, nickname }) => {
+      handleSelectSeat(socket, io, roomId, position, nickname);
+    });
+
     socket.on('disconnect', () => {
       handleDisconnect(socket, io);
     });
@@ -83,7 +118,7 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
     sessionToken: session.sessionToken,
   });
 
-  socket.emit('game:state-update', { state: room.game.toClientState() });
+  socket.emit('game:state-update', { state: getClientState(room) });
 }
 
 function handleJoinRoom(
@@ -101,6 +136,24 @@ function handleJoinRoom(
   const result = room.game.addPlayer(playerId, nickname);
 
   if (!result.valid) {
+    // If game already started, check for open seats
+    if (result.error === 'Game already started') {
+      const abandonedIds = roomManager.getAbandonedPlayerIds(room.id);
+      if (abandonedIds.length > 0) {
+        const seats = abandonedIds.map((id) => {
+          const player = room.game.getState().players.find((p) => p.id === id)!;
+          return {
+            position: player.position,
+            team: player.team,
+            previousNickname: player.nickname,
+          };
+        });
+        void socket.join(room.id);
+        socket.emit('room:seats-available', { roomId: room.id, seats });
+        return;
+      }
+    }
+
     socket.emit('error', {
       code: 'JOIN_FAILED',
       message: result.error || 'Failed to join room',
@@ -128,7 +181,7 @@ function handleJoinRoom(
   });
 
   // Send state to all
-  const state = room.game.toClientState();
+  const state = getClientState(room);
   socket.emit('game:state-update', { state });
   socket.to(room.id).emit('game:state-update', { state });
 }
@@ -188,12 +241,12 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
 
       // Update state
       io.to(room.id).emit('game:state-update', {
-        state: room.game.toClientState(),
+        state: getClientState(room),
       });
     }
   } else {
     io.to(room.id).emit('game:state-update', {
-      state: room.game.toClientState(),
+      state: getClientState(room),
     });
   }
 }
@@ -221,7 +274,7 @@ function handlePlayerLeave(socket: TypedSocket, io: TypedServer): void {
     playerId: session.playerId,
   });
   io.to(session.roomId).emit('game:state-update', {
-    state: room.game.toClientState(),
+    state: getClientState(room),
   });
 }
 
@@ -287,7 +340,7 @@ function handleBid(
   });
 
   io.to(room.id).emit('game:state-update', {
-    state: room.game.toClientState(),
+    state: getClientState(room),
   });
 }
 
@@ -361,7 +414,7 @@ function handlePlayCard(
   // Broadcast state with the trick-end phase — all 4 cards are visible in
   // currentTrick.plays. If the trick is not complete this is the normal update.
   io.to(room.id).emit('game:state-update', {
-    state: room.game.toClientState(),
+    state: getClientState(room),
   });
 
   if (trickComplete) {
@@ -400,7 +453,7 @@ function handlePlayCard(
                 }
 
                 io.to(room.id).emit('game:state-update', {
-                  state: room.game.toClientState(),
+                  state: getClientState(room),
                 });
               }
             }, 3000);
@@ -417,7 +470,7 @@ function handlePlayCard(
 
       // Broadcast the cleared trick (or new round state)
       io.to(room.id).emit('game:state-update', {
-        state: room.game.toClientState(),
+        state: getClientState(room),
       });
     }, 1500);
   }
@@ -473,7 +526,7 @@ function handleReconnect(
   );
 
   socket.emit('reconnect:success', {
-    state: room.game.toClientState(),
+    state: getClientState(room),
     hand,
   });
 
@@ -481,7 +534,7 @@ function handleReconnect(
   socket
     .to(roomId)
     .emit('room:player-reconnected', { playerId: session.playerId });
-  io.to(roomId).emit('game:state-update', { state: room.game.toClientState() });
+  io.to(roomId).emit('game:state-update', { state: getClientState(room) });
 }
 
 function handleChangeSeat(
@@ -520,8 +573,139 @@ function handleChangeSeat(
 
   socket.emit('room:seat-changed', { newPosition });
   io.to(room.id).emit('game:state-update', {
-    state: room.game.toClientState(),
+    state: getClientState(room),
   });
+}
+
+function handleOpenSeat(
+  socket: TypedSocket,
+  io: TypedServer,
+  targetPlayerId: string
+): void {
+  const session = roomManager.getSessionBySocketId(socket.id);
+  if (!session) {
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(session.roomId);
+  if (!room) {
+    socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+    return;
+  }
+
+  const targetPlayer = room.game
+    .getState()
+    .players.find((p) => p.id === targetPlayerId);
+  if (!targetPlayer) {
+    socket.emit('error', {
+      code: 'OPEN_SEAT_FAILED',
+      message: 'Player not found',
+    });
+    return;
+  }
+
+  if (targetPlayer.connected) {
+    socket.emit('error', {
+      code: 'OPEN_SEAT_FAILED',
+      message: 'Player is still connected',
+    });
+    return;
+  }
+
+  // Delete their sessions so they can't reconnect
+  roomManager.deleteSessionsForPlayer(targetPlayerId);
+
+  console.log(
+    `[seat] opened seat for player=${targetPlayerId.slice(0, 8)}… position=${targetPlayer.position} room=${room.id}`
+  );
+
+  io.to(room.id).emit('room:seat-opened', {
+    playerId: targetPlayerId,
+    position: targetPlayer.position,
+  });
+  io.to(room.id).emit('game:state-update', { state: getClientState(room) });
+}
+
+function handleSelectSeat(
+  socket: TypedSocket,
+  io: TypedServer,
+  roomId: string,
+  position: Position,
+  nickname: string
+): void {
+  const room = roomManager.getRoom(roomId);
+  if (!room) {
+    socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+    return;
+  }
+
+  // Find the player at this position
+  const targetPlayer = room.game
+    .getState()
+    .players.find((p) => p.position === position);
+  if (!targetPlayer) {
+    socket.emit('error', {
+      code: 'SEAT_TAKEN',
+      message: 'No player at that position',
+    });
+    return;
+  }
+
+  // Verify the seat is actually open (player disconnected + no valid session)
+  const abandonedIds = roomManager.getAbandonedPlayerIds(roomId);
+  if (!abandonedIds.includes(targetPlayer.id)) {
+    socket.emit('error', {
+      code: 'SEAT_TAKEN',
+      message: 'Seat is no longer available',
+    });
+    return;
+  }
+
+  // Replace the player in the game state
+  const result = room.game.replacePlayer(targetPlayer.id, nickname);
+  if (!result.valid) {
+    socket.emit('error', {
+      code: 'REPLACE_FAILED',
+      message: result.error || 'Failed to take seat',
+    });
+    return;
+  }
+
+  // Create a new session for the new player, reusing the old playerId
+  const newSession = roomManager.createSession(
+    room.id,
+    targetPlayer.id,
+    socket.id
+  );
+  void socket.join(room.id);
+  roomManager.touchRoom(room.id);
+
+  console.log(
+    `[seat] player replaced id=${targetPlayer.id.slice(0, 8)}… position=${position} newNickname=${nickname} room=${room.id}`
+  );
+
+  // Send the new player their data
+  socket.emit('room:joined', {
+    roomId: room.id,
+    position,
+    sessionToken: newSession.sessionToken,
+  });
+
+  const hand = room.game.getPlayerHand(targetPlayer.id);
+  socket.emit('game:cards-dealt', { hand });
+
+  const clientState = getClientState(room);
+  socket.emit('game:state-update', { state: clientState });
+
+  // Auto-reveal cards since they're joining mid-game
+  // (the client will handle this on the room:joined event when cards exist)
+
+  // Broadcast to rest of room
+  socket.to(room.id).emit('game:state-update', { state: clientState });
 }
 
 function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
@@ -544,6 +728,6 @@ function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
     playerId: session.playerId,
   });
   io.to(session.roomId).emit('game:state-update', {
-    state: room.game.toClientState(),
+    state: getClientState(room),
   });
 }

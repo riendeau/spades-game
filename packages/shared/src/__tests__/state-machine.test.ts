@@ -298,4 +298,112 @@ describe('Game State Machine', () => {
       expect(state.currentRound?.bids[0].isBlindNil).toBe(true);
     });
   });
+
+  describe('PLAYER_REPLACE', () => {
+    function setupBiddingGame() {
+      let state = createInitialGameState('test-room');
+
+      for (let i = 0; i < 4; i++) {
+        state = processAction(state, {
+          type: 'PLAYER_JOIN',
+          playerId: `p${i}`,
+          nickname: `Player ${i}`,
+        }).state;
+        state = processAction(state, {
+          type: 'PLAYER_READY',
+          playerId: `p${i}`,
+        }).state;
+      }
+
+      state = processAction(state, { type: 'START_GAME' }).state;
+      state = processAction(state, { type: 'DEAL_CARDS' }).state;
+      return state;
+    }
+
+    it('should replace a disconnected player', () => {
+      let state = setupBiddingGame();
+
+      // Disconnect player
+      state = processAction(state, {
+        type: 'PLAYER_DISCONNECT',
+        playerId: 'p2',
+      }).state;
+      expect(state.players[2].connected).toBe(false);
+
+      // Replace player
+      const result = processAction(state, {
+        type: 'PLAYER_REPLACE',
+        playerId: 'p2',
+        nickname: 'NewPlayer',
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.state.players[2].connected).toBe(true);
+      expect(result.state.players[2].nickname).toBe('NewPlayer');
+      // Should keep same position and team
+      expect(result.state.players[2].position).toBe(2);
+      expect(result.state.players[2].team).toBe('team1');
+    });
+
+    it('should reject replacing a connected player', () => {
+      const state = setupBiddingGame();
+
+      const result = processAction(state, {
+        type: 'PLAYER_REPLACE',
+        playerId: 'p1',
+        nickname: 'NewPlayer',
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('still connected');
+    });
+
+    it('should reject replacing a non-existent player', () => {
+      const state = setupBiddingGame();
+
+      const result = processAction(state, {
+        type: 'PLAYER_REPLACE',
+        playerId: 'nonexistent',
+        nickname: 'NewPlayer',
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('not found');
+    });
+
+    it('should work during playing phase', () => {
+      let state = setupBiddingGame();
+
+      // Make all bids in correct order (starting from dealer+1)
+      for (let i = 0; i < 4; i++) {
+        const pos = state.currentPlayerPosition;
+        const player = state.players.find((p) => p.position === pos)!;
+        state = processAction(state, {
+          type: 'MAKE_BID',
+          playerId: player.id,
+          bid: 3,
+          isNil: false,
+          isBlindNil: false,
+        }).state;
+      }
+      expect(state.phase).toBe('playing');
+
+      // Disconnect and replace
+      state = processAction(state, {
+        type: 'PLAYER_DISCONNECT',
+        playerId: 'p0',
+      }).state;
+
+      const result = processAction(state, {
+        type: 'PLAYER_REPLACE',
+        playerId: 'p0',
+        nickname: 'Replacement',
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.state.players[0].nickname).toBe('Replacement');
+      expect(result.state.players[0].connected).toBe(true);
+      expect(result.state.phase).toBe('playing');
+    });
+  });
 });
