@@ -14,12 +14,12 @@ const slideKeyframes = `
   100% { transform: none; opacity: 1; }
 }
 @keyframes slide-from-west {
-  0% { transform: translateX(calc(-1 * var(--slide-dist))) rotate(-12deg); opacity: 0; }
+  0% { transform: translateX(calc(-1 * var(--slide-dist-x))) rotate(-12deg); opacity: 0; }
   15% { opacity: 1; }
   100% { transform: none; opacity: 1; }
 }
 @keyframes slide-from-east {
-  0% { transform: translateX(var(--slide-dist)) rotate(12deg); opacity: 0; }
+  0% { transform: translateX(var(--slide-dist-x)) rotate(12deg); opacity: 0; }
   15% { opacity: 1; }
   100% { transform: none; opacity: 1; }
 }
@@ -87,6 +87,7 @@ export function TrickArea({
           height: `${height}px`,
           margin: '0 auto',
           '--slide-dist': compact ? '80px' : '150px',
+          '--slide-dist-x': compact ? '120px' : '220px',
         } as React.CSSProperties
       }
     >
