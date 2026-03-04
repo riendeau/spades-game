@@ -69,13 +69,6 @@ export class GameInstance {
           }
         }
       }
-
-      // Also sync hands from state
-      for (const player of this.state.players) {
-        if (player.hand.length > 0) {
-          this.playerHands.set(player.id, player.hand);
-        }
-      }
     }
 
     return result;
