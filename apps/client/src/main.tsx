@@ -1,7 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+import { MobilePreview } from './components/dev/MobilePreview';
 import { SocketProvider } from './socket/socket-context';
+
+const isMobilePreview = new URLSearchParams(window.location.search).has(
+  'mobile'
+);
 
 // Global styles
 const style = document.createElement('style');
@@ -34,8 +39,12 @@ document.head.appendChild(style);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <SocketProvider>
-      <App />
-    </SocketProvider>
+    {isMobilePreview ? (
+      <MobilePreview />
+    ) : (
+      <SocketProvider>
+        <App />
+      </SocketProvider>
+    )}
   </React.StrictMode>
 );

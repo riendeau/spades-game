@@ -109,6 +109,20 @@ This typically happens if:
 - System crash or unexpected termination
 - The graceful shutdown handler failed to complete
 
+### Mobile Preview
+
+Append `?mobile` to any URL to render the app inside a phone-shaped iframe on desktop:
+
+```
+http://localhost:5173/?mobile              # Lobby in compact mode
+http://localhost:5173/room/ABC123?mobile   # Pre-fills room code
+```
+
+- **How it works**: `main.tsx` checks for `?mobile` and renders `MobilePreview` instead of `SocketProvider` + `App`. The component displays a phone frame (390×844) with an `<iframe>` that loads the same URL minus `?mobile`.
+- **Why iframe**: `GameTable` uses `height: 100vh`, which resolves to the iframe's height. `useIsMobile()` naturally returns `true` inside the 390px-wide iframe — no hook changes needed.
+- **Orientation toggle**: A toolbar button switches between portrait (390×844) and landscape (844×390). Landscape exercises the `height < 500` breakpoint. The iframe is not remounted, so game state is preserved.
+- **No socket leak**: The parent page never renders `SocketProvider`, so no extra connection is created.
+
 ## Client Architecture Details
 
 ### Routing
