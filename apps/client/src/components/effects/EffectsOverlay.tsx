@@ -1,12 +1,8 @@
 import type { RoundEffect, ClientGameState } from '@spades/shared';
 import React, { useState, useCallback, useEffect } from 'react';
+import { TEAM_COLORS } from '../../styles/colors';
 import { BowlingStrike } from './BowlingStrike';
 import { FakeVictory } from './FakeVictory';
-
-const TEAM_COLORS: Record<string, string> = {
-  team1: '#3b82f6',
-  team2: '#22c55e',
-};
 
 interface EffectsOverlayProps {
   effects: RoundEffect[];
