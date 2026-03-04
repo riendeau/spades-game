@@ -135,6 +135,30 @@ describe('Scoring', () => {
       // 11 bags - 10 = 1 overflow
       expect(result.bags).toBe(1);
     });
+
+    it('should apply multiple bag penalties when crossing threshold twice', () => {
+      const current: TeamScore = {
+        teamId: 'team1',
+        score: 200,
+        bags: 8,
+        roundBid: 0,
+        roundTricks: 0,
+      };
+
+      const roundCalc = {
+        baseScore: 113,
+        bags: 13,
+        nilBonus: 0,
+        totalScore: 113,
+      };
+
+      const result = updateTeamScore(current, roundCalc, DEFAULT_GAME_CONFIG);
+      // 8 + 13 = 21 bags, crosses threshold at 10 and 20
+      // 200 + 113 - 200 (2 penalties) = 113
+      expect(result.score).toBe(113);
+      // 21 % 10 = 1 bag remaining
+      expect(result.bags).toBe(1);
+    });
   });
 
   describe('checkGameEnd', () => {

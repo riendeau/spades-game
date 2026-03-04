@@ -64,21 +64,15 @@ export function updateTeamScore(
   config: GameConfig
 ): TeamScore {
   const newBags = currentScore.bags + roundCalculation.bags;
-  let bagPenalty = 0;
-
-  if (newBags >= config.bagPenaltyThreshold) {
-    bagPenalty = config.bagPenalty;
-  }
-
-  const bageOverflow =
-    newBags >= config.bagPenaltyThreshold
-      ? newBags - config.bagPenaltyThreshold
-      : 0;
+  const penaltyCount = Math.floor(newBags / config.bagPenaltyThreshold);
+  const bagPenalty = penaltyCount * config.bagPenalty;
+  const remainingBags =
+    penaltyCount > 0 ? newBags % config.bagPenaltyThreshold : newBags;
 
   return {
     ...currentScore,
     score: currentScore.score + roundCalculation.totalScore - bagPenalty,
-    bags: newBags >= config.bagPenaltyThreshold ? bageOverflow : newBags,
+    bags: remainingBags,
     roundBid: 0,
     roundTricks: 0,
   };
