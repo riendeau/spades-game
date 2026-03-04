@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LoginGate } from './components/auth/LoginGate';
 import { useUser } from './components/auth/user-context';
+import { EffectsOverlay } from './components/effects/EffectsOverlay';
 import { GameEndModal } from './components/game/GameEndModal';
 import { GameTable } from './components/game/GameTable';
 import { RoundSummaryModal } from './components/game/RoundSummaryModal';
 import { JoinRoom } from './components/lobby/JoinRoom';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
 import { useGame } from './hooks/use-game';
+import { preload } from './services/audio';
+import { useGameStore } from './store/game-store';
 
 function AppInner() {
   const user = useUser();
@@ -18,6 +21,7 @@ function AppInner() {
     myHand,
     cardsRevealed,
     roundSummary,
+    roundEffects,
     gameEnded,
     error,
     createRoom,
@@ -28,9 +32,32 @@ function AppInner() {
     leaveRoom,
     changeSeat,
     clearRoundSummary,
+    clearRoundEffects,
     revealCards,
     reset,
   } = useGame();
+
+  useEffect(() => {
+    void preload('bowling-strike', '/audio/bowling-strike.mp3');
+    void preload('victory-fanfare', '/audio/victory-fanfare.mp3');
+  }, []);
+
+  // Dev helper: trigger effects from browser console
+  // Usage: __triggerEffect('bowling-strike') or __triggerEffect('fake-victory', 'team2')
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+
+    const trigger = (effectId: string, teamId: 'team1' | 'team2' = 'team1') => {
+      useGameStore.getState().setRoundEffects([{ id: effectId, teamId }]);
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__triggerEffect = trigger;
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).__triggerEffect;
+    };
+  }, []);
 
   // Get room ID from URL if present (uppercase for consistency)
   const urlRoomId = /\/room\/([A-Z0-9]+)/i
@@ -128,6 +155,14 @@ function AppInner() {
           onBid={makeBid}
           onRevealCards={revealCards}
         />
+
+        {roundEffects.length > 0 && (
+          <EffectsOverlay
+            effects={roundEffects}
+            gameState={gameState}
+            onAllComplete={clearRoundEffects}
+          />
+        )}
 
         {roundSummary && (
           <RoundSummaryModal

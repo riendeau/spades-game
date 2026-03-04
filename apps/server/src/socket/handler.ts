@@ -372,9 +372,11 @@ function handlePlayCard(
 
       for (const effect of collectResult.sideEffects ?? []) {
         if (effect.type === 'ROUND_COMPLETE') {
+          const modEffects = room.game.getRoundEffects();
           io.to(room.id).emit('game:round-end', {
             scores: room.game.getState().scores,
             roundSummary: effect.summary,
+            effects: modEffects.length > 0 ? modEffects : undefined,
           });
 
           // If game not over, start next round after an additional delay

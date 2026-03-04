@@ -1,5 +1,6 @@
 import {
   antiElevenMod,
+  scoreEffectsMod,
   classicTheme,
   neonTheme,
   minimalistTheme,
@@ -10,6 +11,7 @@ export function loadBuiltInMods(): void {
   // Load rule mods
   // Reference implementations (inactive): see packages/mods/src/rules/suicide-spades.ts, joker-spades.ts
   modRegistry.registerRuleMod(antiElevenMod);
+  modRegistry.registerRuleMod(scoreEffectsMod);
 
   // Load theme mods
   modRegistry.registerThemeMod(classicTheme);
