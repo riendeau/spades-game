@@ -28,21 +28,9 @@ const slideKeyframes = `
   15% { opacity: 1; }
   100% { transform: rotate(var(--rot-end)); opacity: 1; }
 }
-@keyframes collect-to-south {
+@keyframes collect {
   0% { transform: rotate(var(--rot-end)); opacity: 1; }
-  100% { transform: translateY(var(--slide-dist)) rotate(calc(var(--rot-end) + 12deg)); opacity: 0; }
-}
-@keyframes collect-to-north {
-  0% { transform: rotate(var(--rot-end)); opacity: 1; }
-  100% { transform: translateY(calc(-1 * var(--slide-dist))) rotate(calc(var(--rot-end) - 12deg)); opacity: 0; }
-}
-@keyframes collect-to-west {
-  0% { transform: rotate(var(--rot-end)); opacity: 1; }
-  100% { transform: translateX(calc(-1 * var(--slide-dist-x))) rotate(calc(var(--rot-end) - 12deg)); opacity: 0; }
-}
-@keyframes collect-to-east {
-  0% { transform: rotate(var(--rot-end)); opacity: 1; }
-  100% { transform: translateX(var(--slide-dist-x)) rotate(calc(var(--rot-end) + 12deg)); opacity: 0; }
+  100% { transform: translate(var(--collect-x), var(--collect-y)) rotate(calc(var(--rot-end) + var(--collect-rot))); opacity: 0; }
 }
 `;
 
@@ -56,14 +44,41 @@ const getAnimationName = (relPos: Position): string => {
   return names[relPos];
 };
 
-const getCollectAnimationName = (winnerRelPos: Position): string => {
-  const names: Record<Position, string> = {
-    0: 'collect-to-south',
-    1: 'collect-to-west',
-    2: 'collect-to-north',
-    3: 'collect-to-east',
+// Compute per-card translate offset so all cards converge toward a single
+// point near the winner's edge of the trick area.
+const getCollectOffset = (
+  cardRelPos: Position,
+  winnerRelPos: Position,
+  width: number,
+  height: number,
+  offset: number,
+  gap: number
+): { x: number; y: number; rot: number } => {
+  // Approximate card center offsets from trick-area center
+  const cardPos: Record<Position, { x: number; y: number }> = {
+    0: { x: 0, y: gap }, // south — centered, slightly below middle
+    1: { x: -(width / 2 - offset), y: 0 }, // west — near left edge
+    2: { x: 0, y: -gap }, // north — centered, slightly above middle
+    3: { x: width / 2 - offset, y: 0 }, // east — near right edge
   };
-  return names[winnerRelPos];
+
+  // Convergence point near the winner's edge
+  const target: Record<Position, { x: number; y: number }> = {
+    0: { x: 0, y: height * 0.7 },
+    1: { x: -width * 0.8, y: 0 },
+    2: { x: 0, y: -height * 0.7 },
+    3: { x: width * 0.8, y: 0 },
+  };
+
+  const card = cardPos[cardRelPos];
+  const tgt = target[winnerRelPos];
+  const x = tgt.x - card.x;
+  const y = tgt.y - card.y;
+
+  // Slight rotation in the dominant travel direction
+  const rot = Math.abs(x) > Math.abs(y) ? (x > 0 ? 12 : -12) : y > 0 ? 8 : -8;
+
+  return { x, y, rot };
 };
 
 interface CollectingState {
@@ -181,9 +196,6 @@ export function TrickArea({
 
   // Determine which plays to render
   const displayPlays = collecting ? collecting.plays : (trick?.plays ?? []);
-  const collectAnimName = collecting
-    ? getCollectAnimationName(collecting.winnerRelPos)
-    : null;
 
   return (
     <div
@@ -222,10 +234,27 @@ export function TrickArea({
               style={
                 {
                   animation: collecting
-                    ? `${collectAnimName} 400ms ease-in forwards`
+                    ? 'collect 400ms ease-in forwards'
                     : `${getAnimationName(relPos)} 350ms ease-out forwards`,
                   '--rot-start': `${rot.start}deg`,
                   '--rot-end': `${rot.end}deg`,
+                  ...(collecting
+                    ? (() => {
+                        const c = getCollectOffset(
+                          relPos,
+                          collecting.winnerRelPos,
+                          width,
+                          height,
+                          offset,
+                          gap
+                        );
+                        return {
+                          '--collect-x': `${c.x}px`,
+                          '--collect-y': `${c.y}px`,
+                          '--collect-rot': `${c.rot}deg`,
+                        };
+                      })()
+                    : {}),
                 } as React.CSSProperties
               }
             >
