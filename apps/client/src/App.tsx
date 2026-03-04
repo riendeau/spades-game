@@ -6,6 +6,7 @@ import { GameEndModal } from './components/game/GameEndModal';
 import { GameTable } from './components/game/GameTable';
 import { RoundSummaryModal } from './components/game/RoundSummaryModal';
 import { JoinRoom } from './components/lobby/JoinRoom';
+import { SeatSelection } from './components/lobby/SeatSelection';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
 import { useGame } from './hooks/use-game';
 import { preload } from './services/audio';
@@ -31,6 +32,10 @@ function AppInner() {
     playCard,
     leaveRoom,
     changeSeat,
+    openSeat,
+    selectSeat,
+    availableSeats,
+    seatSelectRoomId,
     clearRoundSummary,
     clearRoundEffects,
     revealCards,
@@ -105,6 +110,23 @@ function AppInner() {
     </div>
   );
 
+  // Seat selection for joining an in-progress game
+  if (availableSeats && seatSelectRoomId) {
+    const nickname =
+      useGameStore.getState().nickname || user?.displayName || 'Player';
+    return (
+      <>
+        {errorToast}
+        <SeatSelection
+          roomId={seatSelectRoomId}
+          seats={availableSeats}
+          nickname={nickname}
+          onSelectSeat={selectSeat}
+        />
+      </>
+    );
+  }
+
   // No room yet - show join/create
   if (!roomId || !gameState) {
     return (
@@ -154,6 +176,7 @@ function AppInner() {
           onPlayCard={playCard}
           onBid={makeBid}
           onRevealCards={revealCards}
+          onOpenSeat={openSeat}
         />
 
         {roundEffects.length > 0 && (

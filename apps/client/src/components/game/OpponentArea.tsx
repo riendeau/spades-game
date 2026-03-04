@@ -1,4 +1,4 @@
-import type { ClientGameState, Position } from '@spades/shared';
+import type { ClientGameState, PlayerId, Position } from '@spades/shared';
 import React from 'react';
 import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 
@@ -7,6 +7,7 @@ interface OpponentAreaProps {
   myPosition: Position;
   relativePosition: 'left' | 'top' | 'right';
   compact?: boolean;
+  onOpenSeat?: (playerId: PlayerId) => void;
 }
 
 export function OpponentArea({
@@ -14,6 +15,7 @@ export function OpponentArea({
   myPosition,
   relativePosition,
   compact = false,
+  onOpenSeat,
 }: OpponentAreaProps) {
   const positionMap: Record<string, Position> = {
     left: ((myPosition + 1) % 4) as Position,
@@ -81,7 +83,41 @@ export function OpponentArea({
           Won: {tricksWon}
         </div>
         {!player.connected && (
-          <div style={{ fontSize: '11px', color: '#f59e0b' }}>Disconnected</div>
+          <div>
+            <div
+              style={{
+                fontSize: '11px',
+                color: player.openForReplacement ? '#f59e0b' : '#f59e0b',
+              }}
+            >
+              {player.openForReplacement ? 'Open Seat' : 'Disconnected'}
+            </div>
+            {!player.openForReplacement && onOpenSeat && (
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Replace ${player.nickname}? They won't be able to reconnect.`
+                    )
+                  ) {
+                    onOpenSeat(player.id);
+                  }
+                }}
+                style={{
+                  marginTop: '4px',
+                  padding: '2px 8px',
+                  fontSize: '10px',
+                  backgroundColor: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                Replace
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

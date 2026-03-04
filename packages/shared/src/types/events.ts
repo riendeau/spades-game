@@ -17,6 +17,12 @@ export interface ClientToServerEvents {
   'game:play-card': (data: { card: Card }) => void;
   'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
   'player:change-seat': (data: { newPosition: Position }) => void;
+  'player:open-seat': (data: { playerId: PlayerId }) => void;
+  'room:select-seat': (data: {
+    roomId: string;
+    position: Position;
+    nickname: string;
+  }) => void;
 }
 
 // Server -> Client Events
@@ -60,6 +66,18 @@ export interface ServerToClientEvents {
   'reconnect:success': (data: { state: ClientGameState; hand: Card[] }) => void;
   'reconnect:failed': (data: { reason: string }) => void;
   'room:seat-changed': (data: { newPosition: Position }) => void;
+  'room:seats-available': (data: {
+    roomId: string;
+    seats: {
+      position: Position;
+      team: 'team1' | 'team2';
+      previousNickname: string;
+    }[];
+  }) => void;
+  'room:seat-opened': (data: {
+    playerId: PlayerId;
+    position: Position;
+  }) => void;
 }
 
 // Client-safe game state (hides other players' hands)
@@ -74,6 +92,7 @@ export interface ClientGameState {
     cardCount: number;
     connected: boolean;
     ready: boolean;
+    openForReplacement?: boolean;
   }[];
   scores: GameState['scores'];
   currentRound: {

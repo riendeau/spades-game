@@ -293,6 +293,14 @@ export class GameInstance {
     return this.dispatch({ type: 'DEAL_CARDS' });
   }
 
+  replacePlayer(playerId: PlayerId, nickname: string): ActionResult {
+    return this.dispatch({
+      type: 'PLAYER_REPLACE',
+      playerId,
+      nickname,
+    });
+  }
+
   movePlayerToSeat(playerId: PlayerId, newPosition: Position): ActionResult {
     return this.dispatch({
       type: 'PLAYER_CHANGE_SEAT',
