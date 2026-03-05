@@ -1,4 +1,4 @@
-import type { Card as CardType, Suit } from '@spades/shared';
+import type { Card as CardType, Rank } from '@spades/shared';
 import React from 'react';
 
 interface CardProps {
@@ -12,19 +12,25 @@ interface CardProps {
   visuallyDisabled?: boolean;
 }
 
-const SUIT_SYMBOLS: Record<Suit, string> = {
-  spades: '\u2660',
-  hearts: '\u2665',
-  diamonds: '\u2666',
-  clubs: '\u2663',
+const RANK_NAMES: Record<Rank, string> = {
+  A: 'ace',
+  '2': '2',
+  '3': '3',
+  '4': '4',
+  '5': '5',
+  '6': '6',
+  '7': '7',
+  '8': '8',
+  '9': '9',
+  '10': '10',
+  J: 'jack',
+  Q: 'queen',
+  K: 'king',
 };
 
-const SUIT_COLORS: Record<Suit, string> = {
-  spades: '#1a1a2e',
-  hearts: '#dc2626',
-  diamonds: '#dc2626',
-  clubs: '#1a1a2e',
-};
+function getCardImageUrl(card: CardType): string {
+  return `/cards/${RANK_NAMES[card.rank]}_of_${card.suit}.svg`;
+}
 
 export function Card({
   card,
@@ -36,11 +42,8 @@ export function Card({
   testId,
   visuallyDisabled,
 }: CardProps) {
-  const symbol = SUIT_SYMBOLS[card.suit];
-  const color = SUIT_COLORS[card.suit];
-
-  // Default visuallyDisabled to disabled if not explicitly set
   const showDisabled = visuallyDisabled ?? disabled;
+  const isSmall = small ?? false;
 
   return (
     <button
@@ -49,31 +52,35 @@ export function Card({
       disabled={disabled}
       data-testid={testId}
       style={{
-        width: small ? '50px' : '90px',
-        height: small ? '75px' : '130px',
-        backgroundColor: showDisabled ? '#e8e8e8' : '#fff',
-        border: selected ? '3px solid #3b82f6' : '1px solid #ccc',
+        position: 'relative',
+        width: isSmall ? '50px' : '90px',
+        height: isSmall ? '75px' : '130px',
+        background: '#fff',
+        border: selected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.15)',
         borderRadius: '8px',
+        padding: isSmall ? '2px' : '3px',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: small ? '14px' : '22px',
-        fontWeight: 'bold',
-        color,
         boxShadow: selected
           ? '0 4px 12px rgba(59, 130, 246, 0.4)'
           : showDisabled
             ? 'none'
-            : '0 2px 4px rgba(0,0,0,0.1)',
+            : '0 2px 4px rgba(0,0,0,0.15)',
         transition: 'all 0.15s ease',
-        transform: selected ? 'translateY(-8px)' : 'none',
         filter: showDisabled ? 'grayscale(1) brightness(0.85)' : 'none',
+        overflow: 'hidden',
       }}
     >
-      <span>{card.rank}</span>
-      <span style={{ fontSize: small ? '20px' : '36px' }}>{symbol}</span>
+      <img
+        src={getCardImageUrl(card)}
+        alt={`${card.rank} of ${card.suit}`}
+        draggable={false}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          borderRadius: '4px',
+        }}
+      />
     </button>
   );
 }
@@ -85,13 +92,14 @@ export function CardBack({ small }: { small?: boolean }) {
         width: small ? '50px' : '90px',
         height: small ? '75px' : '130px',
         backgroundColor: '#1e40af',
-        border: '1px solid #1e3a8a',
+        border: '2px solid #1e3a8a',
         borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundImage:
-          'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px)',
+          'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.08) 5px, rgba(255,255,255,0.08) 10px)',
+        boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)',
       }}
     >
       <span style={{ color: '#fff', fontSize: small ? '20px' : '36px' }}>

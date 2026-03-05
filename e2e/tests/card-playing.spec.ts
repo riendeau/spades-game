@@ -64,20 +64,11 @@ test.describe('Card Playing', () => {
         await waitingButton.isVisible({ timeout: 2_000 }).catch(() => false)
       ) {
         // This player should have disabled cards
-        // Card buttons in the hand should be disabled
-        const cardButtons = page.locator('button[disabled]').filter({
-          has: page.locator('span'),
-        });
-
-        // Find actual card buttons (with 2 spans: rank + suit)
-        const allDisabled = await cardButtons.all();
-        let disabledCardCount = 0;
-        for (const btn of allDisabled) {
-          if ((await btn.locator('span').count()) === 2) {
-            disabledCardCount++;
-          }
-        }
-        expect(disabledCardCount).toBeGreaterThan(0);
+        // Hand card buttons should be disabled
+        const disabledCards = page.locator(
+          '[data-testid="hand-card"][disabled]'
+        );
+        expect(await disabledCards.count()).toBeGreaterThan(0);
         break;
       }
     }
