@@ -58,8 +58,8 @@ export function PlayerHand({
       style={{
         display: 'flex',
         justifyContent: 'center',
-        gap: '-20px',
         padding: compact ? '8px' : '20px',
+        paddingBottom: compact ? '16px' : '30px',
         minHeight: compact ? '91px' : '170px',
       }}
     >
@@ -67,12 +67,24 @@ export function PlayerHand({
         const isSelected =
           selectedCard?.suit === card.suit && selectedCard?.rank === card.rank;
 
+        // Fan: map card index to a rotation centered around 0
+        const count = cards.length;
+        const mid = (count - 1) / 2;
+        const fanAngle = compact ? 2 : 2.5;
+        const rotation = (idx - mid) * fanAngle;
+        // Slight vertical arc so outer cards dip down
+        const lift = compact ? 8 : 12;
+        const offsetY = Math.abs(idx - mid) * (lift / Math.max(mid, 1));
+
         return (
           <div
             key={`${card.suit}-${card.rank}`}
             style={{
               marginLeft: idx > 0 ? (compact ? '-35px' : '-25px') : 0,
               zIndex: isSelected ? 100 : idx,
+              transform: `rotate(${rotation}deg) translateY(${offsetY}px)${isSelected ? ' translateY(-8px)' : ''}`,
+              transformOrigin: 'bottom center',
+              transition: 'transform 0.15s ease',
             }}
           >
             {faceDown ? (

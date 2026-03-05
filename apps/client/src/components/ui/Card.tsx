@@ -56,17 +56,16 @@ export function Card({
         width: isSmall ? '50px' : '90px',
         height: isSmall ? '75px' : '130px',
         background: 'transparent',
-        border: 'none',
+        border: selected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.15)',
         borderRadius: '8px',
         padding: 0,
         cursor: disabled ? 'not-allowed' : 'pointer',
         boxShadow: selected
-          ? '0 0 0 3px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.4)'
+          ? '0 4px 12px rgba(59, 130, 246, 0.4)'
           : showDisabled
             ? 'none'
             : '0 2px 4px rgba(0,0,0,0.15)',
         transition: 'all 0.15s ease',
-        transform: selected ? 'translateY(-8px)' : 'none',
         filter: showDisabled ? 'grayscale(1) brightness(0.85)' : 'none',
         overflow: 'hidden',
       }}
