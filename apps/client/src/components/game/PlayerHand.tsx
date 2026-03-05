@@ -72,9 +72,10 @@ export function PlayerHand({
         const mid = (count - 1) / 2;
         const fanAngle = compact ? 2 : 2.5;
         const rotation = (idx - mid) * fanAngle;
-        // Slight vertical arc so outer cards dip down
-        const lift = compact ? 8 : 12;
-        const offsetY = Math.abs(idx - mid) * (lift / Math.max(mid, 1));
+        // Quadratic vertical arc so outer cards dip down smoothly
+        const t = (idx - mid) / Math.max(mid, 1); // -1 to 1
+        const peakDrop = compact ? 20 : 30;
+        const offsetY = t * t * peakDrop;
 
         return (
           <div
