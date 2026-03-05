@@ -55,10 +55,10 @@ export function Card({
         position: 'relative',
         width: isSmall ? '50px' : '90px',
         height: isSmall ? '75px' : '130px',
-        background: 'transparent',
+        background: '#fff',
         border: selected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.15)',
         borderRadius: '8px',
-        padding: 0,
+        padding: isSmall ? '2px' : '3px',
         cursor: disabled ? 'not-allowed' : 'pointer',
         boxShadow: selected
           ? '0 4px 12px rgba(59, 130, 246, 0.4)'
@@ -78,7 +78,7 @@ export function Card({
           width: '100%',
           height: '100%',
           display: 'block',
-          borderRadius: '8px',
+          borderRadius: '4px',
         }}
       />
     </button>
