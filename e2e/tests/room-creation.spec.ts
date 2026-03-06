@@ -2,22 +2,17 @@ import { test, expect } from '../fixtures/game-fixtures';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 test.describe('Room Creation', () => {
-  test('creating a room shows the waiting room with a 6-character code', async ({
-    createPlayerPage,
-  }) => {
-    const page = await createPlayerPage();
-    const roomCode = await createRoom(page, 'Alice');
-
-    await expect(page.getByText('Waiting Room')).toBeVisible();
-    expect(roomCode).toMatch(/^[A-Z0-9]{6}$/);
-  });
-
-  test('second player can join with room code', async ({
+  test('creating a room and joining with room code', async ({
     createPlayerPage,
   }) => {
     const p1 = await createPlayerPage();
     const roomCode = await createRoom(p1, 'Alice');
 
+    // Room code should be 6 alphanumeric characters
+    await expect(p1.getByText('Waiting Room')).toBeVisible();
+    expect(roomCode).toMatch(/^[A-Z0-9]{6}$/);
+
+    // Second player joins with the room code
     const p2 = await createPlayerPage();
     await joinRoom(p2, roomCode, 'Bob');
 

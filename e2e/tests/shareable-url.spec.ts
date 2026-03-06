@@ -49,7 +49,7 @@ test.describe('Shareable URL', () => {
     expect(clipboardText).toContain('http://localhost:5173');
   });
 
-  test('navigating to shareable URL pre-fills room code', async ({
+  test('navigating to shareable URL pre-fills room code and allows joining', async ({
     createPlayerPage,
     browser,
   }) => {
@@ -70,23 +70,7 @@ test.describe('Shareable URL', () => {
     await expect(roomCodeInput).toBeVisible();
     await expect(roomCodeInput).toHaveValue(roomCode);
 
-    await context2.close();
-  });
-
-  test('joining room via pre-filled shareable URL works', async ({
-    createPlayerPage,
-    browser,
-  }) => {
-    // Player 1 creates a room
-    const p1 = await createPlayerPage();
-    const roomCode = await createRoom(p1, 'Alice');
-
-    // Player 2 navigates to shareable URL and joins
-    const context2 = await browser.newContext();
-    const p2 = await context2.newPage();
-    await p2.goto(`/room/${roomCode}`);
-
-    // Fill in nickname (room code is already pre-filled)
+    // Fill in nickname (room code is already pre-filled) and join
     await p2.getByPlaceholder('Enter your nickname').fill('Bob');
     await p2.getByRole('button', { name: 'Join Room' }).click();
 
