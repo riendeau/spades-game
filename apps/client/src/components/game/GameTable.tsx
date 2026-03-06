@@ -3,6 +3,7 @@ import type {
   ClientGameState,
   PlayerId,
   Position,
+  ScoreHistoryEntry,
 } from '@spades/shared';
 import { getPlayableCards } from '@spades/shared';
 import React, { useState, useMemo, useEffect } from 'react';
@@ -13,6 +14,7 @@ import { Button } from '../ui/Button';
 import { OpponentArea } from './OpponentArea';
 import { PlayerHand } from './PlayerHand';
 import { ScoreBoard } from './ScoreBoard';
+import { ScoreChartModal } from './ScoreChartModal';
 import { TableFelt, TableWatermark } from './TableFelt';
 import { TrickArea } from './TrickArea';
 
@@ -21,6 +23,7 @@ interface GameTableProps {
   myPosition: Position;
   myHand: CardType[];
   cardsRevealed: boolean;
+  scoreHistory: ScoreHistoryEntry[];
   onPlayCard: (card: CardType) => void;
   onBid: (bid: number, isNil?: boolean, isBlindNil?: boolean) => void;
   onRevealCards: () => void;
@@ -32,12 +35,14 @@ export function GameTable({
   myPosition,
   myHand,
   cardsRevealed,
+  scoreHistory,
   onPlayCard,
   onBid,
   onRevealCards,
   onOpenSeat,
 }: GameTableProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
+  const [showScoreChart, setShowScoreChart] = useState(false);
   const isMobile = useIsMobile();
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const isBidding = gameState.phase === 'bidding';
@@ -112,7 +117,47 @@ export function GameTable({
           zIndex: 3,
         }}
       >
-        <ScoreBoard gameState={gameState} compact={isMobile} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+          <ScoreBoard gameState={gameState} compact={isMobile} />
+          <button
+            onClick={() => setShowScoreChart(true)}
+            disabled={scoreHistory.length <= 1}
+            title="Score Progression"
+            style={{
+              background: 'rgba(255,255,255,0.95)',
+              border: 'none',
+              borderRadius: '8px',
+              padding: isMobile ? '4px 6px' : '6px 8px',
+              cursor: scoreHistory.length > 1 ? 'pointer' : 'default',
+              opacity: scoreHistory.length > 1 ? 1 : 0.4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg
+              width={isMobile ? 16 : 20}
+              height={isMobile ? 16 : 20}
+              viewBox="0 0 20 20"
+              fill="none"
+            >
+              <path
+                d="M3 15L7 9L11 12L17 5"
+                stroke="#3b82f6"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M3 15L8 11L12 14L17 8"
+                stroke="#ef4444"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
         <div
           style={{
             color: '#fff',
@@ -306,6 +351,14 @@ export function GameTable({
           )}
         </div>
       </div>
+
+      {showScoreChart && (
+        <ScoreChartModal
+          scoreHistory={scoreHistory}
+          winningScore={gameState.winningScore}
+          onClose={() => setShowScoreChart(false)}
+        />
+      )}
     </div>
   );
 }

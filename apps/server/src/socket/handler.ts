@@ -430,6 +430,7 @@ function handlePlayCard(
             scores: room.game.getState().scores,
             roundSummary: effect.summary,
             effects: modEffects.length > 0 ? modEffects : undefined,
+            scoreHistory: room.game.getScoreHistory(),
           });
 
           // If game not over, start next round after an additional delay
@@ -464,6 +465,7 @@ function handlePlayCard(
           io.to(room.id).emit('game:ended', {
             winningTeam: effect.winner,
             finalScores: room.game.getState().scores,
+            scoreHistory: room.game.getScoreHistory(),
           });
         }
       }
@@ -528,6 +530,7 @@ function handleReconnect(
   socket.emit('reconnect:success', {
     state: getClientState(room),
     hand,
+    scoreHistory: room.game.getScoreHistory(),
   });
 
   // Notify others
