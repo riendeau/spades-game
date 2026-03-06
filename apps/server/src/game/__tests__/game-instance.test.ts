@@ -1,8 +1,4 @@
-import {
-  createInitialGameState,
-  type GameState,
-  type Card,
-} from '@spades/shared';
+import { createInitialGameState, type Card } from '@spades/shared';
 import { describe, it, expect } from 'vitest';
 import { GameInstance } from '../game-instance.js';
 
@@ -57,7 +53,6 @@ describe('GameInstance', () => {
         .getState()
         .players.find((p) => p.position === currentPos)!;
       const hand = game.getPlayerHand(player.id);
-      const card = hand[0];
 
       // Find a card that is valid to play (any card works on first trick lead)
       // but must not be a spade (can't lead spades until broken)

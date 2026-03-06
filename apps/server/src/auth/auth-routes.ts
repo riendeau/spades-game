@@ -44,7 +44,7 @@ authRouter.get('/google', (req, res, next) => {
 });
 
 // OAuth callback
-authRouter.get('/google/callback', (req, res, next) => {
+authRouter.get('/google/callback', (req, res, _next) => {
   if (!oauthConfigured) {
     res.status(503).send('OAuth not configured on this server.');
     return;
