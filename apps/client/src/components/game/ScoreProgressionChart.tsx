@@ -1,5 +1,5 @@
 import type { ScoreHistoryEntry } from '@spades/shared';
-import React from 'react';
+import React, { useState } from 'react';
 import { TEAM1_COLOR, TEAM2_COLOR } from '../../styles/colors';
 
 interface ScoreProgressionChartProps {
@@ -17,6 +17,8 @@ export function ScoreProgressionChart({
   winningScore,
   compact,
 }: ScoreProgressionChartProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   if (scoreHistory.length <= 1) {
     return (
       <div
@@ -161,8 +163,9 @@ export function ScoreProgressionChart({
           key={`t1-${i}`}
           cx={xScale(i)}
           cy={yScale(e.team1Score)}
-          r={3}
+          r={hoveredIndex === i ? 5 : 3}
           fill={TEAM1_COLOR}
+          style={{ transition: 'r 0.1s' }}
         />
       ))}
 
@@ -179,10 +182,74 @@ export function ScoreProgressionChart({
           key={`t2-${i}`}
           cx={xScale(i)}
           cy={yScale(e.team2Score)}
-          r={3}
+          r={hoveredIndex === i ? 5 : 3}
           fill={TEAM2_COLOR}
+          style={{ transition: 'r 0.1s' }}
         />
       ))}
+
+      {/* Invisible hit areas for hover — one per round column */}
+      {scoreHistory.map((_, i) => {
+        const colWidth =
+          scoreHistory.length > 1 ? plotW / (scoreHistory.length - 1) : plotW;
+        return (
+          <rect
+            key={`hit-${i}`}
+            x={xScale(i) - colWidth / 2}
+            y={PADDING.top}
+            width={colWidth}
+            height={plotH}
+            fill="transparent"
+            onMouseEnter={() => setHoveredIndex(i)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            style={{ cursor: 'pointer' }}
+          />
+        );
+      })}
+
+      {/* Tooltip */}
+      {hoveredIndex !== null &&
+        (() => {
+          const entry = scoreHistory[hoveredIndex];
+          const cx = xScale(hoveredIndex);
+          const topScore = Math.max(entry.team1Score, entry.team2Score);
+          const ty = yScale(topScore) - 10;
+          const label = entry.round === 0 ? 'Start' : `Round ${entry.round}`;
+          return (
+            <g>
+              {/* Vertical guide line */}
+              <line
+                x1={cx}
+                y1={PADDING.top}
+                x2={cx}
+                y2={PADDING.top + plotH}
+                stroke="#d1d5db"
+                strokeWidth={0.5}
+                strokeDasharray="3 2"
+              />
+              <g
+                transform={`translate(${cx}, ${Math.max(ty, PADDING.top + 6)})`}
+              >
+                <rect
+                  x={-44}
+                  y={-28}
+                  width={88}
+                  height={32}
+                  rx={4}
+                  fill="rgba(31,41,55,0.9)"
+                />
+                <text textAnchor="middle" y={-16} fontSize={8} fill="#d1d5db">
+                  {label}
+                </text>
+                <text textAnchor="middle" y={-4} fontSize={9} fill="#fff">
+                  <tspan fill={TEAM1_COLOR}>{entry.team1Score}</tspan>
+                  <tspan fill="#9ca3af">{' / '}</tspan>
+                  <tspan fill={TEAM2_COLOR}>{entry.team2Score}</tspan>
+                </text>
+              </g>
+            </g>
+          );
+        })()}
 
       {/* Legend */}
       <g transform={`translate(${PADDING.left + 4}, ${PADDING.top - 6})`}>
