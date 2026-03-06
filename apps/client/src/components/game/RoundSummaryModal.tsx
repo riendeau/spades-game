@@ -67,28 +67,40 @@ export function RoundSummaryModal({
                   <div>Bid: {result.bid}</div>
                   <div>Tricks: {result.tricks}</div>
                   <div style={{ fontWeight: 600 }}>
-                    Points: {result.points > 0 ? '+' : ''}
-                    {result.points}
+                    Points:{' '}
+                    {(() => {
+                      const basePoints =
+                        result.points -
+                        result.nilResults.reduce((sum, n) => sum + n.points, 0);
+                      return (
+                        <>
+                          {basePoints > 0 ? '+' : ''}
+                          {basePoints}
+                        </>
+                      );
+                    })()}
+                    {result.nilResults.map((nil, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          color: nil.succeeded ? '#10b981' : '#dc2626',
+                        }}
+                      >
+                        {' '}
+                        ({nil.points > 0 ? '+' : ''}
+                        {nil.points})
+                      </span>
+                    ))}
                   </div>
-                  {result.bags > 0 && <div>Bags: +{result.bags}</div>}
-                  {result.bagPenalty > 0 && (
-                    <div style={{ color: '#dc2626' }}>
-                      Bag Penalty: -{result.bagPenalty}
-                    </div>
-                  )}
-                  {result.nilResults.map((nil, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        color: nil.succeeded ? '#10b981' : '#dc2626',
-                      }}
-                    >
-                      {nil.isBlindNil ? 'Blind Nil' : 'Nil'}:{' '}
-                      {nil.succeeded ? 'Success' : 'Failed'} (
-                      {nil.points > 0 ? '+' : ''}
-                      {nil.points})
-                    </div>
-                  ))}
+                  <div>
+                    Bags: +{result.bags}
+                    {result.bagPenalty > 0 && (
+                      <span style={{ color: '#dc2626' }}>
+                        {' '}
+                        (-{result.bagPenalty})
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div
