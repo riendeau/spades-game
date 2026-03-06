@@ -8,7 +8,7 @@ interface ScoreProgressionChartProps {
   compact?: boolean;
 }
 
-const PADDING = { top: 20, right: 20, bottom: 30, left: 45 };
+const PADDING = { top: 20, right: 45, bottom: 30, left: 45 };
 const CHART_WIDTH = 500;
 const CHART_HEIGHT = 260;
 
