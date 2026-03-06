@@ -116,7 +116,7 @@ app.use(passportSession);
 // Dev bypass: auto-inject a hardcoded user so auth is transparent locally
 if (!isProd) {
   app.use((req, _res, next) => {
-    if (!req.user) req.user = DEV_USER;
+    req.user ??= DEV_USER;
     next();
   });
 }
