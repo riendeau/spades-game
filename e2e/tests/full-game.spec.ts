@@ -23,6 +23,12 @@ test.describe('Full Game', () => {
   }) => {
     test.setTimeout(180_000);
     const { players } = fourPlayerBidding;
+    const page = players[0];
+
+    // Score chart button should be disabled before any round completes
+    const chartButton = page.getByRole('button', { name: 'Score Progression' });
+    await expect(chartButton).toBeVisible();
+    await expect(chartButton).toBeDisabled();
 
     await completeAllBids(players, 3);
 
@@ -41,12 +47,25 @@ test.describe('Full Game', () => {
     ).toBeVisible();
 
     // All players click Continue
-    for (const page of players) {
-      const continueBtn = page.getByRole('button', { name: 'Continue' });
+    for (const p of players) {
+      const continueBtn = p.getByRole('button', { name: 'Continue' });
       if (await continueBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
         await continueBtn.click();
       }
     }
+
+    // Score chart button should now be enabled; open modal and verify content
+    await expect(chartButton).toBeEnabled({ timeout: 5_000 });
+    await chartButton.click();
+    await expect(
+      page.getByRole('heading', { name: 'Score Progression' })
+    ).toBeVisible();
+    await expect(page.locator('svg polyline')).toHaveCount(2);
+    await expect(page.locator('svg circle').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Score Progression' })
+    ).not.toBeVisible();
 
     // Should start next round — bidding appears again
     // Check for bidding buttons on at least one player
