@@ -7,23 +7,6 @@ import {
 } from '../helpers/playing-helpers';
 
 test.describe('Card Playing', () => {
-  test('current player can select and play a card', async ({
-    fourPlayerBidding,
-  }) => {
-    const { players } = fourPlayerBidding;
-
-    // Complete bidding first
-    await completeAllBids(players, 3);
-
-    // Find whose turn it is and play a card
-    const activePlayer = await playCurrentPlayerCard(players);
-
-    // The play button should now show "Waiting..." after playing
-    await expect(
-      activePlayer.getByRole('button', { name: 'Waiting...' })
-    ).toBeVisible({ timeout: 5_000 });
-  });
-
   test('complete a full trick with 4 card plays', async ({
     fourPlayerBidding,
   }) => {
@@ -50,31 +33,7 @@ test.describe('Card Playing', () => {
     expect(foundNextTurn).toBe(true);
   });
 
-  test('non-current player cards are disabled', async ({
-    fourPlayerBidding,
-  }) => {
-    const { players } = fourPlayerBidding;
-
-    await completeAllBids(players, 3);
-
-    // Find a player whose turn it is NOT (button showing "Waiting...")
-    for (const page of players) {
-      const waitingButton = page.getByRole('button', { name: 'Waiting...' });
-      if (
-        await waitingButton.isVisible({ timeout: 2_000 }).catch(() => false)
-      ) {
-        // This player should have disabled cards
-        // Hand card buttons should be disabled
-        const disabledCards = page.locator(
-          '[data-testid="hand-card"][disabled]'
-        );
-        expect(await disabledCards.count()).toBeGreaterThan(0);
-        break;
-      }
-    }
-  });
-
-  test('spade cards are disabled when leading first trick (spades not broken)', async ({
+  test('card disabled states: non-current player cards disabled, leader cannot lead spades', async ({
     fourPlayerBidding,
   }) => {
     const { players } = fourPlayerBidding;
@@ -107,6 +66,20 @@ test.describe('Card Playing', () => {
     expect(enabledCount).toBeLessThanOrEqual(totalCount);
     // Enabled + disabled = total
     expect(enabledCount + disabledCount).toBe(totalCount);
+
+    // Non-current players should have all their cards disabled
+    for (const page of players) {
+      const waitingButton = page.getByRole('button', { name: 'Waiting...' });
+      if (
+        await waitingButton.isVisible({ timeout: 2_000 }).catch(() => false)
+      ) {
+        const nonCurrentDisabled = page.locator(
+          '[data-testid="hand-card"][disabled]'
+        );
+        expect(await nonCurrentDisabled.count()).toBeGreaterThan(0);
+        break;
+      }
+    }
   });
 
   test('following player has some cards disabled based on lead suit', async ({
@@ -117,7 +90,12 @@ test.describe('Card Playing', () => {
     await completeAllBids(players, 3);
 
     // First player leads a card
-    await playCurrentPlayerCard(players);
+    const activePlayer = await playCurrentPlayerCard(players);
+
+    // The player who just played should show "Waiting..."
+    await expect(
+      activePlayer.getByRole('button', { name: 'Waiting...' })
+    ).toBeVisible({ timeout: 5_000 });
 
     // Find the next current player (follower)
     const follower = await findCurrentPlayer(players);
