@@ -13,6 +13,7 @@ import { Button } from '../ui/Button';
 import { OpponentArea } from './OpponentArea';
 import { PlayerHand } from './PlayerHand';
 import { ScoreBoard } from './ScoreBoard';
+import { TableFelt, TableWatermark } from './TableFelt';
 import { TrickArea } from './TrickArea';
 
 interface GameTableProps {
@@ -94,11 +95,12 @@ export function GameTable({
         height: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#1a472a',
         color: '#fff',
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
+      <TableFelt />
       {/* Top bar */}
       <div
         style={{
@@ -106,6 +108,8 @@ export function GameTable({
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           padding: isMobile ? '4px 8px' : '16px',
+          position: 'relative',
+          zIndex: 3,
         }}
       >
         <ScoreBoard gameState={gameState} compact={isMobile} />
@@ -127,6 +131,8 @@ export function GameTable({
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
+          position: 'relative',
+          zIndex: 3,
         }}
       >
         {/* Top opponent */}
@@ -155,8 +161,10 @@ export function GameTable({
             justifyContent: 'space-between',
             padding: isMobile ? '0 6px' : '0 20px',
             minHeight: 0,
+            position: 'relative',
           }}
         >
+          <TableWatermark />
           <OpponentArea
             gameState={gameState}
             myPosition={myPosition}
@@ -165,23 +173,27 @@ export function GameTable({
             onOpenSeat={onOpenSeat}
           />
 
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          {/* Absolutely centered so side opponents don't affect position */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              maxWidth: isMobile ? '360px' : '500px',
+              width: isBidding ? '100%' : undefined,
+              pointerEvents: 'auto',
+            }}
+          >
             {isBidding ? (
-              <div
-                style={{
-                  maxWidth: isMobile ? '360px' : '500px',
-                  width: '100%',
-                }}
-              >
-                <BiddingPanel
-                  gameState={gameState}
-                  myPosition={myPosition}
-                  cardsRevealed={cardsRevealed}
-                  onBid={onBid}
-                  onRevealCards={onRevealCards}
-                  compact={isMobile}
-                />
-              </div>
+              <BiddingPanel
+                gameState={gameState}
+                myPosition={myPosition}
+                cardsRevealed={cardsRevealed}
+                onBid={onBid}
+                onRevealCards={onRevealCards}
+                compact={isMobile}
+              />
             ) : (
               <TrickArea
                 gameState={gameState}
