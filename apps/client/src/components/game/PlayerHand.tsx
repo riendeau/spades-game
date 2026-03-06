@@ -70,12 +70,19 @@ export function PlayerHand({
         // Fan: map card index to a rotation centered around 0
         const count = cards.length;
         const mid = (count - 1) / 2;
-        const fanAngle = compact ? 0.75 : 1;
+        // Maintain ~12° total fan spread; cap per-card angle so small
+        // hands don't over-rotate.
+        const maxFan = compact ? 9 : 12;
+        const maxPerCard = compact ? 2 : 2.5;
+        const fanAngle =
+          count <= 1 ? 0 : Math.min(maxPerCard, maxFan / (count - 1));
         const rotation = (idx - mid) * fanAngle;
         // Quadratic vertical arc — applied via `top` so it's in screen
         // coordinates, independent of the card's rotation.
+        // Arc depth scales with card count so small hands stay shallow.
+        const basePeak = compact ? 10 : 20;
+        const peakDrop = count <= 1 ? 0 : basePeak * ((count - 1) / 12);
         const t = (idx - mid) / Math.max(mid, 1); // -1 to 1
-        const peakDrop = compact ? 10 : 20;
         const offsetY = t * t * peakDrop;
 
         return (
