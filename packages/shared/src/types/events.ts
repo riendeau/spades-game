@@ -126,7 +126,7 @@ export interface TeamRoundResult {
   tricks: number;
   points: number;
   bags: number;
-  bagPenalty: boolean;
+  bagPenalty: number;
   nilResults: {
     playerId: PlayerId;
     isBlindNil: boolean;
