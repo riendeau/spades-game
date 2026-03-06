@@ -23,6 +23,7 @@ function AppInner() {
     cardsRevealed,
     roundSummary,
     roundEffects,
+    scoreHistory,
     gameEnded,
     error,
     createRoom,
@@ -173,6 +174,7 @@ function AppInner() {
           myPosition={myPosition}
           myHand={myHand}
           cardsRevealed={cardsRevealed}
+          scoreHistory={scoreHistory}
           onPlayCard={playCard}
           onBid={makeBid}
           onRevealCards={revealCards}
@@ -199,6 +201,8 @@ function AppInner() {
           <GameEndModal
             winner={gameEnded.winner}
             scores={gameEnded.scores}
+            scoreHistory={gameEnded.scoreHistory}
+            winningScore={gameState.winningScore}
             myTeam={myTeam}
             onNewGame={() => {
               reset();

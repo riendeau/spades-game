@@ -57,13 +57,19 @@ export interface ServerToClientEvents {
     scores: GameState['scores'];
     roundSummary: RoundSummary;
     effects?: RoundEffect[];
+    scoreHistory: ScoreHistoryEntry[];
   }) => void;
   'game:ended': (data: {
     winningTeam: 'team1' | 'team2';
     finalScores: GameState['scores'];
+    scoreHistory: ScoreHistoryEntry[];
   }) => void;
   error: (data: { code: string; message: string }) => void;
-  'reconnect:success': (data: { state: ClientGameState; hand: Card[] }) => void;
+  'reconnect:success': (data: {
+    state: ClientGameState;
+    hand: Card[];
+    scoreHistory: ScoreHistoryEntry[];
+  }) => void;
   'reconnect:failed': (data: { reason: string }) => void;
   'room:seat-changed': (data: { newPosition: Position }) => void;
   'room:seats-available': (data: {
@@ -112,7 +118,14 @@ export interface ClientGameState {
   } | null;
   dealerPosition: Position;
   currentPlayerPosition: Position;
+  winningScore: number;
   disabledBids?: number[];
+}
+
+export interface ScoreHistoryEntry {
+  round: number;
+  team1Score: number;
+  team2Score: number;
 }
 
 export interface RoundSummary {

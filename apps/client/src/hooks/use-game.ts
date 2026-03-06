@@ -20,6 +20,7 @@ export function useGame() {
   const cardsRevealed = useGameStore((s) => s.cardsRevealed);
   const roundSummary = useGameStore((s) => s.roundSummary);
   const roundEffects = useGameStore((s) => s.roundEffects);
+  const scoreHistory = useGameStore((s) => s.scoreHistory);
   const gameEnded = useGameStore((s) => s.gameEnded);
   const error = useGameStore((s) => s.error);
   const availableSeats = useGameStore((s) => s.availableSeats);
@@ -76,26 +77,31 @@ export function useGame() {
       setTimeout(clearTrickWinner, 2000);
     });
 
-    socket.on('game:round-end', ({ roundSummary, effects }) => {
+    socket.on('game:round-end', ({ roundSummary, effects, scoreHistory }) => {
       useGameStore.getState().setRoundSummary(roundSummary);
+      useGameStore.getState().setScoreHistory(scoreHistory);
       if (effects?.length) {
         useGameStore.getState().setRoundEffects(effects);
       }
     });
 
-    socket.on('game:ended', ({ winningTeam, finalScores }) => {
-      useGameStore
-        .getState()
-        .setGameEnded({ winner: winningTeam, scores: finalScores });
+    socket.on('game:ended', ({ winningTeam, finalScores, scoreHistory }) => {
+      useGameStore.getState().setGameEnded({
+        winner: winningTeam,
+        scores: finalScores,
+        scoreHistory,
+      });
     });
 
-    socket.on('reconnect:success', ({ state, hand }) => {
+    socket.on('reconnect:success', ({ state, hand, scoreHistory }) => {
       console.log(
         `[game] reconnect:success phase=${state.phase} hand=${hand.length} cards`
       );
-      const { setGameState, setHand, revealCards } = useGameStore.getState();
+      const { setGameState, setHand, revealCards, setScoreHistory } =
+        useGameStore.getState();
       setGameState(state);
       setHand(hand);
+      setScoreHistory(scoreHistory);
       revealCards();
     });
 
@@ -252,6 +258,7 @@ export function useGame() {
     cardsRevealed,
     roundSummary,
     roundEffects,
+    scoreHistory,
     gameEnded,
     error,
     availableSeats,

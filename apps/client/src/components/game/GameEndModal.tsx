@@ -1,11 +1,14 @@
-import type { ClientGameState } from '@spades/shared';
+import type { ClientGameState, ScoreHistoryEntry } from '@spades/shared';
 import React from 'react';
 import { TEAM1_COLOR, TEAM2_COLOR } from '../../styles/colors';
 import { Button } from '../ui/Button';
+import { ScoreProgressionChart } from './ScoreProgressionChart';
 
 interface GameEndModalProps {
   winner: 'team1' | 'team2';
   scores: ClientGameState['scores'];
+  scoreHistory: ScoreHistoryEntry[];
+  winningScore: number;
   myTeam: 'team1' | 'team2';
   onNewGame: () => void;
 }
@@ -13,6 +16,8 @@ interface GameEndModalProps {
 export function GameEndModal({
   winner,
   scores,
+  scoreHistory,
+  winningScore,
   myTeam,
   onNewGame,
 }: GameEndModalProps) {
@@ -35,7 +40,7 @@ export function GameEndModal({
           backgroundColor: '#fff',
           borderRadius: '16px',
           padding: '40px',
-          maxWidth: '400px',
+          maxWidth: '500px',
           width: '90%',
           textAlign: 'center',
           color: '#1f2937',
@@ -74,6 +79,16 @@ export function GameEndModal({
             </div>
           </div>
         </div>
+
+        {scoreHistory.length > 1 && (
+          <div style={{ marginBottom: '24px' }}>
+            <ScoreProgressionChart
+              scoreHistory={scoreHistory}
+              winningScore={winningScore}
+              compact
+            />
+          </div>
+        )}
 
         <Button onClick={onNewGame} size="large">
           Play Again

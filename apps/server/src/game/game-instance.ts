@@ -6,6 +6,7 @@ import {
   type Position,
   type ClientGameState,
   type RoundEffect,
+  type ScoreHistoryEntry,
   processAction,
   DEFAULT_GAME_CONFIG,
   type GameAction,
@@ -20,6 +21,9 @@ export class GameInstance {
   private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
   private roundEffects: RoundEffect[] = [];
+  private scoreHistory: ScoreHistoryEntry[] = [
+    { round: 0, team1Score: 0, team2Score: 0 },
+  ];
 
   constructor(
     initialState: GameState,
@@ -47,6 +51,10 @@ export class GameInstance {
 
   getRoundEffects(): RoundEffect[] {
     return this.roundEffects;
+  }
+
+  getScoreHistory(): ScoreHistoryEntry[] {
+    return this.scoreHistory;
   }
 
   setModState(modId: string, state: unknown): void {
@@ -115,6 +123,7 @@ export class GameInstance {
         : null,
       dealerPosition: this.state.dealerPosition,
       currentPlayerPosition: this.state.currentPlayerPosition,
+      winningScore: this.state.winningScore,
     };
 
     // Calculate disabled bids for current bidder
@@ -252,6 +261,12 @@ export class GameInstance {
       )?.summary;
 
       if (roundSummary) {
+        this.scoreHistory.push({
+          round: roundSummary.roundNumber,
+          team1Score: this.state.scores.team1.score,
+          team2Score: this.state.scores.team2.score,
+        });
+
         this.roundEffects = [];
 
         for (const modId of hookExecutor.getAllModIds()) {

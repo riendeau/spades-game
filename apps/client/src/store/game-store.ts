@@ -4,6 +4,7 @@ import type {
   Position,
   RoundEffect,
   RoundSummary,
+  ScoreHistoryEntry,
 } from '@spades/shared';
 import { create } from 'zustand';
 
@@ -28,10 +29,12 @@ interface GameStore {
   lastTrickWinner: string | null;
   roundSummary: RoundSummary | null;
   roundEffects: RoundEffect[];
+  scoreHistory: ScoreHistoryEntry[];
   error: string | null;
   gameEnded: {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
+    scoreHistory: ScoreHistoryEntry[];
   } | null;
   cardsRevealed: boolean;
   availableSeats: AvailableSeat[] | null;
@@ -53,10 +56,12 @@ interface GameStore {
   clearRoundSummary: () => void;
   setRoundEffects: (effects: RoundEffect[]) => void;
   clearRoundEffects: () => void;
+  setScoreHistory: (history: ScoreHistoryEntry[]) => void;
   setError: (error: string | null) => void;
   setGameEnded: (data: {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
+    scoreHistory: ScoreHistoryEntry[];
   }) => void;
   setMyPosition: (position: Position) => void;
   revealCards: () => void;
@@ -75,6 +80,7 @@ const initialState = {
   lastTrickWinner: null,
   roundSummary: null,
   roundEffects: [],
+  scoreHistory: [],
   error: null,
   gameEnded: null,
   cardsRevealed: false,
@@ -112,6 +118,8 @@ export const useGameStore = create<GameStore>((set) => ({
   setRoundEffects: (effects) => set({ roundEffects: effects }),
 
   clearRoundEffects: () => set({ roundEffects: [] }),
+
+  setScoreHistory: (history) => set({ scoreHistory: history }),
 
   setError: (error) => set({ error }),
 
