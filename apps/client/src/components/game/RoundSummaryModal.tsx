@@ -71,8 +71,10 @@ export function RoundSummaryModal({
                     {result.points}
                   </div>
                   {result.bags > 0 && <div>Bags: +{result.bags}</div>}
-                  {result.bagPenalty && (
-                    <div style={{ color: '#dc2626' }}>Bag Penalty: -100</div>
+                  {result.bagPenalty > 0 && (
+                    <div style={{ color: '#dc2626' }}>
+                      Bag Penalty: -{result.bagPenalty}
+                    </div>
                   )}
                   {result.nilResults.map((nil, i) => (
                     <div

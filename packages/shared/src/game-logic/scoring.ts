@@ -122,13 +122,15 @@ export function createRoundSummary(
 
     const currentTeamScore = gameState.scores[teamId];
     const newBags = currentTeamScore.bags + scoreCalc.bags;
+    const penaltyCount = Math.floor(newBags / config.bagPenaltyThreshold);
+    const bagPenalty = penaltyCount * config.bagPenalty;
 
     return {
       bid: regularBid,
       tricks: teamTricks,
       points: scoreCalc.totalScore,
       bags: scoreCalc.bags,
-      bagPenalty: newBags >= config.bagPenaltyThreshold,
+      bagPenalty,
       nilResults,
     };
   };

@@ -17,7 +17,7 @@ function makeContext(team1Score: number, team2Score: number): RoundEndContext {
       tricks: 4,
       points: 40,
       bags: 0,
-      bagPenalty: false,
+      bagPenalty: 0,
       nilResults: [],
     },
     team2: {
@@ -25,7 +25,7 @@ function makeContext(team1Score: number, team2Score: number): RoundEndContext {
       tricks: 4,
       points: 40,
       bags: 0,
-      bagPenalty: false,
+      bagPenalty: 0,
       nilResults: [],
     },
   };
