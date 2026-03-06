@@ -32,7 +32,7 @@ export function OpponentArea({
   const bid = gameState.currentRound?.bids.find(
     (b) => b.playerId === player.id
   );
-  const tricksWon = gameState.currentRound?.tricksWon[player.id] || 0;
+  const tricksWon = gameState.currentRound?.tricksWon[player.id] ?? 0;
 
   const isSideOpponent =
     relativePosition === 'left' || relativePosition === 'right';

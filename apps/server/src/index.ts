@@ -23,8 +23,8 @@ import { modRegistry } from './mods/mod-registry.js';
 import { roomManager } from './rooms/room-manager.js';
 import { setupSocketHandlers } from './socket/handler.js';
 
-const PORT = process.env.PORT || 3001;
-const BASE_PATH = process.env.BASE_PATH || '/';
+const PORT = process.env.PORT ?? 3001;
+const BASE_PATH = process.env.BASE_PATH ?? '/';
 const isProd = process.env.NODE_ENV === 'production';
 
 // Load mods
@@ -67,7 +67,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: servingClient
     ? undefined
     : {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: process.env.CLIENT_URL ?? 'http://localhost:5173',
         methods: ['GET', 'POST'],
       },
 });
@@ -116,7 +116,7 @@ app.use(passportSession);
 // Dev bypass: auto-inject a hardcoded user so auth is transparent locally
 if (!isProd) {
   app.use((req, _res, next) => {
-    if (!req.user) req.user = DEV_USER;
+    req.user ??= DEV_USER;
     next();
   });
 }

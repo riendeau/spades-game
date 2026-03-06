@@ -44,7 +44,9 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: defaultTheme,
-  setTheme: () => {},
+  setTheme: () => {
+    /* noop default */
+  },
 });
 
 function applyThemeToCSSVariables(theme: ThemeDefinition) {

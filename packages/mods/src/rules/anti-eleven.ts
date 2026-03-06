@@ -52,7 +52,7 @@ export const antiElevenMod: RuleMod = {
         return context;
       }
 
-      const state = (modState || {}) as AntiElevenState;
+      const state = (modState ?? {}) as AntiElevenState;
 
       // Make disablement decision on first call for this turn
       if (state.shouldDisableThisTurn === undefined) {
@@ -97,7 +97,7 @@ export const antiElevenMod: RuleMod = {
 
     onRoundEnd: (context: RoundEndContext): RoundEndResult => {
       const { roundSummary, modState } = context;
-      const state = (modState || {}) as AntiElevenState;
+      const state = (modState ?? {}) as AntiElevenState;
 
       // Calculate total table bid
       const totalBid = roundSummary.team1.bid + roundSummary.team2.bid;

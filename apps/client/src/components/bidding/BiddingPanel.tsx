@@ -53,7 +53,7 @@ export function BiddingPanel({
 
   // Calculate max allowed bid based on partner's bid (to prevent team bidding > 13)
   const getMaxAllowedBid = (): number => {
-    const currentBids = gameState.currentRound?.bids || [];
+    const currentBids = gameState.currentRound?.bids ?? [];
     // Only restrict if we're the 3rd or 4th player to bid
     if (currentBids.length < 2) {
       return 13; // No restriction for first two bidders

@@ -18,7 +18,7 @@ export function JoinRoom({
   initialNickname,
 }: JoinRoomProps) {
   const [nickname, setNickname] = useState(initialNickname ?? '');
-  const [roomId, setRoomId] = useState(initialRoomId || '');
+  const [roomId, setRoomId] = useState(initialRoomId ?? '');
   const [mode, setMode] = useState<'create' | 'join'>(
     initialRoomId ? 'join' : 'create'
   );

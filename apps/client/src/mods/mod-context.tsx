@@ -18,8 +18,12 @@ interface ModContextType {
 const ModContext = createContext<ModContextType>({
   availableMods: [],
   activeMods: [],
-  setAvailableMods: () => {},
-  toggleMod: () => {},
+  setAvailableMods: () => {
+    /* noop default */
+  },
+  toggleMod: () => {
+    /* noop default */
+  },
   isModActive: () => false,
 });
 

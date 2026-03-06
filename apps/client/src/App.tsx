@@ -113,7 +113,7 @@ function AppInner() {
   // Seat selection for joining an in-progress game
   if (availableSeats && seatSelectRoomId) {
     const nickname =
-      useGameStore.getState().nickname || user?.displayName || 'Player';
+      useGameStore.getState().nickname ?? user?.displayName ?? 'Player';
     return (
       <>
         {errorToast}
@@ -162,7 +162,7 @@ function AppInner() {
   // Game in progress
   if (myPosition !== null) {
     const myPlayer = gameState.players.find((p) => p.position === myPosition);
-    const myTeam = myPlayer?.team || 'team1';
+    const myTeam = myPlayer?.team ?? 'team1';
 
     return (
       <>

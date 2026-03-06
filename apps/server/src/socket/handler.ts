@@ -62,7 +62,7 @@ export function setupSocketHandlers(io: TypedServer): void {
     });
 
     socket.on('game:bid', ({ bid, isNil, isBlindNil }) => {
-      handleBid(socket, io, bid, isNil || false, isBlindNil || false);
+      handleBid(socket, io, bid, isNil ?? false, isBlindNil ?? false);
     });
 
     socket.on('game:play-card', ({ card }) => {
@@ -99,7 +99,7 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
   if (!result.valid) {
     socket.emit('error', {
       code: 'CREATE_FAILED',
-      message: result.error || 'Failed to create room',
+      message: result.error ?? 'Failed to create room',
     });
     return;
   }
@@ -156,7 +156,7 @@ function handleJoinRoom(
 
     socket.emit('error', {
       code: 'JOIN_FAILED',
-      message: result.error || 'Failed to join room',
+      message: result.error ?? 'Failed to join room',
     });
     return;
   }
@@ -209,7 +209,7 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
   if (!result.valid) {
     socket.emit('error', {
       code: 'READY_FAILED',
-      message: result.error || 'Failed to ready',
+      message: result.error ?? 'Failed to ready',
     });
     return;
   }
@@ -316,7 +316,7 @@ function handleBid(
   if (!validation.valid) {
     socket.emit('error', {
       code: 'INVALID_BID',
-      message: validation.errorMessage || 'Invalid bid',
+      message: validation.errorMessage ?? 'Invalid bid',
     });
     return;
   }
@@ -325,7 +325,7 @@ function handleBid(
   if (!result.valid) {
     socket.emit('error', {
       code: 'BID_FAILED',
-      message: result.error || 'Bid failed',
+      message: result.error ?? 'Bid failed',
     });
     return;
   }
@@ -379,7 +379,7 @@ function handlePlayCard(
   if (!validation.valid) {
     socket.emit('error', {
       code: 'INVALID_PLAY',
-      message: validation.errorMessage || 'Invalid play',
+      message: validation.errorMessage ?? 'Invalid play',
     });
     return;
   }
@@ -388,7 +388,7 @@ function handlePlayCard(
   if (!result.valid) {
     socket.emit('error', {
       code: 'PLAY_FAILED',
-      message: result.error || 'Play failed',
+      message: result.error ?? 'Play failed',
     });
     return;
   }
@@ -564,7 +564,7 @@ function handleChangeSeat(
   if (!result.valid) {
     socket.emit('error', {
       code: 'SEAT_CHANGE_FAILED',
-      message: result.error || 'Failed to change seat',
+      message: result.error ?? 'Failed to change seat',
     });
     return;
   }
@@ -670,7 +670,7 @@ function handleSelectSeat(
   if (!result.valid) {
     socket.emit('error', {
       code: 'REPLACE_FAILED',
-      message: result.error || 'Failed to take seat',
+      message: result.error ?? 'Failed to take seat',
     });
     return;
   }

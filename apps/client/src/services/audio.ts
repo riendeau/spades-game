@@ -3,9 +3,7 @@ let ctx: AudioContext | null = null;
 const activeSources = new Map<string, AudioBufferSourceNode>();
 
 function getContext(): AudioContext {
-  if (!ctx) {
-    ctx = new AudioContext();
-  }
+  ctx ??= new AudioContext();
   return ctx;
 }
 
