@@ -41,11 +41,13 @@ export const antiElevenMod: RuleMod = {
         return context;
       }
 
+      // If any existing bid is nil/blind nil, skip entirely
+      if (currentBids.some((b) => b.isNil || b.isBlindNil)) {
+        return context;
+      }
+
       // Calculate current table bid
-      const tableBid = currentBids.reduce(
-        (sum, b) => sum + (b.isNil || b.isBlindNil ? 0 : b.bid),
-        0
-      );
+      const tableBid = currentBids.reduce((sum, b) => sum + b.bid, 0);
 
       // If table already >= 11, skip check entirely
       if (tableBid >= 11) {
@@ -108,8 +110,12 @@ export const antiElevenMod: RuleMod = {
         disabledBid: null,
       };
 
-      // Only react to exactly 11
-      if (totalBid !== 11) {
+      // Only react to exactly 11 with no nil bids
+      const hasNilBid =
+        roundSummary.team1.nilResults.length > 0 ||
+        roundSummary.team2.nilResults.length > 0;
+
+      if (totalBid !== 11 || hasNilBid) {
         return {
           modState: {
             ...state,
