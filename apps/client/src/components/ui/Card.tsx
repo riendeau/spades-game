@@ -1,5 +1,6 @@
-import type { Card as CardType, Rank, Suit } from '@spades/shared';
+import type { Card as CardType, Rank } from '@spades/shared';
 import React, { useCallback, useState } from 'react';
+import { preloadedCardUrls } from '../../preload-cards';
 
 interface CardProps {
   card: CardType;
@@ -26,40 +27,8 @@ const RANK_NAMES: Record<Rank, string> = {
   K: 'king',
 };
 
-const SUITS: Suit[] = ['clubs', 'diamonds', 'hearts', 'spades'];
-const RANKS: Rank[] = [
-  'A',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  '10',
-  'J',
-  'Q',
-  'K',
-];
-
 function getCardImageUrl(card: CardType): string {
   return `/cards/${RANK_NAMES[card.rank]}_of_${card.suit}.svg`;
-}
-
-const preloadedUrls = new Set<string>();
-
-export function preloadCardImages(): void {
-  for (const suit of SUITS) {
-    for (const rank of RANKS) {
-      const url = getCardImageUrl({ rank, suit });
-      if (!preloadedUrls.has(url)) {
-        preloadedUrls.add(url);
-        const img = new Image();
-        img.src = url;
-      }
-    }
-  }
 }
 
 export function Card({
@@ -73,7 +42,7 @@ export function Card({
   const showDisabled = visuallyDisabled ?? disabled;
   const isSmall = small ?? false;
   const src = getCardImageUrl(card);
-  const [loaded, setLoaded] = useState(() => preloadedUrls.has(src));
+  const [loaded, setLoaded] = useState(() => preloadedCardUrls.has(src));
   const onLoad = useCallback(() => setLoaded(true), []);
 
   return (
