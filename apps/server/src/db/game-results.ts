@@ -57,8 +57,25 @@ const EMPTY_STATS: PlayerStats = {
   partners: [],
 };
 
+const DEV_SAMPLE_STATS: PlayerStats = {
+  totalGames: 23,
+  wins: 14,
+  losses: 9,
+  winRate: 61,
+  partners: [
+    { displayName: 'Alice', gamesPlayed: 10, wins: 7, losses: 3 },
+    { displayName: 'Bob', gamesPlayed: 8, wins: 4, losses: 4 },
+    { displayName: 'Charlie', gamesPlayed: 3, wins: 2, losses: 1 },
+    { displayName: 'Diana', gamesPlayed: 2, wins: 1, losses: 1 },
+  ],
+};
+
 export async function getPlayerStats(userId: string): Promise<PlayerStats> {
-  if (!process.env.DATABASE_URL) return EMPTY_STATS;
+  if (!process.env.DATABASE_URL) {
+    return process.env.NODE_ENV === 'production'
+      ? EMPTY_STATS
+      : DEV_SAMPLE_STATS;
+  }
 
   // Find all games this user participated in, determine their team, and identify their partner
   const result = await pool.query<{
