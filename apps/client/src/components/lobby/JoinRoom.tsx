@@ -147,6 +147,19 @@ export function JoinRoom({
           {mode === 'create' ? 'Create Room' : 'Join Room'}
         </Button>
       </form>
+
+      <div style={{ textAlign: 'center', marginTop: '24px' }}>
+        <a
+          href="/stats"
+          style={{
+            color: '#6b7280',
+            textDecoration: 'none',
+            fontSize: '14px',
+          }}
+        >
+          Your Stats
+        </a>
+      </div>
     </div>
   );
 }

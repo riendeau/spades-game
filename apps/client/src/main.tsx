@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+import { LoginGate } from './components/auth/LoginGate';
 import { MobilePreview } from './components/dev/MobilePreview';
+import { StatsPage } from './components/stats/StatsPage';
 import { preloadCardImages } from './preload-cards';
 import { SocketProvider } from './socket/socket-context';
 
@@ -10,6 +12,7 @@ preloadCardImages();
 const isMobilePreview = new URLSearchParams(window.location.search).has(
   'mobile'
 );
+const isStatsPage = /^\/stats\/?$/.test(window.location.pathname);
 
 // Global styles
 const style = document.createElement('style');
@@ -44,6 +47,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {isMobilePreview ? (
       <MobilePreview />
+    ) : isStatsPage ? (
+      <LoginGate>
+        <StatsPage />
+      </LoginGate>
     ) : (
       <SocketProvider>
         <App />

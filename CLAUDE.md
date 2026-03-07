@@ -67,6 +67,7 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 - `apps/server/src/rooms/room-manager.ts` - Room and session management (includes modifyConfig hook invocation)
 - `apps/server/src/mods/mod-loader.ts` - Registers built-in mods (controls which mods are active)
 - `apps/server/src/mods/hook-executor.ts` - Executes mod hooks in sequence
+- `apps/server/src/db/game-results.ts` - Game result persistence and player stats queries
 - `apps/client/src/hooks/use-game.ts` - Main client-side game hook
 
 ### Team Structure
@@ -132,6 +133,7 @@ http://localhost:5173/room/ABC123?mobile   # Pre-fills room code
 - Server has SPA fallback (`apps/server/src/index.ts:55`) - all non-API routes serve `index.html`
 - **Existing URL routes**:
   - `/room/:id` - Pre-fills room code on join screen (e.g., `/room/ABC123`)
+  - `/stats` - Player stats page (win/loss record, partner history)
 - **To add a new route**: Parse URL in `App.tsx`, pass extracted data as props to components
 
 ### Styling
@@ -229,6 +231,7 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 - `apps/server/src/auth/auth-routes.ts` — Express router for `/auth/google`, `/auth/google/callback`, `/auth/logout`, `/auth/me`
 - `apps/server/src/db/client.ts` — `pg.Pool` from `DATABASE_URL`
 - `apps/server/src/db/schema.ts` — `createTables()` (idempotent; only runs when `DATABASE_URL` is set)
+- `apps/server/src/db/game-results.ts` — `insertGameResult()` + `getPlayerStats()` for the `game_results` table
 - `apps/client/src/components/auth/LoginGate.tsx` — Fetches `/auth/me` on mount; shows Google sign-in UI to unauthenticated users; exposes user via `UserContext`
 
 ### Gotchas
@@ -254,6 +257,21 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 | `SESSION_SECRET`       | Signs the session cookie (32+ random chars)                        |
 | `ALLOWED_EMAILS`       | Comma-separated allowlist (e.g. `alice@gmail.com,bob@gmail.com`)   |
 | `DATABASE_URL`         | PostgreSQL connection string (auto-set by Render from DB resource) |
+
+## Game Result Tracking
+
+Completed games are recorded in the `game_results` table. Player identity is bridged from Google OAuth into game sessions via a `userId` field on `PlayerSession`.
+
+**How it works:**
+
+- `PlayerSession.userId` is populated from `socket.request.user.id` when a session is created (in `handleCreateRoom`, `handleJoinRoom`, `handleSelectSeat`).
+- On the `GAME_COMPLETE` side effect, `handler.ts` calls `recordGameResult()` which maps player positions to user IDs and inserts a row (fire-and-forget).
+- Player columns use `UUID REFERENCES users(id) ON DELETE SET NULL` — nullable so games survive user deletion.
+- Position → column mapping: pos 0 → `team1_player1`, pos 2 → `team1_player2`, pos 1 → `team2_player1`, pos 3 → `team2_player2`.
+
+**Stats API:** `GET /api/stats` returns `{ totalGames, wins, losses, winRate, partners[] }` for the authenticated user. In dev (no `DATABASE_URL`), returns zeros.
+
+**Client:** `/stats` route renders `StatsPage` with summary cards and partner history. Linked from the lobby via "Your Stats".
 
 ## Dependency Management
 

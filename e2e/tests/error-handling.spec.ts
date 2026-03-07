@@ -49,7 +49,7 @@ test.describe('Error Handling', () => {
     await p5.getByRole('button', { name: 'Join Room' }).click();
 
     // Should show an error
-    await expect(p5.getByText(/full|no.*room|cannot join/i)).toBeVisible({
+    await expect(p5.getByText('Game is full')).toBeVisible({
       timeout: 5_000,
     });
   });

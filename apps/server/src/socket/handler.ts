@@ -6,12 +6,18 @@ import type {
   Position,
 } from '@spades/shared';
 import { validatePlay, validateBid } from '@spades/shared';
+import type { Request } from 'express';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import { insertGameResult } from '../db/game-results.js';
 import { roomManager, type Room } from '../rooms/room-manager.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
+
+function getUserId(socket: TypedSocket): string | null {
+  return (socket.request as Request).user?.id ?? null;
+}
 
 function getClientState(room: Room): ClientGameState {
   const state = room.game.toClientState();
@@ -104,7 +110,12 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
     return;
   }
 
-  const session = roomManager.createSession(room.id, playerId, socket.id);
+  const session = roomManager.createSession(
+    room.id,
+    playerId,
+    socket.id,
+    getUserId(socket)
+  );
   void socket.join(room.id);
 
   socket.emit('room:created', {
@@ -161,7 +172,12 @@ function handleJoinRoom(
     return;
   }
 
-  const session = roomManager.createSession(room.id, playerId, socket.id);
+  const session = roomManager.createSession(
+    room.id,
+    playerId,
+    socket.id,
+    getUserId(socket)
+  );
   void socket.join(room.id);
   roomManager.touchRoom(room.id);
 
@@ -467,6 +483,9 @@ function handlePlayCard(
             finalScores: room.game.getState().scores,
             scoreHistory: room.game.getScoreHistory(),
           });
+
+          // Record game result (fire-and-forget)
+          void recordGameResult(room);
         }
       }
 
@@ -682,7 +701,8 @@ function handleSelectSeat(
   const newSession = roomManager.createSession(
     room.id,
     targetPlayer.id,
-    socket.id
+    socket.id,
+    getUserId(socket)
   );
   void socket.join(room.id);
   roomManager.touchRoom(room.id);
@@ -711,10 +731,39 @@ function handleSelectSeat(
   socket.to(room.id).emit('game:state-update', { state: clientState });
 }
 
+async function recordGameResult(room: Room): Promise<void> {
+  try {
+    const state = room.game.getState();
+    const userIds = roomManager.getUserIdsByPlayerId(room.id);
+
+    // Map positions to user IDs:
+    // position 0 → team1_player1, position 2 → team1_player2
+    // position 1 → team2_player1, position 3 → team2_player2
+    const playerByPos = new Map(state.players.map((p) => [p.position, p.id]));
+
+    await insertGameResult({
+      roomId: room.id,
+      team1Score: state.scores.team1.score,
+      team2Score: state.scores.team2.score,
+      roundsPlayed: state.currentRound?.roundNumber ?? 1,
+      team1Player1Id: userIds.get(playerByPos.get(0)!) ?? null,
+      team1Player2Id: userIds.get(playerByPos.get(2)!) ?? null,
+      team2Player1Id: userIds.get(playerByPos.get(1)!) ?? null,
+      team2Player2Id: userIds.get(playerByPos.get(3)!) ?? null,
+    });
+
+    console.log(
+      `[game-result] recorded room=${room.id} score=${state.scores.team1.score}-${state.scores.team2.score}`
+    );
+  } catch (err) {
+    console.error('[game-result] failed to record:', err);
+  }
+}
+
 function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
   const session = roomManager.markSessionDisconnected(socket.id);
   if (!session) {
-    console.warn(`[socket] disconnected id=${socket.id} — no session mapped`);
+    // Normal — socket connected but user never joined a room
     return;
   }
 
