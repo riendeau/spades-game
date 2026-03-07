@@ -1,5 +1,6 @@
-import type { Card as CardType, Rank } from '@spades/shared';
-import React from 'react';
+import type { Card as CardType } from '@spades/shared';
+import React, { useCallback, useState } from 'react';
+import { getCardImageUrl, preloadedCardUrls } from '../../preload-cards';
 
 interface CardProps {
   card: CardType;
@@ -8,26 +9,6 @@ interface CardProps {
   small?: boolean;
   testId?: string;
   visuallyDisabled?: boolean;
-}
-
-const RANK_NAMES: Record<Rank, string> = {
-  A: 'ace',
-  '2': '2',
-  '3': '3',
-  '4': '4',
-  '5': '5',
-  '6': '6',
-  '7': '7',
-  '8': '8',
-  '9': '9',
-  '10': '10',
-  J: 'jack',
-  Q: 'queen',
-  K: 'king',
-};
-
-function getCardImageUrl(card: CardType): string {
-  return `/cards/${RANK_NAMES[card.rank]}_of_${card.suit}.svg`;
 }
 
 export function Card({
@@ -40,6 +21,9 @@ export function Card({
 }: CardProps) {
   const showDisabled = visuallyDisabled ?? disabled;
   const isSmall = small ?? false;
+  const src = getCardImageUrl(card);
+  const [loaded, setLoaded] = useState(() => preloadedCardUrls.has(src));
+  const onLoad = useCallback(() => setLoaded(true), []);
 
   return (
     <button
@@ -62,14 +46,16 @@ export function Card({
       }}
     >
       <img
-        src={getCardImageUrl(card)}
+        src={src}
         alt={`${card.rank} of ${card.suit}`}
         draggable={false}
+        onLoad={onLoad}
         style={{
           width: '100%',
           height: '100%',
           display: 'block',
           borderRadius: '4px',
+          opacity: loaded ? 1 : 0,
         }}
       />
     </button>

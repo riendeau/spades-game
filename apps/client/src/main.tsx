@@ -2,7 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { MobilePreview } from './components/dev/MobilePreview';
+import { preloadCardImages } from './preload-cards';
 import { SocketProvider } from './socket/socket-context';
+
+preloadCardImages();
 
 const isMobilePreview = new URLSearchParams(window.location.search).has(
   'mobile'
