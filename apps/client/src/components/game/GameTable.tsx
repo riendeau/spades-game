@@ -43,6 +43,7 @@ export function GameTable({
 }: GameTableProps) {
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [showScoreChart, setShowScoreChart] = useState(false);
+  const [isCollecting, setIsCollecting] = useState(false);
   const isMobile = useIsMobile();
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const isBidding = gameState.phase === 'bidding';
@@ -80,7 +81,7 @@ export function GameTable({
     if (!isPlaying) {
       return { text: 'Waiting...', disabled: true };
     }
-    if (!isMyTurn) {
+    if (!isMyTurn || isCollecting) {
       return { text: 'Waiting...', disabled: true };
     }
     if (!selectedCard) {
@@ -244,6 +245,7 @@ export function GameTable({
                 gameState={gameState}
                 myPosition={myPosition}
                 compact={isMobile}
+                onCollectingChange={setIsCollecting}
               />
             )}
           </div>
@@ -331,7 +333,7 @@ export function GameTable({
           <PlayerHand
             cards={myHand}
             onPlayCard={onPlayCard}
-            isMyTurn={isPlaying && isMyTurn}
+            isMyTurn={isPlaying && isMyTurn && !isCollecting}
             selectedCard={selectedCard}
             onSelectCard={setSelectedCard}
             faceDown={isBidding && !cardsRevealed}
