@@ -134,7 +134,9 @@ export function TrickArea({
     null
   );
   const prevPlaysRef = React.useRef(plays);
-  const collectTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const collectTimerRef = React.useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined);
 
   // Clean up collection timer on unmount
   React.useEffect(() => {
