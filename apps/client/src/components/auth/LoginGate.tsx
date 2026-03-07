@@ -13,6 +13,7 @@ type AuthState =
 
 export function LoginGate({ children }: LoginGateProps) {
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
+  const [showLoadingText, setShowLoadingText] = useState(false);
 
   useEffect(() => {
     fetch('/auth/me')
@@ -33,6 +34,14 @@ export function LoginGate({ children }: LoginGateProps) {
       });
   }, []);
 
+  // Delay showing loading text so fast auth checks (dev bypass, warm session)
+  // don't flash "Loading..." during page transitions.
+  useEffect(() => {
+    if (authState.status !== 'loading') return;
+    const timer = setTimeout(() => setShowLoadingText(true), 200);
+    return () => clearTimeout(timer);
+  }, [authState.status]);
+
   if (authState.status === 'loading') {
     return (
       <div
@@ -44,12 +53,14 @@ export function LoginGate({ children }: LoginGateProps) {
           backgroundColor: '#f3f4f6',
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '8px' }}>
-            Loading...
+        {showLoadingText && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>
+              Loading...
+            </div>
+            <div style={{ color: '#6b7280' }}>Please wait</div>
           </div>
-          <div style={{ color: '#6b7280' }}>Please wait</div>
-        </div>
+        )}
       </div>
     );
   }
