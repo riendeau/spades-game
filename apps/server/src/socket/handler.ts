@@ -485,7 +485,7 @@ function handlePlayCard(
           });
 
           // Record game result (fire-and-forget)
-          void recordGameResult(room, effect.winner);
+          void recordGameResult(room);
         }
       }
 
@@ -731,10 +731,7 @@ function handleSelectSeat(
   socket.to(room.id).emit('game:state-update', { state: clientState });
 }
 
-async function recordGameResult(
-  room: Room,
-  winningTeam: 'team1' | 'team2'
-): Promise<void> {
+async function recordGameResult(room: Room): Promise<void> {
   try {
     const state = room.game.getState();
     const userIds = roomManager.getUserIdsByPlayerId(room.id);
@@ -746,7 +743,6 @@ async function recordGameResult(
 
     await insertGameResult({
       roomId: room.id,
-      winningTeam,
       team1Score: state.scores.team1.score,
       team2Score: state.scores.team2.score,
       roundsPlayed: state.currentRound?.roundNumber ?? 1,
@@ -757,7 +753,7 @@ async function recordGameResult(
     });
 
     console.log(
-      `[game-result] recorded room=${room.id} winner=${winningTeam} score=${state.scores.team1.score}-${state.scores.team2.score}`
+      `[game-result] recorded room=${room.id} score=${state.scores.team1.score}-${state.scores.team2.score}`
     );
   } catch (err) {
     console.error('[game-result] failed to record:', err);

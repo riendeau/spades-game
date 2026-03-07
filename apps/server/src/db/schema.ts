@@ -20,7 +20,6 @@ export async function createTables(): Promise<void> {
     CREATE TABLE IF NOT EXISTS game_results (
       id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
       room_id          TEXT        NOT NULL,
-      winning_team     TEXT        NOT NULL CHECK (winning_team IN ('team1', 'team2')),
       team1_score      INTEGER     NOT NULL,
       team2_score      INTEGER     NOT NULL,
       rounds_played    INTEGER     NOT NULL,

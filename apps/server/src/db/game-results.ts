@@ -2,7 +2,6 @@ import { pool } from './client.js';
 
 export interface GameResultData {
   roomId: string;
-  winningTeam: 'team1' | 'team2';
   team1Score: number;
   team2Score: number;
   roundsPlayed: number;
@@ -17,12 +16,11 @@ export async function insertGameResult(data: GameResultData): Promise<void> {
 
   await pool.query(
     `INSERT INTO game_results
-       (room_id, winning_team, team1_score, team2_score, rounds_played,
+       (room_id, team1_score, team2_score, rounds_played,
         team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       data.roomId,
-      data.winningTeam,
       data.team1Score,
       data.team2Score,
       data.roundsPlayed,
@@ -138,8 +136,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   // Ordered by completed_at DESC so the first 5 rows are the recent games.
   const result = await pool.query<{
     completed_at: string;
-    winning_team: string;
-    my_team: string;
+    won: boolean;
     my_score: number;
     opponent_score: number;
     partner_id: string | null;
@@ -148,11 +145,10 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   }>(
     `SELECT
        completed_at,
-       winning_team,
        CASE
-         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN 'team1'
-         ELSE 'team2'
-       END AS my_team,
+         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN team1_score > team2_score
+         ELSE team2_score > team1_score
+       END AS won,
        CASE
          WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN team1_score
          ELSE team2_score
@@ -187,7 +183,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   if (result.rows.length === 0) return EMPTY_STATS;
 
   const totalGames = result.rows.length;
-  const wins = result.rows.filter((r) => r.winning_team === r.my_team).length;
+  const wins = result.rows.filter((r) => r.won).length;
   const losses = totalGames - wins;
 
   // Aggregate partner stats
@@ -203,7 +199,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
       losses: 0,
     };
     existing.gamesPlayed++;
-    if (row.winning_team === row.my_team) {
+    if (row.won) {
       existing.wins++;
     } else {
       existing.losses++;
@@ -251,7 +247,7 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
   // Build recent games from the first 5 rows
   const recentGames: RecentGame[] = recentRows.map((row) => ({
     completedAt: row.completed_at,
-    won: row.winning_team === row.my_team,
+    won: row.won,
     myScore: row.my_score,
     opponentScore: row.opponent_score,
     partner: name(row.partner_id),
