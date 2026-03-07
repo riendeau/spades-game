@@ -13,6 +13,7 @@ export interface PlayerSession {
   roomId: string;
   socketId: string | null;
   disconnectedAt: number | null;
+  userId: string | null;
 }
 
 export interface Room {
@@ -73,7 +74,8 @@ export class RoomManager {
   createSession(
     roomId: string,
     playerId: string,
-    socketId: string
+    socketId: string,
+    userId: string | null = null
   ): PlayerSession {
     const sessionToken = uuidv4();
     const session: PlayerSession = {
@@ -82,6 +84,7 @@ export class RoomManager {
       roomId,
       socketId,
       disconnectedAt: null,
+      userId,
     };
 
     this.sessions.set(sessionToken, session);
@@ -241,6 +244,16 @@ export class RoomManager {
         );
       }
     }
+  }
+
+  getUserIdsByPlayerId(roomId: string): Map<string, string | null> {
+    const result = new Map<string, string | null>();
+    for (const session of this.sessions.values()) {
+      if (session.roomId === roomId) {
+        result.set(session.playerId, session.userId);
+      }
+    }
+    return result;
   }
 
   private cleanup(): void {

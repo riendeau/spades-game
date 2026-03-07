@@ -8,6 +8,7 @@ import { RoundSummaryModal } from './components/game/RoundSummaryModal';
 import { JoinRoom } from './components/lobby/JoinRoom';
 import { SeatSelection } from './components/lobby/SeatSelection';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
+import { StatsPage } from './components/stats/StatsPage';
 import { useGame } from './hooks/use-game';
 import { preload } from './services/audio';
 import { useGameStore } from './store/game-store';
@@ -70,6 +71,9 @@ function AppInner() {
     .exec(window.location.pathname)?.[1]
     ?.toUpperCase();
 
+  // Check for /stats route
+  const isStatsPage = /^\/stats\/?$/.test(window.location.pathname);
+
   if (!connected) {
     return (
       <div
@@ -126,6 +130,11 @@ function AppInner() {
         />
       </>
     );
+  }
+
+  // Stats page
+  if (isStatsPage) {
+    return <StatsPage />;
   }
 
   // No room yet - show join/create
