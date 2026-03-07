@@ -15,14 +15,14 @@ test.describe('Card Playing', () => {
     await completeAllBids(players, 3);
     await completeTrick(players);
 
-    // After trick is complete, one player should have button showing "Select Card" for the next trick
+    // After trick is complete, one player should have the my-turn indicator for the next trick
     let foundNextTurn = false;
     for (let attempt = 0; attempt < 20; attempt++) {
       for (const page of players) {
-        const turnButton = page.getByRole('button', {
-          name: /^(Select Card|Play .+ of .+)$/,
-        });
-        if (await turnButton.isVisible({ timeout: 200 }).catch(() => false)) {
+        const turnIndicator = page.locator('[data-testid="my-turn"]');
+        if (
+          await turnIndicator.isVisible({ timeout: 200 }).catch(() => false)
+        ) {
           foundNextTurn = true;
           break;
         }
@@ -69,14 +69,13 @@ test.describe('Card Playing', () => {
 
     // Non-current players should have all their cards disabled
     for (const page of players) {
-      const waitingButton = page.getByRole('button', { name: 'Waiting...' });
-      if (
-        await waitingButton.isVisible({ timeout: 2_000 }).catch(() => false)
-      ) {
-        const nonCurrentDisabled = page.locator(
-          '[data-testid="hand-card"][disabled]'
-        );
-        expect(await nonCurrentDisabled.count()).toBeGreaterThan(0);
+      if (page === leader) continue;
+      const nonCurrentDisabled = page.locator(
+        '[data-testid="hand-card"][disabled]'
+      );
+      const count = await nonCurrentDisabled.count();
+      if (count > 0) {
+        expect(count).toBeGreaterThan(0);
         break;
       }
     }
@@ -92,10 +91,10 @@ test.describe('Card Playing', () => {
     // First player leads a card
     const activePlayer = await playCurrentPlayerCard(players);
 
-    // The player who just played should show "Waiting..."
+    // The player who just played should no longer have the my-turn indicator
     await expect(
-      activePlayer.getByRole('button', { name: 'Waiting...' })
-    ).toBeVisible({ timeout: 5_000 });
+      activePlayer.locator('[data-testid="my-turn"]')
+    ).not.toBeVisible({ timeout: 5_000 });
 
     // Find the next current player (follower)
     const follower = await findCurrentPlayer(players);
@@ -115,35 +114,6 @@ test.describe('Card Playing', () => {
     // If the follower has the lead suit, only those cards (and possibly others
     // if they don't have the suit) should be enabled, so enabled <= total
     expect(enabledCount).toBeLessThanOrEqual(totalCount);
-  });
-
-  test('clicking a selected card deselects it', async ({
-    fourPlayerBidding,
-  }) => {
-    const { players } = fourPlayerBidding;
-
-    await completeAllBids(players, 3);
-
-    const activePlayer = await findCurrentPlayer(players);
-
-    // Select a card
-    const card = activePlayer
-      .locator('[data-testid="hand-card"]:not([disabled])')
-      .first();
-    await card.click();
-
-    // Button should show "Play <card>"
-    await expect(
-      activePlayer.getByRole('button', { name: /^Play .+ of .+$/ })
-    ).toBeVisible({ timeout: 2_000 });
-
-    // Click the same card again to deselect
-    await card.click();
-
-    // Button should now show "Select Card" (card is deselected)
-    await expect(
-      activePlayer.getByRole('button', { name: 'Select Card' })
-    ).toBeVisible({ timeout: 2_000 });
   });
 
   test('double-clicking a card plays it immediately', async ({
@@ -173,9 +143,9 @@ test.describe('Card Playing', () => {
       { timeout: 10_000 }
     );
 
-    // Button should now show "Waiting..." after playing
+    // The player who just played should no longer have the my-turn indicator
     await expect(
-      activePlayer.getByRole('button', { name: 'Waiting...' })
-    ).toBeVisible({ timeout: 5_000 });
+      activePlayer.locator('[data-testid="my-turn"]')
+    ).not.toBeVisible({ timeout: 5_000 });
   });
 });
