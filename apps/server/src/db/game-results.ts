@@ -41,11 +41,21 @@ export interface PartnerStats {
   losses: number;
 }
 
+export interface RecentGame {
+  completedAt: string;
+  won: boolean;
+  myScore: number;
+  opponentScore: number;
+  partner: string;
+  opponents: [string, string];
+}
+
 export interface PlayerStats {
   totalGames: number;
   wins: number;
   losses: number;
   winRate: number;
+  recentGames: RecentGame[];
   partners: PartnerStats[];
 }
 
@@ -54,14 +64,61 @@ const EMPTY_STATS: PlayerStats = {
   wins: 0,
   losses: 0,
   winRate: 0,
+  recentGames: [],
   partners: [],
 };
+
+function hoursAgo(h: number): string {
+  return new Date(Date.now() - h * 3600_000).toISOString();
+}
 
 const DEV_SAMPLE_STATS: PlayerStats = {
   totalGames: 23,
   wins: 14,
   losses: 9,
   winRate: 61,
+  recentGames: [
+    {
+      completedAt: hoursAgo(1),
+      won: true,
+      myScore: 512,
+      opponentScore: 340,
+      partner: 'Alice',
+      opponents: ['Bob', 'Charlie'],
+    },
+    {
+      completedAt: hoursAgo(3),
+      won: false,
+      myScore: 420,
+      opponentScore: 505,
+      partner: 'Bob',
+      opponents: ['Alice', 'Diana'],
+    },
+    {
+      completedAt: hoursAgo(26),
+      won: true,
+      myScore: 530,
+      opponentScore: 285,
+      partner: 'Alice',
+      opponents: ['Charlie', 'Diana'],
+    },
+    {
+      completedAt: hoursAgo(50),
+      won: true,
+      myScore: 500,
+      opponentScore: 490,
+      partner: 'Charlie',
+      opponents: ['Alice', 'Bob'],
+    },
+    {
+      completedAt: hoursAgo(170),
+      won: false,
+      myScore: 380,
+      opponentScore: 510,
+      partner: 'Diana',
+      opponents: ['Alice', 'Bob'],
+    },
+  ],
   partners: [
     { displayName: 'Alice', gamesPlayed: 10, wins: 7, losses: 3 },
     { displayName: 'Bob', gamesPlayed: 8, wins: 4, losses: 4 },
@@ -131,33 +188,108 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     partnerMap.set(row.partner_id, existing);
   }
 
-  // Resolve partner display names
-  const partnerIds = [...partnerMap.keys()];
-  const partners: PartnerStats[] = [];
+  // Fetch the 5 most recent games with all player IDs
+  const recentResult = await pool.query<{
+    completed_at: string;
+    winning_team: string;
+    my_team: string;
+    my_score: number;
+    opponent_score: number;
+    partner_id: string | null;
+    opponent1_id: string | null;
+    opponent2_id: string | null;
+  }>(
+    `SELECT
+       completed_at,
+       winning_team,
+       CASE
+         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN 'team1'
+         ELSE 'team2'
+       END AS my_team,
+       CASE
+         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN team1_score
+         ELSE team2_score
+       END AS my_score,
+       CASE
+         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN team2_score
+         ELSE team1_score
+       END AS opponent_score,
+       CASE
+         WHEN team1_player1_id = $1 THEN team1_player2_id
+         WHEN team1_player2_id = $1 THEN team1_player1_id
+         WHEN team2_player1_id = $1 THEN team2_player2_id
+         WHEN team2_player2_id = $1 THEN team2_player1_id
+       END AS partner_id,
+       CASE
+         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN team2_player1_id
+         ELSE team1_player1_id
+       END AS opponent1_id,
+       CASE
+         WHEN team1_player1_id = $1 OR team1_player2_id = $1 THEN team2_player2_id
+         ELSE team1_player2_id
+       END AS opponent2_id
+     FROM game_results
+     WHERE team1_player1_id = $1
+        OR team1_player2_id = $1
+        OR team2_player1_id = $1
+        OR team2_player2_id = $1
+     ORDER BY completed_at DESC
+     LIMIT 5`,
+    [userId]
+  );
 
-  if (partnerIds.length > 0) {
+  // Collect all unique user IDs we need to resolve (partners + opponents)
+  const allUserIds = new Set<string>();
+  for (const row of result.rows) {
+    if (row.partner_id) allUserIds.add(row.partner_id);
+  }
+  for (const row of recentResult.rows) {
+    if (row.partner_id) allUserIds.add(row.partner_id);
+    if (row.opponent1_id) allUserIds.add(row.opponent1_id);
+    if (row.opponent2_id) allUserIds.add(row.opponent2_id);
+  }
+
+  // Resolve display names in a single query
+  const nameMap = new Map<string, string>();
+  if (allUserIds.size > 0) {
     const nameResult = await pool.query<{ id: string; display_name: string }>(
       `SELECT id, display_name FROM users WHERE id = ANY($1)`,
-      [partnerIds]
+      [[...allUserIds]]
     );
-    const nameMap = new Map(nameResult.rows.map((r) => [r.id, r.display_name]));
-
-    for (const [partnerId, stats] of partnerMap) {
-      partners.push({
-        displayName: nameMap.get(partnerId) ?? 'Unknown',
-        ...stats,
-      });
+    for (const row of nameResult.rows) {
+      nameMap.set(row.id, row.display_name);
     }
-
-    // Sort by most games played together
-    partners.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
   }
+
+  const name = (id: string | null) =>
+    id ? (nameMap.get(id) ?? 'Unknown') : 'Unknown';
+
+  // Build partner stats
+  const partners: PartnerStats[] = [];
+  for (const [partnerId, stats] of partnerMap) {
+    partners.push({
+      displayName: name(partnerId),
+      ...stats,
+    });
+  }
+  partners.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
+
+  // Build recent games
+  const recentGames: RecentGame[] = recentResult.rows.map((row) => ({
+    completedAt: row.completed_at,
+    won: row.winning_team === row.my_team,
+    myScore: row.my_score,
+    opponentScore: row.opponent_score,
+    partner: name(row.partner_id),
+    opponents: [name(row.opponent1_id), name(row.opponent2_id)],
+  }));
 
   return {
     totalGames,
     wins,
     losses,
     winRate: Math.round((wins / totalGames) * 100),
+    recentGames,
     partners,
   };
 }

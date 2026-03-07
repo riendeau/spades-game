@@ -7,11 +7,21 @@ interface PartnerStats {
   losses: number;
 }
 
+export interface RecentGame {
+  completedAt: string;
+  won: boolean;
+  myScore: number;
+  opponentScore: number;
+  partner: string;
+  opponents: [string, string];
+}
+
 export interface PlayerStats {
   totalGames: number;
   wins: number;
   losses: number;
   winRate: number;
+  recentGames: RecentGame[];
   partners: PartnerStats[];
 }
 
