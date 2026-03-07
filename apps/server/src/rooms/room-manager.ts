@@ -142,20 +142,26 @@ export class RoomManager {
   }
 
   markSessionDisconnected(socketId: string): PlayerSession | undefined {
-    const session = this.getSessionBySocketId(socketId);
-    if (session) {
-      session.disconnectedAt = Date.now();
-      session.socketId = null;
-      this.socketToSession.delete(socketId);
+    // Check the map directly — a missing entry is normal (socket connected
+    // but never joined a room), so avoid getSessionBySocketId's warning.
+    const token = this.socketToSession.get(socketId);
+    if (!token) return undefined;
 
-      console.log(
-        `[session] marking disconnected token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId} socket=${socketId}`
+    const session = this.sessions.get(token);
+    if (!session) {
+      console.error(
+        `[session] MAP INCONSISTENCY in markDisconnected socket=${socketId} → token=${token.slice(0, 8)}… but token not in sessions map!`
       );
-    } else {
-      console.warn(
-        `[session] markDisconnected: no session for socket=${socketId}`
-      );
+      return undefined;
     }
+
+    session.disconnectedAt = Date.now();
+    session.socketId = null;
+    this.socketToSession.delete(socketId);
+
+    console.log(
+      `[session] marking disconnected token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId} socket=${socketId}`
+    );
     return session;
   }
 

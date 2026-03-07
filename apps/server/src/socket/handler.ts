@@ -767,7 +767,7 @@ async function recordGameResult(
 function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
   const session = roomManager.markSessionDisconnected(socket.id);
   if (!session) {
-    console.warn(`[socket] disconnected id=${socket.id} — no session mapped`);
+    // Normal — socket connected but user never joined a room
     return;
   }
 
