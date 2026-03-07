@@ -162,7 +162,7 @@ describe('antiElevenMod', () => {
         team1Bid: 5,
         team2Bid: 6,
         team1NilResults: [
-          { playerId: 'p1', isBlindNil: false, succeeded: true },
+          { playerId: 'p1', isBlindNil: false, succeeded: true, points: 100 },
         ],
       });
       const result = onRoundEnd(
@@ -182,7 +182,7 @@ describe('antiElevenMod', () => {
         team1Bid: 4,
         team2Bid: 7,
         team2NilResults: [
-          { playerId: 'p2', isBlindNil: true, succeeded: false },
+          { playerId: 'p2', isBlindNil: true, succeeded: false, points: -200 },
         ],
       });
       const result = onRoundEnd(
