@@ -1,4 +1,5 @@
-import type { Rank, Suit } from '@spades/shared';
+import type { Card, Rank } from '@spades/shared';
+import { RANKS, SUITS } from '@spades/shared';
 
 const RANK_NAMES: Record<Rank, string> = {
   A: 'ace',
@@ -16,29 +17,16 @@ const RANK_NAMES: Record<Rank, string> = {
   K: 'king',
 };
 
-const SUITS: Suit[] = ['clubs', 'diamonds', 'hearts', 'spades'];
-const RANKS: Rank[] = [
-  'A',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  '10',
-  'J',
-  'Q',
-  'K',
-];
+export function getCardImageUrl(card: Card): string {
+  return `/cards/${RANK_NAMES[card.rank]}_of_${card.suit}.svg`;
+}
 
 export const preloadedCardUrls = new Set<string>();
 
 export function preloadCardImages(): void {
   for (const suit of SUITS) {
     for (const rank of RANKS) {
-      const url = `/cards/${RANK_NAMES[rank]}_of_${suit}.svg`;
+      const url = getCardImageUrl({ rank, suit });
       if (!preloadedCardUrls.has(url)) {
         preloadedCardUrls.add(url);
         const img = new Image();

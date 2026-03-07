@@ -1,6 +1,6 @@
-import type { Card as CardType, Rank } from '@spades/shared';
+import type { Card as CardType } from '@spades/shared';
 import React, { useCallback, useState } from 'react';
-import { preloadedCardUrls } from '../../preload-cards';
+import { getCardImageUrl, preloadedCardUrls } from '../../preload-cards';
 
 interface CardProps {
   card: CardType;
@@ -9,26 +9,6 @@ interface CardProps {
   small?: boolean;
   testId?: string;
   visuallyDisabled?: boolean;
-}
-
-const RANK_NAMES: Record<Rank, string> = {
-  A: 'ace',
-  '2': '2',
-  '3': '3',
-  '4': '4',
-  '5': '5',
-  '6': '6',
-  '7': '7',
-  '8': '8',
-  '9': '9',
-  '10': '10',
-  J: 'jack',
-  Q: 'queen',
-  K: 'king',
-};
-
-function getCardImageUrl(card: CardType): string {
-  return `/cards/${RANK_NAMES[card.rank]}_of_${card.suit}.svg`;
 }
 
 export function Card({
