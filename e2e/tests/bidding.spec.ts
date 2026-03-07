@@ -77,14 +77,14 @@ test.describe('Bidding', () => {
 
     await completeAllBids(players, 3);
 
-    // Should transition to playing phase — one player's button shows "Select Card"
+    // Should transition to playing phase — one player has the my-turn indicator
     let foundTurn = false;
     for (let attempt = 0; attempt < 20; attempt++) {
       for (const page of players) {
-        const turnButton = page.getByRole('button', {
-          name: /^(Select Card|Play .+ of .+)$/,
-        });
-        if (await turnButton.isVisible({ timeout: 200 }).catch(() => false)) {
+        const turnIndicator = page.locator('[data-testid="my-turn"]');
+        if (
+          await turnIndicator.isVisible({ timeout: 200 }).catch(() => false)
+        ) {
           foundTurn = true;
           break;
         }

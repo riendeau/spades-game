@@ -6,8 +6,6 @@ interface PlayerHandProps {
   cards: CardType[];
   onPlayCard: (card: CardType) => void;
   isMyTurn: boolean;
-  selectedCard: CardType | null;
-  onSelectCard: (card: CardType | null) => void;
   faceDown?: boolean;
   playableCards?: CardType[];
   compact?: boolean;
@@ -17,8 +15,6 @@ export function PlayerHand({
   cards,
   onPlayCard,
   isMyTurn,
-  selectedCard,
-  onSelectCard,
   faceDown = false,
   playableCards,
   compact = false,
@@ -31,26 +27,9 @@ export function PlayerHand({
     );
   };
 
-  const handleCardClick = (card: CardType) => {
-    if (!isCardPlayable(card)) return;
-
-    const isSelected =
-      selectedCard?.suit === card.suit && selectedCard.rank === card.rank;
-    if (isSelected) {
-      // Clicking a selected card deselects it
-      onSelectCard(null);
-    } else {
-      // Clicking an unselected card selects it
-      onSelectCard(card);
-    }
-  };
-
   const handleCardDoubleClick = (card: CardType) => {
     if (!isCardPlayable(card)) return;
-
-    // Double-clicking immediately plays the card
     onPlayCard(card);
-    onSelectCard(null);
   };
 
   return (
@@ -64,9 +43,6 @@ export function PlayerHand({
       }}
     >
       {cards.map((card, idx) => {
-        const isSelected =
-          selectedCard?.suit === card.suit && selectedCard?.rank === card.rank;
-
         // Fan: map card index to a rotation centered around 0
         const count = cards.length;
         const mid = (count - 1) / 2;
@@ -92,8 +68,8 @@ export function PlayerHand({
               position: 'relative',
               top: `${offsetY}px`,
               marginLeft: idx > 0 ? (compact ? '-35px' : '-25px') : 0,
-              zIndex: isSelected ? 100 : idx,
-              transform: `rotate(${rotation}deg)${isSelected ? ' translateY(-12px)' : ''}`,
+              zIndex: idx,
+              transform: `rotate(${rotation}deg)`,
               transformOrigin: 'bottom center',
               transition: 'transform 0.15s ease',
             }}
@@ -103,10 +79,8 @@ export function PlayerHand({
             ) : (
               <Card
                 card={card}
-                onClick={() => handleCardClick(card)}
                 onDoubleClick={() => handleCardDoubleClick(card)}
                 disabled={!isCardPlayable(card)}
-                selected={isSelected}
                 testId="hand-card"
                 visuallyDisabled={isMyTurn && !isCardPlayable(card)}
                 small={compact}

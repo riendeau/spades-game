@@ -3,10 +3,8 @@ import React from 'react';
 
 interface CardProps {
   card: CardType;
-  onClick?: () => void;
   onDoubleClick?: () => void;
   disabled?: boolean;
-  selected?: boolean;
   small?: boolean;
   testId?: string;
   visuallyDisabled?: boolean;
@@ -34,10 +32,8 @@ function getCardImageUrl(card: CardType): string {
 
 export function Card({
   card,
-  onClick,
   onDoubleClick,
   disabled,
-  selected,
   small,
   testId,
   visuallyDisabled,
@@ -47,7 +43,6 @@ export function Card({
 
   return (
     <button
-      onClick={onClick}
       onDoubleClick={onDoubleClick}
       disabled={disabled}
       data-testid={testId}
@@ -56,15 +51,11 @@ export function Card({
         width: isSmall ? '50px' : '90px',
         height: isSmall ? '75px' : '130px',
         background: '#fff',
-        border: selected ? '2px solid #3b82f6' : '1px solid rgba(0,0,0,0.15)',
+        border: '1px solid rgba(0,0,0,0.15)',
         borderRadius: '8px',
         padding: isSmall ? '2px' : '3px',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        boxShadow: selected
-          ? '0 4px 12px rgba(59, 130, 246, 0.4)'
-          : showDisabled
-            ? 'none'
-            : '0 2px 4px rgba(0,0,0,0.15)',
+        boxShadow: showDisabled ? 'none' : '0 2px 4px rgba(0,0,0,0.15)',
         transition: 'all 0.15s ease',
         filter: showDisabled ? 'grayscale(1) brightness(0.85)' : 'none',
         overflow: 'hidden',

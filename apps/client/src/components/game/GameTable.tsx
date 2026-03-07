@@ -6,11 +6,10 @@ import type {
   ScoreHistoryEntry,
 } from '@spades/shared';
 import { getPlayableCards } from '@spades/shared';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 import { BiddingPanel } from '../bidding/BiddingPanel';
-import { Button } from '../ui/Button';
 import { OpponentArea } from './OpponentArea';
 import { PlayerHand } from './PlayerHand';
 import { ScoreBoard } from './ScoreBoard';
@@ -41,7 +40,6 @@ export function GameTable({
   onRevealCards,
   onOpenSeat,
 }: GameTableProps) {
-  const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [showScoreChart, setShowScoreChart] = useState(false);
   const [isCollecting, setIsCollecting] = useState(false);
   const isMobile = useIsMobile();
@@ -56,44 +54,6 @@ export function GameTable({
     if (!isPlaying || !isMyTurn || !myPlayerId) return undefined;
     return getPlayableCards(gameState, myPlayerId, myHand);
   }, [isPlaying, isMyTurn, myPlayerId, gameState, myHand]);
-
-  useEffect(() => {
-    if (
-      selectedCard &&
-      playableCards &&
-      !playableCards.some(
-        (c) => c.suit === selectedCard.suit && c.rank === selectedCard.rank
-      )
-    ) {
-      setSelectedCard(null);
-    }
-  }, [playableCards, selectedCard]);
-
-  const handlePlaySelected = () => {
-    if (selectedCard) {
-      onPlayCard(selectedCard);
-      setSelectedCard(null);
-    }
-  };
-
-  // Determine button text and state
-  const getButtonState = () => {
-    if (!isPlaying) {
-      return { text: 'Waiting...', disabled: true };
-    }
-    if (!isMyTurn || isCollecting) {
-      return { text: 'Waiting...', disabled: true };
-    }
-    if (!selectedCard) {
-      return { text: 'Select Card', disabled: true };
-    }
-    return {
-      text: `Play ${selectedCard.rank} of ${selectedCard.suit}`,
-      disabled: false,
-    };
-  };
-
-  const buttonState = getButtonState();
 
   return (
     <div
@@ -324,6 +284,9 @@ export function GameTable({
 
         {/* Bottom section with my hand */}
         <div
+          data-testid={
+            isPlaying && isMyTurn && !isCollecting ? 'my-turn' : undefined
+          }
           style={{
             backgroundColor: 'rgba(0,0,0,0.2)',
             padding: isMobile ? '12px 12px' : '20px',
@@ -334,23 +297,10 @@ export function GameTable({
             cards={myHand}
             onPlayCard={onPlayCard}
             isMyTurn={isPlaying && isMyTurn && !isCollecting}
-            selectedCard={selectedCard}
-            onSelectCard={setSelectedCard}
             faceDown={isBidding && !cardsRevealed}
             playableCards={playableCards}
             compact={isMobile}
           />
-
-          {!isBidding && (
-            <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <Button
-                onClick={handlePlaySelected}
-                disabled={buttonState.disabled}
-              >
-                {buttonState.text}
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
