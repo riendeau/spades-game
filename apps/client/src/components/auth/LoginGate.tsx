@@ -38,7 +38,7 @@ export function LoginGate({ children }: LoginGateProps) {
   // don't flash "Loading..." during page transitions.
   useEffect(() => {
     if (authState.status !== 'loading') return;
-    const timer = setTimeout(() => setShowLoadingText(true), 200);
+    const timer = setTimeout(() => setShowLoadingText(true), 1000);
     return () => clearTimeout(timer);
   }, [authState.status]);
 
