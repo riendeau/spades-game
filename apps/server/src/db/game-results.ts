@@ -1,5 +1,12 @@
 import { pool } from './client.js';
 
+export interface NilAttemptInsertData {
+  roundNumber: number;
+  playerId: string | null;
+  isBlindNil: boolean;
+  succeeded: boolean;
+}
+
 export interface GameResultData {
   roomId: string;
   team1Score: number;
@@ -9,27 +16,58 @@ export interface GameResultData {
   team1Player2Id: string | null;
   team2Player1Id: string | null;
   team2Player2Id: string | null;
+  nilAttempts: NilAttemptInsertData[];
 }
 
 export async function insertGameResult(data: GameResultData): Promise<void> {
   if (!process.env.DATABASE_URL) return;
 
-  await pool.query(
-    `INSERT INTO game_results
-       (room_id, team1_score, team2_score, rounds_played,
-        team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [
-      data.roomId,
-      data.team1Score,
-      data.team2Score,
-      data.roundsPlayed,
-      data.team1Player1Id,
-      data.team1Player2Id,
-      data.team2Player1Id,
-      data.team2Player2Id,
-    ]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query<{ id: string }>(
+      `INSERT INTO game_results
+         (room_id, team1_score, team2_score, rounds_played,
+          team1_player1_id, team1_player2_id, team2_player1_id, team2_player2_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id`,
+      [
+        data.roomId,
+        data.team1Score,
+        data.team2Score,
+        data.roundsPlayed,
+        data.team1Player1Id,
+        data.team1Player2Id,
+        data.team2Player1Id,
+        data.team2Player2Id,
+      ]
+    );
+
+    const gameResultId = result.rows[0].id;
+
+    for (const nil of data.nilAttempts) {
+      await client.query(
+        `INSERT INTO nil_attempts
+           (game_result_id, round_number, player_id, is_blind_nil, succeeded)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          gameResultId,
+          nil.roundNumber,
+          nil.playerId,
+          nil.isBlindNil,
+          nil.succeeded,
+        ]
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export interface PartnerStats {
@@ -261,5 +299,122 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats> {
     winRate: Math.round((wins / totalGames) * 100),
     recentGames,
     partners,
+  };
+}
+
+export interface NilStats {
+  totalAttempts: number;
+  succeeded: number;
+  failed: number;
+  successRate: number;
+  blindNilAttempts: number;
+  blindNilSucceeded: number;
+  blindNilSuccessRate: number;
+  asPartner: {
+    totalAttempts: number;
+    succeeded: number;
+    failed: number;
+    successRate: number;
+  };
+}
+
+const EMPTY_NIL_STATS: NilStats = {
+  totalAttempts: 0,
+  succeeded: 0,
+  failed: 0,
+  successRate: 0,
+  blindNilAttempts: 0,
+  blindNilSucceeded: 0,
+  blindNilSuccessRate: 0,
+  asPartner: { totalAttempts: 0, succeeded: 0, failed: 0, successRate: 0 },
+};
+
+const DEV_SAMPLE_NIL_STATS: NilStats = {
+  totalAttempts: 8,
+  succeeded: 5,
+  failed: 3,
+  successRate: 63,
+  blindNilAttempts: 2,
+  blindNilSucceeded: 1,
+  blindNilSuccessRate: 50,
+  asPartner: { totalAttempts: 6, succeeded: 4, failed: 2, successRate: 67 },
+};
+
+export async function getNilStats(userId: string): Promise<NilStats> {
+  if (!process.env.DATABASE_URL) {
+    return process.env.NODE_ENV === 'production'
+      ? EMPTY_NIL_STATS
+      : DEV_SAMPLE_NIL_STATS;
+  }
+
+  // My nil bids
+  const myNils = await pool.query<{
+    total: string;
+    succeeded: string;
+    blind_total: string;
+    blind_succeeded: string;
+  }>(
+    `SELECT
+       COUNT(*)::text AS total,
+       COUNT(*) FILTER (WHERE succeeded)::text AS succeeded,
+       COUNT(*) FILTER (WHERE is_blind_nil)::text AS blind_total,
+       COUNT(*) FILTER (WHERE is_blind_nil AND succeeded)::text AS blind_succeeded
+     FROM nil_attempts
+     WHERE player_id = $1`,
+    [userId]
+  );
+
+  const totalAttempts = parseInt(myNils.rows[0].total, 10);
+  const succeeded = parseInt(myNils.rows[0].succeeded, 10);
+  const failed = totalAttempts - succeeded;
+  const blindNilAttempts = parseInt(myNils.rows[0].blind_total, 10);
+  const blindNilSucceeded = parseInt(myNils.rows[0].blind_succeeded, 10);
+
+  // Partner's nil bids (I was protecting)
+  const partnerNils = await pool.query<{
+    total: string;
+    succeeded: string;
+  }>(
+    `SELECT
+       COUNT(*)::text AS total,
+       COUNT(*) FILTER (WHERE na.succeeded)::text AS succeeded
+     FROM nil_attempts na
+     JOIN game_results gr ON gr.id = na.game_result_id
+     WHERE na.player_id != $1
+       AND CASE
+         WHEN gr.team1_player1_id = $1 THEN na.player_id = gr.team1_player2_id
+         WHEN gr.team1_player2_id = $1 THEN na.player_id = gr.team1_player1_id
+         WHEN gr.team2_player1_id = $1 THEN na.player_id = gr.team2_player2_id
+         WHEN gr.team2_player2_id = $1 THEN na.player_id = gr.team2_player1_id
+         ELSE FALSE
+       END`,
+    [userId]
+  );
+
+  const partnerTotal = parseInt(partnerNils.rows[0].total, 10);
+  const partnerSucceeded = parseInt(partnerNils.rows[0].succeeded, 10);
+  const partnerFailed = partnerTotal - partnerSucceeded;
+
+  return {
+    totalAttempts,
+    succeeded,
+    failed,
+    successRate:
+      totalAttempts > 0 ? Math.round((succeeded / totalAttempts) * 100) : 0,
+    blindNilAttempts,
+    blindNilSucceeded,
+    blindNilSuccessRate:
+      blindNilAttempts > 0
+        ? Math.round((blindNilSucceeded / blindNilAttempts) * 100)
+        : 0,
+    asPartner: {
+      totalAttempts: partnerTotal,
+      succeeded: partnerSucceeded,
+      failed: partnerFailed,
+      successRate:
+        partnerTotal > 0
+          ? Math.round((partnerSucceeded / partnerTotal) * 100)
+          : 0,
+    },
   };
 }

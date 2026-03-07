@@ -741,6 +741,13 @@ async function recordGameResult(room: Room): Promise<void> {
     // position 1 → team2_player1, position 3 → team2_player2
     const playerByPos = new Map(state.players.map((p) => [p.position, p.id]));
 
+    const nilAttempts = room.game.getNilAttempts().map((na) => ({
+      roundNumber: na.roundNumber,
+      playerId: userIds.get(na.playerId) ?? null,
+      isBlindNil: na.isBlindNil,
+      succeeded: na.succeeded,
+    }));
+
     await insertGameResult({
       roomId: room.id,
       team1Score: state.scores.team1.score,
@@ -750,10 +757,11 @@ async function recordGameResult(room: Room): Promise<void> {
       team1Player2Id: userIds.get(playerByPos.get(2)!) ?? null,
       team2Player1Id: userIds.get(playerByPos.get(1)!) ?? null,
       team2Player2Id: userIds.get(playerByPos.get(3)!) ?? null,
+      nilAttempts,
     });
 
     console.log(
-      `[game-result] recorded room=${room.id} score=${state.scores.team1.score}-${state.scores.team2.score}`
+      `[game-result] recorded room=${room.id} score=${state.scores.team1.score}-${state.scores.team2.score} nils=${nilAttempts.length}`
     );
   } catch (err) {
     console.error('[game-result] failed to record:', err);

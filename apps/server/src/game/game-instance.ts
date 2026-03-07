@@ -15,12 +15,20 @@ import {
 } from '@spades/shared';
 import { hookExecutor } from '../mods/hook-executor.js';
 
+export interface NilAttemptData {
+  roundNumber: number;
+  playerId: PlayerId;
+  isBlindNil: boolean;
+  succeeded: boolean;
+}
+
 export class GameInstance {
   private state: GameState;
   private config: GameConfig;
   private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
   private roundEffects: RoundEffect[] = [];
+  private nilAttempts: NilAttemptData[] = [];
   private scoreHistory: ScoreHistoryEntry[] = [
     { round: 0, team1Score: 0, team2Score: 0 },
   ];
@@ -55,6 +63,10 @@ export class GameInstance {
 
   getScoreHistory(): ScoreHistoryEntry[] {
     return this.scoreHistory;
+  }
+
+  getNilAttempts(): NilAttemptData[] {
+    return this.nilAttempts;
   }
 
   setModState(modId: string, state: unknown): void {
@@ -266,6 +278,18 @@ export class GameInstance {
           team1Score: this.state.scores.team1.score,
           team2Score: this.state.scores.team2.score,
         });
+
+        for (const nr of [
+          ...roundSummary.team1.nilResults,
+          ...roundSummary.team2.nilResults,
+        ]) {
+          this.nilAttempts.push({
+            roundNumber: roundSummary.roundNumber,
+            playerId: nr.playerId,
+            isBlindNil: nr.isBlindNil,
+            succeeded: nr.succeeded,
+          });
+        }
 
         this.roundEffects = [];
 
