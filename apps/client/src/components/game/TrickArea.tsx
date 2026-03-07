@@ -110,12 +110,14 @@ interface TrickAreaProps {
   gameState: ClientGameState;
   myPosition: Position;
   compact?: boolean;
+  onCollectingChange?: (collecting: boolean) => void;
 }
 
 export function TrickArea({
   gameState,
   myPosition,
   compact = false,
+  onCollectingChange,
 }: TrickAreaProps) {
   const trick = gameState.currentRound?.currentTrick;
   const plays = trick?.plays ?? [];
@@ -132,9 +134,21 @@ export function TrickArea({
     null
   );
   const prevPlaysRef = React.useRef(plays);
+  const collectTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+
+  // Clean up collection timer on unmount
+  React.useEffect(() => {
+    return () => {
+      clearTimeout(collectTimerRef.current);
+      onCollectingChange?.(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Collection detection — declared BEFORE rotation-generation effect
-  // so it can snapshot rotations before they're cleared
+  // so it can snapshot rotations before they're cleared.
+  // Timer is managed via ref (not effect cleanup) so that a plays.length
+  // change during the animation doesn't cancel the setCollecting(null) call.
   React.useLayoutEffect(() => {
     const prevPlays = prevPlaysRef.current;
     prevPlaysRef.current = plays;
@@ -152,9 +166,19 @@ export function TrickArea({
           rotations: new Map(rotationsRef.current),
           winnerRelPos,
         });
-        const timer = setTimeout(() => setCollecting(null), 400);
-        return () => clearTimeout(timer);
+        onCollectingChange?.(true);
+        clearTimeout(collectTimerRef.current);
+        collectTimerRef.current = setTimeout(() => {
+          setCollecting(null);
+          onCollectingChange?.(false);
+        }, 400);
       }
+    } else if (plays.length > 0) {
+      // New trick cards arrived while collection animation was in progress —
+      // clear it immediately so the new cards are visible.
+      clearTimeout(collectTimerRef.current);
+      setCollecting(null);
+      onCollectingChange?.(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plays.length, lastTrickWinner]);
