@@ -78,11 +78,13 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
         style={{
           display: 'flex',
           gap: '8px',
+          justifyContent: 'center',
           marginBottom: gameState.currentRound ? '8px' : '0',
         }}
       >
         <div
           style={{
+            flex: 1,
             backgroundColor: TEAM1_COLOR,
             borderRadius: '8px',
             padding: '8px 12px',
@@ -101,6 +103,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
 
         <div
           style={{
+            flex: 1,
             backgroundColor: TEAM2_COLOR,
             borderRadius: '8px',
             padding: '8px 12px',
@@ -118,7 +121,11 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
         </div>
       </div>
 
-      {gameState.currentRound && <TrickTracker gameState={gameState} />}
+      {gameState.currentRound && (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <TrickTracker gameState={gameState} />
+        </div>
+      )}
     </div>
   );
 }
