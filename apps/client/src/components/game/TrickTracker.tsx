@@ -94,17 +94,17 @@ function renderDot(
           <circle cx={cx} cy={cy} r={r} fill={color} opacity={0.3} />
           <line
             x1={cx - s}
-            y1={cy - s}
+            y1={cy}
             x2={cx + s}
-            y2={cy + s}
+            y2={cy}
             stroke={color}
             strokeWidth={r * 0.35}
             strokeLinecap="round"
           />
           <line
-            x1={cx + s}
+            x1={cx}
             y1={cy - s}
-            x2={cx - s}
+            x2={cx}
             y2={cy + s}
             stroke={color}
             strokeWidth={r * 0.35}
@@ -145,7 +145,7 @@ function renderDot(
     }
 
     case 'bag-set': {
-      // Bag + setting opponent: team-color circle + white × + opponent ring
+      // Bag + setting opponent: team-color circle + white + + opponent ring
       const color = TEAM_COLORS[state.team];
       const opponentColor = OPPONENT_COLOR[state.team];
       const s = r * 0.45;
@@ -164,17 +164,17 @@ function renderDot(
           />
           <line
             x1={cx - s}
-            y1={cy - s}
+            y1={cy}
             x2={cx + s}
-            y2={cy + s}
+            y2={cy}
             stroke="#fff"
             strokeWidth={r * 0.35}
             strokeLinecap="round"
           />
           <line
-            x1={cx + s}
+            x1={cx}
             y1={cy - s}
-            x2={cx - s}
+            x2={cx}
             y2={cy + s}
             stroke="#fff"
             strokeWidth={r * 0.35}
