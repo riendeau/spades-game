@@ -57,14 +57,14 @@ export function AdUnit({
   // Dev placeholder when no AdSense client is configured
   if (!adsenseClient) {
     return (
-      <div style={{ borderRadius: '8px', overflow: 'hidden', ...style }}>
+      <div style={{ ...style }}>
         <img
           src={beefsBanner}
           alt="Ad"
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
+            objectFit: 'contain',
             display: 'block',
           }}
         />

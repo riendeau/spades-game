@@ -132,7 +132,7 @@ export function GameTable({
             <AdUnit
               slot="8297080653"
               format="horizontal"
-              style={{ width: '350px', height: '60px' }}
+              style={{ width: '350px', height: '75px' }}
             />
           )}
           <div
