@@ -92,7 +92,7 @@ function renderZoneBands(
   totalHeight: number
 ): React.ReactNode {
   const bandRadius = totalHeight / 2;
-  const opacity = 0.15;
+  const opacity = 0.25;
 
   // Each band spans from the edge to the extent of the team's bid.
   // Width = number of dots * dotDiameter + (dots - 1) * gap + half a gap on each side
