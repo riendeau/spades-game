@@ -14,7 +14,6 @@ interface TrickTrackerProps {
 }
 
 const TEAM_COLORS = { team1: TEAM1_COLOR, team2: TEAM2_COLOR };
-const OPPONENT_COLOR = { team1: TEAM2_COLOR, team2: TEAM1_COLOR };
 
 function renderDot(
   state: DotState,
@@ -75,74 +74,6 @@ function renderDot(
             x2={cx}
             y2={cy + s}
             stroke={color}
-            strokeWidth={r * 0.35}
-            strokeLinecap="round"
-          />
-        </g>
-      );
-    }
-
-    case 'set': {
-      const color = TEAM_COLORS[state.team];
-      const opponentColor = OPPONENT_COLOR[state.team];
-      const s = r * 0.5;
-      const ringWidth = r * 0.3;
-      return (
-        <g key={index}>
-          <circle cx={cx} cy={cy} r={r} fill={color} />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r - ringWidth / 2}
-            fill="none"
-            stroke={opponentColor}
-            strokeWidth={ringWidth}
-            opacity={0.6}
-          />
-          <polyline
-            points={`${cx - s},${cy} ${cx - s * 0.2},${cy + s * 0.7} ${cx + s},${cy - s * 0.5}`}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={r * 0.35}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </g>
-      );
-    }
-
-    case 'bag-set': {
-      const color = TEAM_COLORS[state.team];
-      const opponentColor = OPPONENT_COLOR[state.team];
-      const s = r * 0.45;
-      const ringWidth = r * 0.3;
-      return (
-        <g key={index}>
-          <circle cx={cx} cy={cy} r={r} fill={color} />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r - ringWidth / 2}
-            fill="none"
-            stroke={opponentColor}
-            strokeWidth={ringWidth}
-            opacity={0.6}
-          />
-          <line
-            x1={cx - s}
-            y1={cy}
-            x2={cx + s}
-            y2={cy}
-            stroke="#fff"
-            strokeWidth={r * 0.35}
-            strokeLinecap="round"
-          />
-          <line
-            x1={cx}
-            y1={cy - s}
-            x2={cx}
-            y2={cy + s}
-            stroke="#fff"
             strokeWidth={r * 0.35}
             strokeLinecap="round"
           />

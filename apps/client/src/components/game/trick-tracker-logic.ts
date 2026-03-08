@@ -5,9 +5,7 @@ export type DotZone = 'team1' | 'team2' | 'unclaimed' | 'contested';
 export type DotState =
   | { type: 'unclaimed' }
   | { type: 'won'; team: 'team1' | 'team2' }
-  | { type: 'bag'; team: 'team1' | 'team2' }
-  | { type: 'set'; team: 'team1' | 'team2' }
-  | { type: 'bag-set'; team: 'team1' | 'team2' };
+  | { type: 'bag'; team: 'team1' | 'team2' };
 
 export interface TrickTrackerData {
   team1Bid: number;
@@ -75,30 +73,19 @@ export function computeDotZones(team1Bid: number, team2Bid: number): DotZone[] {
 }
 
 export function computeDotStates(data: TrickTrackerData): DotState[] {
-  const zones = computeDotZones(data.team1Bid, data.team2Bid);
   const states: DotState[] = new Array(13);
 
   for (let i = 0; i < 13; i++) {
-    const zone = zones[i];
-
     if (i < data.team1Won) {
-      // Team1 won this dot (filling from left)
       const isBag = i >= data.team1Bid;
-      const isSet = zone !== 'team1' && zone !== 'unclaimed';
-
-      if (isBag && isSet) states[i] = { type: 'bag-set', team: 'team1' };
-      else if (isBag) states[i] = { type: 'bag', team: 'team1' };
-      else if (isSet) states[i] = { type: 'set', team: 'team1' };
-      else states[i] = { type: 'won', team: 'team1' };
+      states[i] = isBag
+        ? { type: 'bag', team: 'team1' }
+        : { type: 'won', team: 'team1' };
     } else if (i >= 13 - data.team2Won) {
-      // Team2 won this dot (filling from right)
       const isBag = i < 13 - data.team2Bid;
-      const isSet = zone !== 'team2' && zone !== 'unclaimed';
-
-      if (isBag && isSet) states[i] = { type: 'bag-set', team: 'team2' };
-      else if (isBag) states[i] = { type: 'bag', team: 'team2' };
-      else if (isSet) states[i] = { type: 'set', team: 'team2' };
-      else states[i] = { type: 'won', team: 'team2' };
+      states[i] = isBag
+        ? { type: 'bag', team: 'team2' }
+        : { type: 'won', team: 'team2' };
     } else {
       states[i] = { type: 'unclaimed' };
     }

@@ -308,7 +308,7 @@ describe('computeDotStates', () => {
     expect(states[12]).toEqual({ type: 'won', team: 'team2' });
   });
 
-  it('bag-set: won beyond bid into opponent zone', () => {
+  it('won beyond bid into opponent zone shows bag', () => {
     const data: TrickTrackerData = {
       team1Bid: 6,
       team2Bid: 7,
@@ -317,15 +317,14 @@ describe('computeDotStates', () => {
       phase: 'playing',
     };
     const states = computeDotStates(data);
-    // zones: exact bid (6+7=13), team1 owns 0-5, team2 owns 6-12
-    // team1 won 0-7: 0-5 are 'won', 6-7 are beyond bid AND in team2 zone → 'bag-set'
+    // team1 won 0-7: 0-5 within bid → 'won', 6-7 beyond bid → 'bag'
     for (let i = 0; i < 6; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team1' });
     }
-    expect(states[6]).toEqual({ type: 'bag-set', team: 'team1' });
-    expect(states[7]).toEqual({ type: 'bag-set', team: 'team1' });
+    expect(states[6]).toEqual({ type: 'bag', team: 'team1' });
+    expect(states[7]).toEqual({ type: 'bag', team: 'team1' });
 
-    // team2 won 8-12: all in team2 zone → 'won'
+    // team2 won 8-12: all within bid → 'won'
     for (let i = 8; i <= 12; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team2' });
     }
@@ -387,7 +386,7 @@ describe('computeDotStates', () => {
     }
   });
 
-  it('overbid with tricks won in contested zone → set', () => {
+  it('overbid with tricks won within bid shows won', () => {
     const data: TrickTrackerData = {
       team1Bid: 8,
       team2Bid: 8,
@@ -396,45 +395,17 @@ describe('computeDotStates', () => {
       phase: 'playing',
     };
     const states = computeDotStates(data);
-    // zones: team1=0-4, contested=5-7, team2=8-12
-    // team1 won 0-6: 0-4 'won', 5-6 'set' (contested zone)
-    for (let i = 0; i < 5; i++) {
+    // team1 won 0-6: all within bid of 8 → 'won'
+    for (let i = 0; i < 7; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team1' });
     }
-    expect(states[5]).toEqual({ type: 'set', team: 'team1' });
-    expect(states[6]).toEqual({ type: 'set', team: 'team1' });
-
-    // team2 won 7-12: 7 is 'set' (contested), 8-12 are 'won'
-    expect(states[7]).toEqual({ type: 'set', team: 'team2' });
-    for (let i = 8; i <= 12; i++) {
+    // team2 won 7-12: all within bid of 8 → 'won'
+    for (let i = 7; i <= 12; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team2' });
     }
   });
 
-  it('set (not bag): overbid, won within bid in contested zone', () => {
-    const data: TrickTrackerData = {
-      team1Bid: 8,
-      team2Bid: 7,
-      team1Won: 7,
-      team2Won: 6,
-      phase: 'playing',
-    };
-    const states = computeDotStates(data);
-    // zones: team1=0-5, contested=6-7, team2=8-12
-    // team1 won 0-6: 0-5 'won' (own zone, within bid), 6 'set' (contested, within bid of 8)
-    for (let i = 0; i < 6; i++) {
-      expect(states[i]).toEqual({ type: 'won', team: 'team1' });
-    }
-    expect(states[6]).toEqual({ type: 'set', team: 'team1' });
-
-    // team2 won 7-12: 7 'set' (contested, within bid of 7), 8-12 'won'
-    expect(states[7]).toEqual({ type: 'set', team: 'team2' });
-    for (let i = 8; i <= 12; i++) {
-      expect(states[i]).toEqual({ type: 'won', team: 'team2' });
-    }
-  });
-
-  it('bag-set vs bag: underbid, won far beyond bid', () => {
+  it('won far beyond bid shows bags regardless of zone', () => {
     const data: TrickTrackerData = {
       team1Bid: 3,
       team2Bid: 4,
@@ -443,20 +414,15 @@ describe('computeDotStates', () => {
       phase: 'playing',
     };
     const states = computeDotStates(data);
-    // zones: team1=0-2, unclaimed=3-8, team2=9-12
-    // team1 won 0-9:
-    //   0-2: own zone, within bid → 'won'
-    //   3-8: unclaimed, beyond bid → 'bag'
-    //   9: team2 zone, beyond bid → 'bag-set'
+    // team1 won 0-9: 0-2 within bid → 'won', 3-9 beyond bid → 'bag'
     for (let i = 0; i < 3; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team1' });
     }
-    for (let i = 3; i <= 8; i++) {
+    for (let i = 3; i <= 9; i++) {
       expect(states[i]).toEqual({ type: 'bag', team: 'team1' });
     }
-    expect(states[9]).toEqual({ type: 'bag-set', team: 'team1' });
 
-    // team2 won 10-12: all in team2 zone → 'won'
+    // team2 won 10-12: all within bid → 'won'
     for (let i = 10; i <= 12; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team2' });
     }
