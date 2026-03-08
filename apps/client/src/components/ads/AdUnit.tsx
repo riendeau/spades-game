@@ -15,6 +15,19 @@ interface AdUnitProps {
 
 const adsenseClient = import.meta.env.VITE_ADSENSE_CLIENT as string | undefined;
 
+// Load the AdSense script once, shared across all AdUnit instances
+let scriptLoaded = false;
+function ensureScript() {
+  if (scriptLoaded || !adsenseClient) return;
+  scriptLoaded = true;
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.crossOrigin = 'anonymous';
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`;
+  document.head.appendChild(script);
+}
+
 export function AdUnit({
   slot,
   format = 'auto',
@@ -27,6 +40,7 @@ export function AdUnit({
 
   useEffect(() => {
     if (!adsenseClient || pushed.current) return;
+    ensureScript();
 
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
@@ -70,11 +84,6 @@ export function AdUnit({
         Ad
       </div>
     );
-  }
-
-  // Ad blocker detected — render nothing
-  if (typeof window.adsbygoogle === 'undefined') {
-    return null;
   }
 
   if (unfilled) return null;
