@@ -132,7 +132,7 @@ export function GameTable({
           </div>
           {!isMobile && (
             <AdUnit
-              slot="YOUR_GAME_SLOT_ID"
+              slot="8297080653"
               format="horizontal"
               style={{ width: '200px', height: '50px' }}
             />

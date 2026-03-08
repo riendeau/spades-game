@@ -421,7 +421,7 @@ export function WaitingRoom({
       </div>
 
       <AdUnit
-        slot="YOUR_WAITING_SLOT_ID"
+        slot="8660188529"
         format="auto"
         fullWidthResponsive
         style={{ marginTop: '24px' }}

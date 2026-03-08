@@ -163,7 +163,7 @@ export function JoinRoom({
       </div>
 
       <AdUnit
-        slot="YOUR_LOBBY_SLOT_ID"
+        slot="5367664982"
         format="auto"
         fullWidthResponsive
         style={{ marginTop: '24px' }}
