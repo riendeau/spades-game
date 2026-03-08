@@ -8,7 +8,8 @@ export type DotState =
   | { type: 'contested' }
   | { type: 'won'; team: 'team1' | 'team2' }
   | { type: 'bag'; team: 'team1' | 'team2' }
-  | { type: 'set'; team: 'team1' | 'team2' };
+  | { type: 'set'; team: 'team1' | 'team2' }
+  | { type: 'bag-set'; team: 'team1' | 'team2' };
 
 export interface TrickTrackerData {
   team1Bid: number;
@@ -84,24 +85,22 @@ export function computeDotStates(data: TrickTrackerData): DotState[] {
 
     if (i < data.team1Won) {
       // Team1 won this dot (filling from left)
-      if (zone === 'team1') {
-        states[i] = { type: 'won', team: 'team1' };
-      } else if (zone === 'unclaimed') {
-        states[i] = { type: 'bag', team: 'team1' };
-      } else {
-        // team2 or contested zone
-        states[i] = { type: 'set', team: 'team1' };
-      }
+      const isBag = i >= data.team1Bid;
+      const isSet = zone !== 'team1' && zone !== 'unclaimed';
+
+      if (isBag && isSet) states[i] = { type: 'bag-set', team: 'team1' };
+      else if (isBag) states[i] = { type: 'bag', team: 'team1' };
+      else if (isSet) states[i] = { type: 'set', team: 'team1' };
+      else states[i] = { type: 'won', team: 'team1' };
     } else if (i >= 13 - data.team2Won) {
       // Team2 won this dot (filling from right)
-      if (zone === 'team2') {
-        states[i] = { type: 'won', team: 'team2' };
-      } else if (zone === 'unclaimed') {
-        states[i] = { type: 'bag', team: 'team2' };
-      } else {
-        // team1 or contested zone
-        states[i] = { type: 'set', team: 'team2' };
-      }
+      const isBag = i < 13 - data.team2Bid;
+      const isSet = zone !== 'team2' && zone !== 'unclaimed';
+
+      if (isBag && isSet) states[i] = { type: 'bag-set', team: 'team2' };
+      else if (isBag) states[i] = { type: 'bag', team: 'team2' };
+      else if (isSet) states[i] = { type: 'set', team: 'team2' };
+      else states[i] = { type: 'won', team: 'team2' };
     } else {
       // Not yet won — show bid state
       if (zone === 'team1') states[i] = { type: 'bid', team: 'team1' };

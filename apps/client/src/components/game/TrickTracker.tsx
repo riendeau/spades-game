@@ -115,6 +115,37 @@ function renderDot(
     }
 
     case 'set': {
+      // Not a bag, but setting opponent: team-color circle + white ✓ + opponent ring
+      const color = TEAM_COLORS[state.team];
+      const opponentColor = OPPONENT_COLOR[state.team];
+      const s = r * 0.5;
+      const ringWidth = r * 0.3;
+      return (
+        <g key={index}>
+          <circle cx={cx} cy={cy} r={r} fill={color} />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r - ringWidth / 2}
+            fill="none"
+            stroke={opponentColor}
+            strokeWidth={ringWidth}
+            opacity={0.6}
+          />
+          <polyline
+            points={`${cx - s},${cy} ${cx - s * 0.2},${cy + s * 0.7} ${cx + s},${cy - s * 0.5}`}
+            fill="none"
+            stroke="#fff"
+            strokeWidth={r * 0.35}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      );
+    }
+
+    case 'bag-set': {
+      // Bag + setting opponent: faded opponent-color circle + team-color ×
       const teamColor = TEAM_COLORS[state.team];
       const opponentColor = OPPONENT_COLOR[state.team];
       const s = r * 0.45;
