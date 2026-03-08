@@ -120,7 +120,21 @@ export function GameTable({
             </svg>
           </button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '4px',
+          }}
+        >
+          {!isMobile && (
+            <AdUnit
+              slot="8297080653"
+              format="horizontal"
+              style={{ width: '350px', height: '60px' }}
+            />
+          )}
           <div
             style={{
               color: '#fff',
@@ -130,13 +144,6 @@ export function GameTable({
           >
             Room: {gameState.id}
           </div>
-          {!isMobile && (
-            <AdUnit
-              slot="8297080653"
-              format="horizontal"
-              style={{ width: '200px', height: '50px' }}
-            />
-          )}
         </div>
       </div>
 
