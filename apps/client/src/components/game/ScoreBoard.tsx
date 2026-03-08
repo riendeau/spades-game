@@ -1,6 +1,7 @@
 import type { ClientGameState } from '@spades/shared';
 import React from 'react';
 import { TEAM1_COLOR, TEAM2_COLOR } from '../../styles/colors';
+import { TrickTracker } from './TrickTracker';
 
 interface ScoreBoardProps {
   gameState: ClientGameState;
@@ -9,23 +10,6 @@ interface ScoreBoardProps {
 
 export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
   const { scores } = gameState;
-
-  const roundInfo = gameState.currentRound ? (
-    <>
-      R{gameState.currentRound.roundNumber} · T
-      {gameState.currentRound.tricksWon
-        ? Math.min(
-            Object.values(gameState.currentRound.tricksWon).reduce(
-              (a, b) => a + b,
-              0
-            ) + 1,
-            13
-          )
-        : 1}
-      /13
-      {gameState.currentRound.spadesBroken && ' · ♠'}
-    </>
-  ) : null;
 
   if (compact) {
     return (
@@ -76,9 +60,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
             {scores.team2.bags}b
           </span>
         </div>
-        {gameState.currentRound && (
-          <div style={{ fontSize: '10px', color: '#6b7280' }}>{roundInfo}</div>
-        )}
+        <TrickTracker gameState={gameState} compact />
       </div>
     );
   }
@@ -92,7 +74,13 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       }}
     >
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          marginBottom: gameState.currentRound ? '8px' : '0',
+        }}
+      >
         <div
           style={{
             backgroundColor: TEAM1_COLOR,
@@ -130,9 +118,7 @@ export function ScoreBoard({ gameState, compact = false }: ScoreBoardProps) {
         </div>
       </div>
 
-      {gameState.currentRound && (
-        <div style={{ fontSize: '12px', color: '#6b7280' }}>{roundInfo}</div>
-      )}
+      {gameState.currentRound && <TrickTracker gameState={gameState} />}
     </div>
   );
 }
