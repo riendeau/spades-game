@@ -249,7 +249,7 @@ describe('computeDotZones', () => {
 });
 
 describe('computeDotStates', () => {
-  it('bidding phase with no tricks shows bid states', () => {
+  it('bidding phase with no tricks shows all unclaimed', () => {
     const data: TrickTrackerData = {
       team1Bid: 5,
       team2Bid: 4,
@@ -258,15 +258,8 @@ describe('computeDotStates', () => {
       phase: 'bidding',
     };
     const states = computeDotStates(data);
-    // 0-4: bid team1, 5-8: unclaimed, 9-12: bid team2
-    for (let i = 0; i < 5; i++) {
-      expect(states[i]).toEqual({ type: 'bid', team: 'team1' });
-    }
-    for (let i = 5; i <= 8; i++) {
-      expect(states[i]).toEqual({ type: 'unclaimed' });
-    }
-    for (let i = 9; i <= 12; i++) {
-      expect(states[i]).toEqual({ type: 'bid', team: 'team2' });
+    for (const state of states) {
+      expect(state).toEqual({ type: 'unclaimed' });
     }
   });
 
@@ -283,17 +276,10 @@ describe('computeDotStates', () => {
     for (let i = 0; i < 3; i++) {
       expect(states[i]).toEqual({ type: 'won', team: 'team1' });
     }
-    // team1 bid remaining 3-4
-    expect(states[3]).toEqual({ type: 'bid', team: 'team1' });
-    expect(states[4]).toEqual({ type: 'bid', team: 'team1' });
-    // unclaimed 5-7
-    for (let i = 5; i <= 7; i++) {
+    // remaining 3-10: unclaimed (bids shown via background zones, not dots)
+    for (let i = 3; i <= 10; i++) {
       expect(states[i]).toEqual({ type: 'unclaimed' });
     }
-    // team2 bid remaining 8-10
-    expect(states[8]).toEqual({ type: 'bid', team: 'team2' });
-    expect(states[9]).toEqual({ type: 'bid', team: 'team2' });
-    expect(states[10]).toEqual({ type: 'bid', team: 'team2' });
     // team2 won 11-12
     expect(states[11]).toEqual({ type: 'won', team: 'team2' });
     expect(states[12]).toEqual({ type: 'won', team: 'team2' });
@@ -387,7 +373,7 @@ describe('computeDotStates', () => {
     }
   });
 
-  it('overbid with no tricks yet', () => {
+  it('overbid with no tricks yet shows all unclaimed', () => {
     const data: TrickTrackerData = {
       team1Bid: 8,
       team2Bid: 8,
@@ -396,15 +382,8 @@ describe('computeDotStates', () => {
       phase: 'bidding',
     };
     const states = computeDotStates(data);
-    // team1 exclusive: 0-4, contested: 5-7, team2 exclusive: 8-12
-    for (let i = 0; i < 5; i++) {
-      expect(states[i]).toEqual({ type: 'bid', team: 'team1' });
-    }
-    for (let i = 5; i <= 7; i++) {
-      expect(states[i]).toEqual({ type: 'contested' });
-    }
-    for (let i = 8; i <= 12; i++) {
-      expect(states[i]).toEqual({ type: 'bid', team: 'team2' });
+    for (const state of states) {
+      expect(state).toEqual({ type: 'unclaimed' });
     }
   });
 

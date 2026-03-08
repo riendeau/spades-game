@@ -4,8 +4,6 @@ export type DotZone = 'team1' | 'team2' | 'unclaimed' | 'contested';
 
 export type DotState =
   | { type: 'unclaimed' }
-  | { type: 'bid'; team: 'team1' | 'team2' }
-  | { type: 'contested' }
   | { type: 'won'; team: 'team1' | 'team2' }
   | { type: 'bag'; team: 'team1' | 'team2' }
   | { type: 'set'; team: 'team1' | 'team2' }
@@ -102,11 +100,7 @@ export function computeDotStates(data: TrickTrackerData): DotState[] {
       else if (isSet) states[i] = { type: 'set', team: 'team2' };
       else states[i] = { type: 'won', team: 'team2' };
     } else {
-      // Not yet won — show bid state
-      if (zone === 'team1') states[i] = { type: 'bid', team: 'team1' };
-      else if (zone === 'team2') states[i] = { type: 'bid', team: 'team2' };
-      else if (zone === 'contested') states[i] = { type: 'contested' };
-      else states[i] = { type: 'unclaimed' };
+      states[i] = { type: 'unclaimed' };
     }
   }
 

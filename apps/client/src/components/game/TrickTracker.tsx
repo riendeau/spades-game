@@ -5,6 +5,7 @@ import {
   computeDotStates,
   extractTrickTrackerData,
   type DotState,
+  type TrickTrackerData,
 } from './trick-tracker-logic';
 
 interface TrickTrackerProps {
@@ -35,41 +36,8 @@ function renderDot(
         />
       );
 
-    case 'bid':
-      return (
-        <circle
-          key={index}
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill={TEAM_COLORS[state.team]}
-          opacity={0.4}
-        />
-      );
-
-    case 'contested': {
-      // Left semicircle = team1, right semicircle = team2
-      const top = cy - r;
-      const bot = cy + r;
-      return (
-        <g key={index}>
-          <path
-            d={`M ${cx} ${top} A ${r} ${r} 0 0 0 ${cx} ${bot} Z`}
-            fill={TEAM1_COLOR}
-            opacity={0.4}
-          />
-          <path
-            d={`M ${cx} ${top} A ${r} ${r} 0 0 1 ${cx} ${bot} Z`}
-            fill={TEAM2_COLOR}
-            opacity={0.4}
-          />
-        </g>
-      );
-    }
-
     case 'won': {
       const color = TEAM_COLORS[state.team];
-      // Checkmark: proportional to dot radius
       const s = r * 0.5;
       return (
         <g key={index}>
@@ -115,7 +83,6 @@ function renderDot(
     }
 
     case 'set': {
-      // Not a bag, but setting opponent: team-color circle + white ✓ + opponent ring
       const color = TEAM_COLORS[state.team];
       const opponentColor = OPPONENT_COLOR[state.team];
       const s = r * 0.5;
@@ -145,7 +112,6 @@ function renderDot(
     }
 
     case 'bag-set': {
-      // Bag + setting opponent: team-color circle + white + + opponent ring
       const color = TEAM_COLORS[state.team];
       const opponentColor = OPPONENT_COLOR[state.team];
       const s = r * 0.45;
@@ -186,6 +152,58 @@ function renderDot(
   }
 }
 
+/** Render background zone bands behind the dots. */
+function renderZoneBands(
+  data: TrickTrackerData,
+  dotDiameter: number,
+  gap: number,
+  totalWidth: number,
+  totalHeight: number
+): React.ReactNode {
+  const bandRadius = totalHeight / 2;
+  const opacity = 0.15;
+
+  // Each band spans from the edge to the extent of the team's bid.
+  // Width = number of dots * dotDiameter + (dots - 1) * gap + half a gap on each side
+  // to visually wrap around the dots in that zone.
+  const bandWidth = (count: number) => {
+    if (count <= 0) return 0;
+    return count * dotDiameter + (count - 1) * gap + gap;
+  };
+
+  const team1Width = bandWidth(data.team1Bid);
+  const team2Width = bandWidth(data.team2Bid);
+
+  return (
+    <>
+      {data.team1Bid > 0 && (
+        <rect
+          x={0}
+          y={0}
+          width={Math.min(team1Width, totalWidth)}
+          height={totalHeight}
+          rx={bandRadius}
+          ry={bandRadius}
+          fill={TEAM1_COLOR}
+          opacity={opacity}
+        />
+      )}
+      {data.team2Bid > 0 && (
+        <rect
+          x={Math.max(0, totalWidth - team2Width)}
+          y={0}
+          width={Math.min(team2Width, totalWidth)}
+          height={totalHeight}
+          rx={bandRadius}
+          ry={bandRadius}
+          fill={TEAM2_COLOR}
+          opacity={opacity}
+        />
+      )}
+    </>
+  );
+}
+
 export function TrickTracker({
   gameState,
   compact = false,
@@ -198,8 +216,9 @@ export function TrickTracker({
   const dotDiameter = compact ? 10 : 14;
   const gap = compact ? 2 : 3;
   const r = dotDiameter / 2;
-  const totalWidth = 13 * dotDiameter + 12 * gap;
-  const totalHeight = dotDiameter;
+  const pad = gap / 2;
+  const totalWidth = 13 * dotDiameter + 12 * gap + pad * 2;
+  const totalHeight = dotDiameter + pad * 2;
 
   return (
     <svg
@@ -208,9 +227,10 @@ export function TrickTracker({
       viewBox={`0 0 ${totalWidth} ${totalHeight}`}
       style={{ display: 'block' }}
     >
+      {renderZoneBands(data, dotDiameter, gap, totalWidth, totalHeight)}
       {dotStates.map((state, i) => {
-        const cx = r + i * (dotDiameter + gap);
-        const cy = r;
+        const cx = pad + r + i * (dotDiameter + gap);
+        const cy = pad + r;
         return renderDot(state, i, r, cx, cy);
       })}
     </svg>
