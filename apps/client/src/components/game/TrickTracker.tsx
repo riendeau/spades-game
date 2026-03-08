@@ -145,19 +145,29 @@ function renderDot(
     }
 
     case 'bag-set': {
-      // Bag + setting opponent: faded opponent-color circle + team-color ×
-      const teamColor = TEAM_COLORS[state.team];
+      // Bag + setting opponent: team-color circle + white × + opponent ring
+      const color = TEAM_COLORS[state.team];
       const opponentColor = OPPONENT_COLOR[state.team];
       const s = r * 0.45;
+      const ringWidth = r * 0.3;
       return (
         <g key={index}>
-          <circle cx={cx} cy={cy} r={r} fill={opponentColor} opacity={0.2} />
+          <circle cx={cx} cy={cy} r={r} fill={color} />
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r - ringWidth / 2}
+            fill="none"
+            stroke={opponentColor}
+            strokeWidth={ringWidth}
+            opacity={0.6}
+          />
           <line
             x1={cx - s}
             y1={cy - s}
             x2={cx + s}
             y2={cy + s}
-            stroke={teamColor}
+            stroke="#fff"
             strokeWidth={r * 0.35}
             strokeLinecap="round"
           />
@@ -166,7 +176,7 @@ function renderDot(
             y1={cy - s}
             x2={cx - s}
             y2={cy + s}
-            stroke={teamColor}
+            stroke="#fff"
             strokeWidth={r * 0.35}
             strokeLinecap="round"
           />
