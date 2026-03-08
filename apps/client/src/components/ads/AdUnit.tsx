@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 declare global {
   interface Window {
@@ -22,6 +22,8 @@ export function AdUnit({
   style,
 }: AdUnitProps) {
   const pushed = useRef(false);
+  const insRef = useRef<HTMLModElement>(null);
+  const [unfilled, setUnfilled] = useState(false);
 
   useEffect(() => {
     if (!adsenseClient || pushed.current) return;
@@ -32,6 +34,23 @@ export function AdUnit({
     } catch {
       // Ad blocker or script not loaded — silently ignore
     }
+  }, []);
+
+  // Collapse the container when AdSense marks the slot as unfilled
+  useEffect(() => {
+    const ins = insRef.current;
+    if (!ins || !adsenseClient) return;
+
+    const observer = new MutationObserver(() => {
+      if (ins.getAttribute('data-ad-status') === 'unfilled') {
+        setUnfilled(true);
+      }
+    });
+    observer.observe(ins, {
+      attributes: true,
+      attributeFilter: ['data-ad-status'],
+    });
+    return () => observer.disconnect();
   }, []);
 
   // Dev placeholder when no AdSense client is configured
@@ -58,9 +77,12 @@ export function AdUnit({
     return null;
   }
 
+  if (unfilled) return null;
+
   return (
     <div style={style}>
       <ins
+        ref={insRef}
         className="adsbygoogle"
         style={{ display: 'block' }}
         data-ad-client={adsenseClient}
