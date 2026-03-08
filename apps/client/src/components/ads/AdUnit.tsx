@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import beefsBanner from '../../assets/beefs.png';
 
 declare global {
   interface Window {
@@ -56,18 +57,17 @@ export function AdUnit({
   // Dev placeholder when no AdSense client is configured
   if (!adsenseClient) {
     return (
-      <div
-        style={{
-          border: '2px dashed #9ca3af',
-          borderRadius: '8px',
-          padding: '12px',
-          textAlign: 'center',
-          color: '#9ca3af',
-          fontSize: '13px',
-          ...style,
-        }}
-      >
-        Ad
+      <div style={{ ...style }}>
+        <img
+          src={beefsBanner}
+          alt="Ad"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
       </div>
     );
   }
