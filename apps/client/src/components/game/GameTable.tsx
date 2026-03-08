@@ -9,6 +9,7 @@ import { getPlayableCards } from '@spades/shared';
 import React, { useState, useMemo } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
+import { AdUnit } from '../ads/AdUnit';
 import { BiddingPanel } from '../bidding/BiddingPanel';
 import { OpponentArea } from './OpponentArea';
 import { PlayerHand } from './PlayerHand';
@@ -119,14 +120,23 @@ export function GameTable({
             </svg>
           </button>
         </div>
-        <div
-          style={{
-            color: '#fff',
-            fontSize: isMobile ? '12px' : '14px',
-            opacity: 0.8,
-          }}
-        >
-          Room: {gameState.id}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <div
+            style={{
+              color: '#fff',
+              fontSize: isMobile ? '12px' : '14px',
+              opacity: 0.8,
+            }}
+          >
+            Room: {gameState.id}
+          </div>
+          {!isMobile && (
+            <AdUnit
+              slot="8297080653"
+              format="horizontal"
+              style={{ width: '200px', height: '50px' }}
+            />
+          )}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import type { ClientGameState, Position } from '@spades/shared';
 import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { TEAM_COLORS } from '../../styles/colors';
+import { AdUnit } from '../ads/AdUnit';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -418,6 +419,13 @@ export function WaitingRoom({
           {isReady ? 'Waiting for others...' : 'Ready'}
         </Button>
       </div>
+
+      <AdUnit
+        slot="8660188529"
+        format="auto"
+        fullWidthResponsive
+        style={{ marginTop: '24px' }}
+      />
 
       {/* Dev button to auto-fill room */}
       {import.meta.env.DEV && gameState.players.length < 4 && (

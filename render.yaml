@@ -31,4 +31,6 @@ services:
         sync: false
       - key: ALLOWED_EMAILS
         sync: false
+      - key: VITE_ADSENSE_CLIENT
+        sync: false
     healthCheckPath: /health

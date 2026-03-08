@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { LOBBY_MOTTO, LOBBY_TITLE } from '../../lobby-branding';
+import { AdUnit } from '../ads/AdUnit';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
@@ -160,6 +161,13 @@ export function JoinRoom({
           Your Stats
         </a>
       </div>
+
+      <AdUnit
+        slot="5367664982"
+        format="auto"
+        fullWidthResponsive
+        style={{ marginTop: '24px' }}
+      />
     </div>
   );
 }
