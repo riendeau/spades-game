@@ -148,7 +148,7 @@ http://localhost:5173/room/ABC123?mobile   # Pre-fills room code
 
 All four player positions (three opponents + the local player) use a consistent badge style:
 
-- **Team colors**: team1 = blue (`#3b82f6`), team2 = green (`#22c55e`)
+- **Team colors**: team1 = maroon (`#861F41`), team2 = orange (`#E5751F`)
 - **Active player**: full-saturation border + background tint + `box-shadow` glow in team color
 - **Inactive players**: faded border (`rgba(..., 0.35)`) + very subtle background tint (`rgba(..., 0.07)`)
 - **Player names**: near-white (`#f9fafb`) for legibility on the dark green table; gray (`#9ca3af`) when disconnected

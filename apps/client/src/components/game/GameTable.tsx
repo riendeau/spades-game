@@ -105,14 +105,14 @@ export function GameTable({
             >
               <path
                 d="M3 15L7 9L11 12L17 5"
-                stroke="#3b82f6"
+                stroke={TEAM_COLORS.team1}
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
                 d="M3 15L8 11L12 14L17 8"
-                stroke="#ef4444"
+                stroke={TEAM_COLORS.team2}
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

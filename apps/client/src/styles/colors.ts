@@ -5,10 +5,10 @@ function hexToRgb(hex: string): string {
   return `${r}, ${g}, ${b}`;
 }
 
-export const TEAM1_COLOR = '#3b82f6';
+export const TEAM1_COLOR = '#861F41';
 export const TEAM1_RGB = hexToRgb(TEAM1_COLOR);
 
-export const TEAM2_COLOR = '#ef4444';
+export const TEAM2_COLOR = '#E5751F';
 export const TEAM2_RGB = hexToRgb(TEAM2_COLOR);
 
 export const TEAM_COLORS: Record<'team1' | 'team2', string> = {
