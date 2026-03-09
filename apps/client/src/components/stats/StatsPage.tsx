@@ -6,7 +6,13 @@ export function StatsPage() {
   const { stats, loading } = useStats();
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background:
+          'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
+      }}
+    >
       <div
         style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px' }}
       >
@@ -22,7 +28,8 @@ export function StatsPage() {
             style={{
               fontSize: '28px',
               fontWeight: 700,
-              color: '#1f2937',
+              color: '#ffffff',
+              textShadow: '0 2px 8px rgba(0,0,0,0.3)',
               margin: 0,
             }}
           >
@@ -31,7 +38,7 @@ export function StatsPage() {
           <a
             href="/"
             style={{
-              color: '#3b82f6',
+              color: 'rgba(255,255,255,0.6)',
               textDecoration: 'none',
               fontSize: '14px',
               fontWeight: 500,
@@ -43,7 +50,11 @@ export function StatsPage() {
 
         {loading && (
           <div
-            style={{ textAlign: 'center', color: '#6b7280', padding: '40px 0' }}
+            style={{
+              textAlign: 'center',
+              color: 'rgba(255,255,255,0.5)',
+              padding: '40px 0',
+            }}
           >
             Loading stats...
           </div>
@@ -56,7 +67,7 @@ export function StatsPage() {
               padding: '60px 20px',
               backgroundColor: '#fff',
               borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
             }}
           >
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>♠</div>
@@ -124,7 +135,7 @@ export function StatsPage() {
                 style={{
                   backgroundColor: '#fff',
                   borderRadius: '12px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                   overflow: 'hidden',
                   marginBottom: '16px',
                 }}
@@ -212,7 +223,7 @@ export function StatsPage() {
                 style={{
                   backgroundColor: '#fff',
                   borderRadius: '12px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                   overflow: 'hidden',
                 }}
               >
@@ -434,7 +445,7 @@ function StatCard({
         borderRadius: '12px',
         padding: '16px',
         textAlign: 'center',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
       }}
     >
       <div style={{ fontSize: '28px', fontWeight: 700, color }}>{value}</div>

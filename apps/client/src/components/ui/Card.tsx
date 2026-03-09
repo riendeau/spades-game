@@ -32,8 +32,8 @@ export function Card({
       data-testid={testId}
       style={{
         position: 'relative',
-        width: isSmall ? '50px' : '90px',
-        height: isSmall ? '75px' : '130px',
+        width: isSmall ? '50px' : '110px',
+        height: isSmall ? '75px' : '160px',
         background: '#fff',
         border: '1px solid rgba(0,0,0,0.15)',
         borderRadius: '8px',
@@ -66,8 +66,8 @@ export function CardBack({ small }: { small?: boolean }) {
   return (
     <div
       style={{
-        width: small ? '50px' : '90px',
-        height: small ? '75px' : '130px',
+        width: small ? '50px' : '110px',
+        height: small ? '75px' : '160px',
         backgroundColor: '#1e40af',
         border: '2px solid #1e3a8a',
         borderRadius: '8px',
