@@ -1,10 +1,13 @@
 import { pool } from './client.js';
 
-export interface NilAttemptInsertData {
+export interface RoundBidInsertData {
   roundNumber: number;
   playerId: string | null;
+  playerPosition: number;
+  bid: number;
+  isNil: boolean;
   isBlindNil: boolean;
-  succeeded: boolean;
+  tricksWon: number;
 }
 
 export interface GameResultData {
@@ -16,7 +19,7 @@ export interface GameResultData {
   team1Player2Id: string | null;
   team2Player1Id: string | null;
   team2Player2Id: string | null;
-  nilAttempts: NilAttemptInsertData[];
+  roundBids: RoundBidInsertData[];
 }
 
 export async function insertGameResult(data: GameResultData): Promise<void> {
@@ -46,17 +49,21 @@ export async function insertGameResult(data: GameResultData): Promise<void> {
 
     const gameResultId = result.rows[0].id;
 
-    for (const nil of data.nilAttempts) {
+    for (const rb of data.roundBids) {
       await client.query(
-        `INSERT INTO nil_attempts
-           (game_result_id, round_number, player_id, is_blind_nil, succeeded)
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO round_bids
+           (game_result_id, round_number, player_id, player_position,
+            bid, is_nil, is_blind_nil, tricks_won)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           gameResultId,
-          nil.roundNumber,
-          nil.playerId,
-          nil.isBlindNil,
-          nil.succeeded,
+          rb.roundNumber,
+          rb.playerId,
+          rb.playerPosition,
+          rb.bid,
+          rb.isNil,
+          rb.isBlindNil,
+          rb.tricksWon,
         ]
       );
     }
@@ -347,7 +354,7 @@ export async function getNilStats(userId: string): Promise<NilStats> {
       : DEV_SAMPLE_NIL_STATS;
   }
 
-  // My nil bids
+  // My nil bids (nil succeeded iff tricks_won = 0)
   const myNils = await pool.query<{
     total: string;
     succeeded: string;
@@ -356,11 +363,12 @@ export async function getNilStats(userId: string): Promise<NilStats> {
   }>(
     `SELECT
        COUNT(*)::text AS total,
-       COUNT(*) FILTER (WHERE succeeded)::text AS succeeded,
+       COUNT(*) FILTER (WHERE tricks_won = 0)::text AS succeeded,
        COUNT(*) FILTER (WHERE is_blind_nil)::text AS blind_total,
-       COUNT(*) FILTER (WHERE is_blind_nil AND succeeded)::text AS blind_succeeded
-     FROM nil_attempts
-     WHERE player_id = $1`,
+       COUNT(*) FILTER (WHERE is_blind_nil AND tricks_won = 0)::text AS blind_succeeded
+     FROM round_bids
+     WHERE player_id = $1
+       AND (is_nil OR is_blind_nil)`,
     [userId]
   );
 
@@ -377,15 +385,16 @@ export async function getNilStats(userId: string): Promise<NilStats> {
   }>(
     `SELECT
        COUNT(*)::text AS total,
-       COUNT(*) FILTER (WHERE na.succeeded)::text AS succeeded
-     FROM nil_attempts na
-     JOIN game_results gr ON gr.id = na.game_result_id
-     WHERE na.player_id != $1
+       COUNT(*) FILTER (WHERE rb.tricks_won = 0)::text AS succeeded
+     FROM round_bids rb
+     JOIN game_results gr ON gr.id = rb.game_result_id
+     WHERE (rb.is_nil OR rb.is_blind_nil)
+       AND rb.player_id != $1
        AND CASE
-         WHEN gr.team1_player1_id = $1 THEN na.player_id = gr.team1_player2_id
-         WHEN gr.team1_player2_id = $1 THEN na.player_id = gr.team1_player1_id
-         WHEN gr.team2_player1_id = $1 THEN na.player_id = gr.team2_player2_id
-         WHEN gr.team2_player2_id = $1 THEN na.player_id = gr.team2_player1_id
+         WHEN gr.team1_player1_id = $1 THEN rb.player_id = gr.team1_player2_id
+         WHEN gr.team1_player2_id = $1 THEN rb.player_id = gr.team1_player1_id
+         WHEN gr.team2_player1_id = $1 THEN rb.player_id = gr.team2_player2_id
+         WHEN gr.team2_player2_id = $1 THEN rb.player_id = gr.team2_player1_id
          ELSE FALSE
        END`,
     [userId]
@@ -416,5 +425,79 @@ export async function getNilStats(userId: string): Promise<NilStats> {
           ? Math.round((partnerSucceeded / partnerTotal) * 100)
           : 0,
     },
+  };
+}
+
+export interface BidStats {
+  totalRounds: number;
+  averageBid: number;
+  averageTricks: number;
+  bidAccuracy: number;
+  underbidRate: number;
+  setBidRate: number;
+}
+
+const EMPTY_BID_STATS: BidStats = {
+  totalRounds: 0,
+  averageBid: 0,
+  averageTricks: 0,
+  bidAccuracy: 0,
+  underbidRate: 0,
+  setBidRate: 0,
+};
+
+const DEV_SAMPLE_BID_STATS: BidStats = {
+  totalRounds: 47,
+  averageBid: 3.4,
+  averageTricks: 3.6,
+  bidAccuracy: 72,
+  underbidRate: 19,
+  setBidRate: 9,
+};
+
+export async function getBidStats(userId: string): Promise<BidStats> {
+  if (!process.env.DATABASE_URL) {
+    return process.env.NODE_ENV === 'production'
+      ? EMPTY_BID_STATS
+      : DEV_SAMPLE_BID_STATS;
+  }
+
+  const result = await pool.query<{
+    total_rounds: string;
+    avg_bid: string;
+    avg_tricks: string;
+    met_bid: string;
+    over_bid: string;
+    under_bid: string;
+  }>(
+    `SELECT
+       COUNT(*)::text AS total_rounds,
+       COALESCE(AVG(bid)::numeric(4,1)::text, '0') AS avg_bid,
+       COALESCE(AVG(tricks_won)::numeric(4,1)::text, '0') AS avg_tricks,
+       COUNT(*) FILTER (WHERE tricks_won >= bid)::text AS met_bid,
+       COUNT(*) FILTER (WHERE tricks_won > bid)::text AS over_bid,
+       COUNT(*) FILTER (WHERE tricks_won < bid)::text AS under_bid
+     FROM round_bids
+     WHERE player_id = $1
+       AND NOT is_nil
+       AND NOT is_blind_nil`,
+    [userId]
+  );
+
+  const row = result.rows[0];
+  const totalRounds = parseInt(row.total_rounds, 10);
+  if (totalRounds === 0) return EMPTY_BID_STATS;
+
+  const metBid = parseInt(row.met_bid, 10);
+  const overBid = parseInt(row.over_bid, 10);
+  const underBid = parseInt(row.under_bid, 10);
+
+  return {
+    totalRounds,
+    averageBid: parseFloat(row.avg_bid),
+    averageTricks: parseFloat(row.avg_tricks),
+    bidAccuracy: Math.round((metBid / totalRounds) * 100),
+    underbidRate: Math.round((overBid / totalRounds) * 100),
+    setBidRate: Math.round((underBid / totalRounds) * 100),
   };
 }

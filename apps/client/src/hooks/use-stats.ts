@@ -25,22 +25,59 @@ export interface PlayerStats {
   partners: PartnerStats[];
 }
 
+export interface BidStats {
+  totalRounds: number;
+  averageBid: number;
+  averageTricks: number;
+  bidAccuracy: number;
+  underbidRate: number;
+  setBidRate: number;
+}
+
+export interface NilStats {
+  totalAttempts: number;
+  succeeded: number;
+  failed: number;
+  successRate: number;
+  blindNilAttempts: number;
+  blindNilSucceeded: number;
+  blindNilSuccessRate: number;
+  asPartner: {
+    totalAttempts: number;
+    succeeded: number;
+    failed: number;
+    successRate: number;
+  };
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Status ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export function useStats() {
   const [stats, setStats] = useState<PlayerStats | null>(null);
+  const [bidStats, setBidStats] = useState<BidStats | null>(null);
+  const [nilStats, setNilStats] = useState<NilStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/stats')
-      .then((res) => {
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        return res.json() as Promise<PlayerStats>;
+    Promise.all([
+      fetchJson<PlayerStats>('/api/stats'),
+      fetchJson<BidStats>('/api/stats/bids'),
+      fetchJson<NilStats>('/api/stats/nil'),
+    ])
+      .then(([s, b, n]) => {
+        setStats(s);
+        setBidStats(b);
+        setNilStats(n);
       })
-      .then(setStats)
       .catch((err) => {
         console.error('Failed to fetch stats:', err);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  return { stats, loading };
+  return { stats, bidStats, nilStats, loading };
 }

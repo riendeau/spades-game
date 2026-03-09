@@ -1,9 +1,9 @@
 import React from 'react';
-import type { RecentGame } from '../../hooks/use-stats';
+import type { BidStats, NilStats, RecentGame } from '../../hooks/use-stats';
 import { useStats } from '../../hooks/use-stats';
 
 export function StatsPage() {
-  const { stats, loading } = useStats();
+  const { stats, bidStats, nilStats, loading } = useStats();
 
   return (
     <div
@@ -217,6 +217,16 @@ export function StatsPage() {
               </div>
             )}
 
+            {/* Bidding stats */}
+            {bidStats && bidStats.totalRounds > 0 && (
+              <BiddingSection bidStats={bidStats} />
+            )}
+
+            {/* Nil bids */}
+            {nilStats && nilStats.totalAttempts > 0 && (
+              <NilBidsSection nilStats={nilStats} />
+            )}
+
             {/* Partner history */}
             {stats.partners.length > 0 && (
               <div
@@ -426,6 +436,158 @@ function RecentGameRow({ game }: { game: RecentGame }) {
         </span>
       </td>
     </tr>
+  );
+}
+
+function BiddingSection({ bidStats }: { bidStats: BidStats }) {
+  return (
+    <div
+      style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+        overflow: 'hidden',
+        marginBottom: '16px',
+      }}
+    >
+      <div
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid #e5e7eb',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: '#1f2937',
+            margin: 0,
+          }}
+        >
+          Bidding
+        </h2>
+      </div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '1px',
+          backgroundColor: '#e5e7eb',
+        }}
+      >
+        <BidStatCell label="Avg Bid" value={bidStats.averageBid.toFixed(1)} />
+        <BidStatCell
+          label="Avg Tricks"
+          value={bidStats.averageTricks.toFixed(1)}
+        />
+        <BidStatCell
+          label="Bid Accuracy"
+          value={`${bidStats.bidAccuracy}%`}
+          color="#16a34a"
+        />
+        <BidStatCell
+          label="Set Rate"
+          value={`${bidStats.setBidRate}%`}
+          color="#dc2626"
+        />
+      </div>
+      <div
+        style={{
+          padding: '10px 20px',
+          fontSize: '12px',
+          color: '#9ca3af',
+          borderTop: '1px solid #e5e7eb',
+        }}
+      >
+        {bidStats.totalRounds} rounds played
+      </div>
+    </div>
+  );
+}
+
+function BidStatCell({
+  label,
+  value,
+  color = '#374151',
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) {
+  return (
+    <div style={{ backgroundColor: '#fff', padding: '14px 20px' }}>
+      <div style={{ fontSize: '20px', fontWeight: 700, color }}>{value}</div>
+      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function NilBidsSection({ nilStats }: { nilStats: NilStats }) {
+  return (
+    <div
+      style={{
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+        overflow: 'hidden',
+        marginBottom: '16px',
+      }}
+    >
+      <div
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid #e5e7eb',
+        }}
+      >
+        <h2
+          style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: '#1f2937',
+            margin: 0,
+          }}
+        >
+          Nil Bids
+        </h2>
+      </div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '1px',
+          backgroundColor: '#e5e7eb',
+        }}
+      >
+        <BidStatCell label="Attempts" value={String(nilStats.totalAttempts)} />
+        <BidStatCell
+          label="Success Rate"
+          value={`${nilStats.successRate}%`}
+          color="#16a34a"
+        />
+        <BidStatCell
+          label="Blind Nil"
+          value={`${nilStats.blindNilAttempts > 0 ? nilStats.blindNilSucceeded : 0}/${nilStats.blindNilAttempts}`}
+        />
+      </div>
+      {nilStats.asPartner.totalAttempts > 0 && (
+        <div
+          style={{
+            padding: '12px 20px',
+            borderTop: '1px solid #e5e7eb',
+            fontSize: '13px',
+            color: '#374151',
+          }}
+        >
+          As partner (protecting):{' '}
+          <span style={{ fontWeight: 600 }}>
+            {nilStats.asPartner.succeeded}/{nilStats.asPartner.totalAttempts}
+          </span>{' '}
+          succeeded ({nilStats.asPartner.successRate}%)
+        </div>
+      )}
+    </div>
   );
 }
 

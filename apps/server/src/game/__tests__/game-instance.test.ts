@@ -184,4 +184,118 @@ describe('GameInstance', () => {
       }
     });
   });
+
+  describe('round bid tracking', () => {
+    it('should record 4 round bids after a complete round', () => {
+      const game = createFourPlayerGame();
+      startAndDeal(game);
+      bidAll(game, 3);
+
+      // Play all 13 tricks
+      for (let trick = 0; trick < 13; trick++) {
+        for (let play = 0; play < 4; play++) {
+          const state = game.getState();
+          const currentPos = state.currentPlayerPosition;
+          const player = state.players.find((p) => p.position === currentPos)!;
+          const hand = game.getPlayerHand(player.id);
+
+          let cardToPlay: Card;
+          if (play === 0) {
+            cardToPlay = hand.find((c) => c.suit !== 'spades') ?? hand[0];
+          } else {
+            const leadSuit = state.currentRound!.currentTrick.leadSuit;
+            const suitCard = hand.find((c) => c.suit === leadSuit);
+            cardToPlay = suitCard ?? hand[0];
+          }
+
+          game.playCard(player.id, cardToPlay);
+        }
+        game.collectTrick();
+      }
+
+      const roundBids = game.getRoundBids();
+      expect(roundBids).toHaveLength(4);
+
+      // Each bid should be 3 (what we bid)
+      for (const rb of roundBids) {
+        expect(rb.bid).toBe(3);
+        expect(rb.roundNumber).toBe(1);
+        expect(rb.isNil).toBe(false);
+        expect(rb.isBlindNil).toBe(false);
+        expect(rb.position).toBeGreaterThanOrEqual(0);
+        expect(rb.position).toBeLessThanOrEqual(3);
+        expect(rb.tricksWon).toBeGreaterThanOrEqual(0);
+      }
+
+      // Total tricks won across all players should be 13
+      const totalTricks = roundBids.reduce((sum, rb) => sum + rb.tricksWon, 0);
+      expect(totalTricks).toBe(13);
+    });
+
+    it('should accumulate bids across multiple rounds', () => {
+      const game = createFourPlayerGame();
+      startAndDeal(game);
+      bidAll(game, 3);
+
+      // Play round 1
+      for (let trick = 0; trick < 13; trick++) {
+        for (let play = 0; play < 4; play++) {
+          const state = game.getState();
+          const currentPos = state.currentPlayerPosition;
+          const player = state.players.find((p) => p.position === currentPos)!;
+          const hand = game.getPlayerHand(player.id);
+
+          let cardToPlay: Card;
+          if (play === 0) {
+            cardToPlay = hand.find((c) => c.suit !== 'spades') ?? hand[0];
+          } else {
+            const leadSuit = state.currentRound!.currentTrick.leadSuit;
+            const suitCard = hand.find((c) => c.suit === leadSuit);
+            cardToPlay = suitCard ?? hand[0];
+          }
+
+          game.playCard(player.id, cardToPlay);
+        }
+        game.collectTrick();
+      }
+
+      expect(game.getRoundBids()).toHaveLength(4);
+
+      // Start round 2
+      game.startNextRound();
+      bidAll(game, 4);
+
+      for (let trick = 0; trick < 13; trick++) {
+        for (let play = 0; play < 4; play++) {
+          const state = game.getState();
+          const currentPos = state.currentPlayerPosition;
+          const player = state.players.find((p) => p.position === currentPos)!;
+          const hand = game.getPlayerHand(player.id);
+
+          let cardToPlay: Card;
+          if (play === 0) {
+            cardToPlay = hand.find((c) => c.suit !== 'spades') ?? hand[0];
+          } else {
+            const leadSuit = state.currentRound!.currentTrick.leadSuit;
+            const suitCard = hand.find((c) => c.suit === leadSuit);
+            cardToPlay = suitCard ?? hand[0];
+          }
+
+          game.playCard(player.id, cardToPlay);
+        }
+        game.collectTrick();
+      }
+
+      const allBids = game.getRoundBids();
+      expect(allBids).toHaveLength(8); // 4 per round * 2 rounds
+
+      const round1Bids = allBids.filter((rb) => rb.roundNumber === 1);
+      const round2Bids = allBids.filter((rb) => rb.roundNumber === 2);
+      expect(round1Bids).toHaveLength(4);
+      expect(round2Bids).toHaveLength(4);
+
+      for (const rb of round1Bids) expect(rb.bid).toBe(3);
+      for (const rb of round2Bids) expect(rb.bid).toBe(4);
+    });
+  });
 });
