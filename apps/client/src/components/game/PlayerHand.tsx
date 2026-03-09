@@ -39,7 +39,7 @@ export function PlayerHand({
         justifyContent: 'center',
         padding: compact ? '8px' : '20px',
         paddingBottom: compact ? '12px' : '25px',
-        minHeight: compact ? '91px' : '170px',
+        minHeight: compact ? '91px' : '200px',
       }}
     >
       {cards.map((card, idx) => {
@@ -56,7 +56,7 @@ export function PlayerHand({
         // Quadratic vertical arc — applied via `top` so it's in screen
         // coordinates, independent of the card's rotation.
         // Arc depth scales with card count so small hands stay shallow.
-        const basePeak = compact ? 10 : 20;
+        const basePeak = compact ? 10 : 24;
         const peakDrop = count <= 1 ? 0 : basePeak * ((count - 1) / 12);
         const t = (idx - mid) / Math.max(mid, 1); // -1 to 1
         const offsetY = t * t * peakDrop;
@@ -67,7 +67,7 @@ export function PlayerHand({
             style={{
               position: 'relative',
               top: `${offsetY}px`,
-              marginLeft: idx > 0 ? (compact ? '-35px' : '-25px') : 0,
+              marginLeft: idx > 0 ? (compact ? '-35px' : '-32px') : 0,
               zIndex: idx,
               transform: `rotate(${rotation}deg)`,
               transformOrigin: 'bottom center',

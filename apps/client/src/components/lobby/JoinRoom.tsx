@@ -62,18 +62,21 @@ export function JoinRoom({
   return (
     <div
       style={{
-        maxWidth: '400px',
+        maxWidth: '420px',
         margin: '0 auto',
-        padding: isMobile ? '24px 16px' : '40px 20px',
+        padding: isMobile ? '24px 16px' : '48px 20px',
       }}
     >
       <h1
         style={{
-          fontSize: '32px',
+          fontSize: '38px',
           fontWeight: 700,
           textAlign: 'center',
           marginBottom: '4px',
-          color: '#1f2937',
+          color: '#ffffff',
+          letterSpacing: '0.03em',
+          textShadow:
+            '0 0 20px rgba(255,255,255,0.25), 0 0 40px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.5)',
         }}
       >
         {LOBBY_TITLE}
@@ -83,11 +86,12 @@ export function JoinRoom({
         style={{
           textAlign: 'center',
           fontStyle: 'italic',
-          fontSize: '13px',
-          letterSpacing: '0.05em',
-          color: '#6b7280',
-          marginBottom: '24px',
+          fontSize: '14px',
+          letterSpacing: '0.08em',
+          color: 'rgba(255,255,255,0.65)',
+          marginBottom: '28px',
           fontFamily: 'Georgia, "Times New Roman", serif',
+          textShadow: '0 1px 6px rgba(0,0,0,0.3)',
         }}
       >
         {LOBBY_MOTTO}
@@ -95,67 +99,83 @@ export function JoinRoom({
 
       <div
         style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '24px',
+          backgroundColor: '#ffffff',
+          borderRadius: '16px',
+          padding: isMobile ? '24px 20px' : '32px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
         }}
       >
-        <Button
-          variant={mode === 'create' ? 'primary' : 'secondary'}
-          onClick={() => setMode('create')}
-          style={{ flex: 1 }}
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '24px',
+          }}
         >
-          Create Game
-        </Button>
-        <Button
-          variant={mode === 'join' ? 'primary' : 'secondary'}
-          onClick={() => setMode('join')}
-          style={{ flex: 1 }}
+          <Button
+            variant={mode === 'create' ? 'primary' : 'secondary'}
+            onClick={() => setMode('create')}
+            style={{ flex: 1 }}
+          >
+            Create Game
+          </Button>
+          <Button
+            variant={mode === 'join' ? 'primary' : 'secondary'}
+            onClick={() => setMode('join')}
+            style={{ flex: 1 }}
+          >
+            Join Game
+          </Button>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
         >
-          Join Game
-        </Button>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-      >
-        <Input
-          label="Nickname"
-          placeholder="Enter your nickname"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          maxLength={20}
-        />
-
-        {mode === 'join' && (
           <Input
-            label="Room Code"
-            placeholder="e.g. ABC123"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-            maxLength={6}
-            style={{ textTransform: 'uppercase', letterSpacing: '2px' }}
+            label="Nickname"
+            placeholder="Enter your nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={20}
           />
-        )}
 
-        <Button
-          type="submit"
-          size="large"
-          disabled={!nickname.trim() || (mode === 'join' && !roomId.trim())}
-          style={{ marginTop: '8px' }}
-        >
-          {mode === 'create' ? 'Create Room' : 'Join Room'}
-        </Button>
-      </form>
+          {mode === 'join' && (
+            <Input
+              label="Room Code"
+              placeholder="e.g. ABC123"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+              maxLength={6}
+              style={{ textTransform: 'uppercase', letterSpacing: '2px' }}
+            />
+          )}
+
+          <Button
+            type="submit"
+            size="large"
+            disabled={!nickname.trim() || (mode === 'join' && !roomId.trim())}
+            style={{ marginTop: '8px' }}
+          >
+            {mode === 'create' ? 'Create Room' : 'Join Room'}
+          </Button>
+        </form>
+      </div>
 
       <div style={{ textAlign: 'center', marginTop: '24px' }}>
         <a
           href="/stats"
           style={{
-            color: '#6b7280',
+            display: 'inline-block',
+            color: 'rgba(255,255,255,0.75)',
             textDecoration: 'none',
             fontSize: '14px',
+            fontWeight: 500,
+            padding: '8px 20px',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '20px',
+            letterSpacing: '0.03em',
+            transition: 'all 0.15s ease',
           }}
         >
           Your Stats

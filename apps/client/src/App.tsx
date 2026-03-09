@@ -78,14 +78,17 @@ function AppInner() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f3f4f6',
+          background:
+            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
         }}
       >
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', marginBottom: '8px' }}>
+          <div
+            style={{ fontSize: '24px', marginBottom: '8px', color: '#ffffff' }}
+          >
             Connecting...
           </div>
-          <div style={{ color: '#6b7280' }}>Please wait</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)' }}>Please wait</div>
         </div>
       </div>
     );
@@ -131,7 +134,13 @@ function AppInner() {
   // No room yet - show join/create
   if (!roomId || !gameState) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background:
+            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
+        }}
+      >
         {errorToast}
         <JoinRoom
           onCreateRoom={createRoom}
@@ -146,7 +155,13 @@ function AppInner() {
   // Waiting room
   if (gameState.phase === 'waiting' && myPosition !== null) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6' }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background:
+            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
+        }}
+      >
         {errorToast}
         <WaitingRoom
           roomId={roomId}
