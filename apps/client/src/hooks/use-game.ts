@@ -23,6 +23,7 @@ export function useGame() {
   const scoreHistory = useGameStore((s) => s.scoreHistory);
   const gameEnded = useGameStore((s) => s.gameEnded);
   const gameSummary = useGameStore((s) => s.gameSummary);
+  const teamNameReveal = useGameStore((s) => s.teamNameReveal);
   const error = useGameStore((s) => s.error);
   const availableSeats = useGameStore((s) => s.availableSeats);
   const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
@@ -55,7 +56,18 @@ export function useGame() {
     });
 
     socket.on('game:state-update', ({ state }) => {
-      useGameStore.getState().setGameState(state);
+      const store = useGameStore.getState();
+      // Trigger team name reveal when they first arrive
+      if (state.teamNames && !store.gameState?.teamNames) {
+        store.setTeamNameReveal({
+          ...state.teamNames,
+          players: state.players.map((p) => ({
+            nickname: p.nickname,
+            team: p.team,
+          })),
+        });
+      }
+      store.setGameState(state);
     });
 
     socket.on('game:cards-dealt', ({ hand }) => {
@@ -254,8 +266,13 @@ export function useGame() {
   );
 
   // Actions are stable refs — destructure once for the return value
-  const { clearRoundSummary, clearRoundEffects, revealCards, reset } =
-    useGameStore.getState();
+  const {
+    clearRoundSummary,
+    clearRoundEffects,
+    clearTeamNameReveal,
+    revealCards,
+    reset,
+  } = useGameStore.getState();
 
   return {
     connected,
@@ -269,6 +286,8 @@ export function useGame() {
     scoreHistory,
     gameEnded,
     gameSummary,
+    teamNameReveal,
+    clearTeamNameReveal,
     error,
     availableSeats,
     seatSelectRoomId,

@@ -38,6 +38,11 @@ interface GameStore {
     teamNames?: { team1: string; team2: string };
   } | null;
   gameSummary: string | null;
+  teamNameReveal: {
+    team1: string;
+    team2: string;
+    players: { nickname: string; team: 'team1' | 'team2' }[];
+  } | null;
   cardsRevealed: boolean;
   availableSeats: AvailableSeat[] | null;
   seatSelectRoomId: string | null;
@@ -67,6 +72,12 @@ interface GameStore {
     teamNames?: { team1: string; team2: string };
   }) => void;
   setGameSummary: (summary: string) => void;
+  setTeamNameReveal: (data: {
+    team1: string;
+    team2: string;
+    players: { nickname: string; team: 'team1' | 'team2' }[];
+  }) => void;
+  clearTeamNameReveal: () => void;
   setMyPosition: (position: Position) => void;
   revealCards: () => void;
   setAvailableSeats: (roomId: string, seats: AvailableSeat[]) => void;
@@ -88,6 +99,7 @@ const initialState = {
   error: null,
   gameEnded: null,
   gameSummary: null,
+  teamNameReveal: null,
   cardsRevealed: false,
   availableSeats: null,
   seatSelectRoomId: null,
@@ -131,6 +143,10 @@ export const useGameStore = create<GameStore>((set) => ({
   setGameEnded: (data) => set({ gameEnded: data, gameSummary: null }),
 
   setGameSummary: (summary) => set({ gameSummary: summary }),
+
+  setTeamNameReveal: (data) => set({ teamNameReveal: data }),
+
+  clearTeamNameReveal: () => set({ teamNameReveal: null }),
 
   setMyPosition: (position) => set({ myPosition: position }),
 
