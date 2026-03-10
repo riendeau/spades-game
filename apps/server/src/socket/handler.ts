@@ -799,7 +799,15 @@ async function generateTeamNamesForRoom(
       team2: team2Players,
     });
 
-    room.game.setTeamNames(names ?? { team1: 'Team 1', team2: 'Team 2' });
+    const { startButton, ...teamNames } = names ?? {
+      team1: 'Team 1',
+      team2: 'Team 2',
+    };
+    room.game.setTeamNames(teamNames);
+    io.to(room.id).emit('game:team-names', {
+      ...teamNames,
+      startButton,
+    });
     io.to(room.id).emit('game:state-update', {
       state: getClientState(room),
     });

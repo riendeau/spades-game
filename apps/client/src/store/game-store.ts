@@ -35,7 +35,7 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
-    teamNames?: { team1: string; team2: string; startButton?: string };
+    teamNames?: { team1: string; team2: string };
   } | null;
   gameSummary: string | null;
   teamNameReveal: {
@@ -68,12 +68,16 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
-    teamNames?: { team1: string; team2: string; startButton?: string };
+    teamNames?: { team1: string; team2: string };
   }) => void;
   setGameSummary: (summary: string) => void;
   setTeamNameReveal: (data: {
     players: { nickname: string; team: 'team1' | 'team2' }[];
-    teamNames: { team1: string; team2: string; startButton?: string } | null;
+    teamNames: {
+      team1: string;
+      team2: string;
+      startButton?: string;
+    } | null;
   }) => void;
   updateTeamNameReveal: (teamNames: {
     team1: string;

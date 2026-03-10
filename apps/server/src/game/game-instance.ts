@@ -30,11 +30,7 @@ export class GameInstance {
   private config: GameConfig;
   private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
-  private teamNames: {
-    team1: string;
-    team2: string;
-    startButton?: string;
-  } | null = null;
+  private teamNames: { team1: string; team2: string } | null = null;
   private roundEffects: RoundEffect[] = [];
   private roundBids: RoundBidData[] = [];
   private scoreHistory: ScoreHistoryEntry[] = [
@@ -77,19 +73,11 @@ export class GameInstance {
     return this.roundBids;
   }
 
-  getTeamNames(): {
-    team1: string;
-    team2: string;
-    startButton?: string;
-  } | null {
+  getTeamNames(): { team1: string; team2: string } | null {
     return this.teamNames;
   }
 
-  setTeamNames(names: {
-    team1: string;
-    team2: string;
-    startButton?: string;
-  }): void {
+  setTeamNames(names: { team1: string; team2: string }): void {
     this.teamNames = names;
   }
 

@@ -64,17 +64,15 @@ export function useGame() {
       });
     });
 
-    socket.on('game:state-update', ({ state }) => {
+    socket.on('game:team-names', (teamNames) => {
       const store = useGameStore.getState();
-      // Update team name reveal when names arrive from the server
-      if (
-        state.teamNames &&
-        store.teamNameReveal &&
-        !store.teamNameReveal.teamNames
-      ) {
-        store.updateTeamNameReveal(state.teamNames);
+      if (store.teamNameReveal && !store.teamNameReveal.teamNames) {
+        store.updateTeamNameReveal(teamNames);
       }
-      store.setGameState(state);
+    });
+
+    socket.on('game:state-update', ({ state }) => {
+      useGameStore.getState().setGameState(state);
     });
 
     socket.on('game:cards-dealt', ({ hand }) => {
@@ -160,6 +158,7 @@ export function useGame() {
       socket.off('room:created');
       socket.off('room:joined');
       socket.off('game:started');
+      socket.off('game:team-names');
       socket.off('game:state-update');
       socket.off('game:cards-dealt');
       socket.off('game:card-played');
