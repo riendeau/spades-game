@@ -35,17 +35,22 @@ export async function createTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_game_results_team2_player1 ON game_results(team2_player1_id);
     CREATE INDEX IF NOT EXISTS idx_game_results_team2_player2 ON game_results(team2_player2_id);
 
-    CREATE TABLE IF NOT EXISTS nil_attempts (
+    CREATE TABLE IF NOT EXISTS round_bids (
       id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
       game_result_id   UUID        NOT NULL REFERENCES game_results(id) ON DELETE CASCADE,
       round_number     INTEGER     NOT NULL,
       player_id        UUID        REFERENCES users(id) ON DELETE SET NULL,
+      player_position  SMALLINT    NOT NULL,
+      bid              SMALLINT    NOT NULL,
+      is_nil           BOOLEAN     NOT NULL DEFAULT FALSE,
       is_blind_nil     BOOLEAN     NOT NULL DEFAULT FALSE,
-      succeeded        BOOLEAN     NOT NULL,
-      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      tricks_won       SMALLINT    NOT NULL,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (NOT (is_nil AND is_blind_nil)),
+      CHECK ((bid = 0) = (is_nil OR is_blind_nil))
     );
 
-    CREATE INDEX IF NOT EXISTS idx_nil_attempts_game_result ON nil_attempts(game_result_id);
-    CREATE INDEX IF NOT EXISTS idx_nil_attempts_player ON nil_attempts(player_id);
+    CREATE INDEX IF NOT EXISTS idx_round_bids_game_result ON round_bids(game_result_id);
+    CREATE INDEX IF NOT EXISTS idx_round_bids_player ON round_bids(player_id);
   `);
 }

@@ -15,11 +15,14 @@ import {
 } from '@spades/shared';
 import { hookExecutor } from '../mods/hook-executor.js';
 
-export interface NilAttemptData {
+export interface RoundBidData {
   roundNumber: number;
   playerId: PlayerId;
+  position: Position;
+  bid: number;
+  isNil: boolean;
   isBlindNil: boolean;
-  succeeded: boolean;
+  tricksWon: number;
 }
 
 export class GameInstance {
@@ -28,7 +31,7 @@ export class GameInstance {
   private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
   private roundEffects: RoundEffect[] = [];
-  private nilAttempts: NilAttemptData[] = [];
+  private roundBids: RoundBidData[] = [];
   private scoreHistory: ScoreHistoryEntry[] = [
     { round: 0, team1Score: 0, team2Score: 0 },
   ];
@@ -65,8 +68,8 @@ export class GameInstance {
     return this.scoreHistory;
   }
 
-  getNilAttempts(): NilAttemptData[] {
-    return this.nilAttempts;
+  getRoundBids(): RoundBidData[] {
+    return this.roundBids;
   }
 
   setModState(modId: string, state: unknown): void {
@@ -264,6 +267,20 @@ export class GameInstance {
     // If round ended, process scoring and run mod hooks
     let endRoundSideEffects: SideEffect[] = [];
     if (this.getState().phase === 'round-end') {
+      // Capture bid and trick data before END_ROUND
+      const bids = this.state.currentRound!.bids;
+      const roundNumber = this.state.currentRound!.roundNumber;
+
+      const playerTricksWon: Record<PlayerId, number> = {};
+      for (const p of this.state.players) {
+        playerTricksWon[p.id] = 0;
+      }
+      for (const trick of this.state.currentRound!.tricks) {
+        if (trick.winner) {
+          playerTricksWon[trick.winner]++;
+        }
+      }
+
       const endRoundResult = this.dispatch({ type: 'END_ROUND' });
       endRoundSideEffects = endRoundResult.sideEffects ?? [];
 
@@ -279,15 +296,17 @@ export class GameInstance {
           team2Score: this.state.scores.team2.score,
         });
 
-        for (const nr of [
-          ...roundSummary.team1.nilResults,
-          ...roundSummary.team2.nilResults,
-        ]) {
-          this.nilAttempts.push({
-            roundNumber: roundSummary.roundNumber,
-            playerId: nr.playerId,
-            isBlindNil: nr.isBlindNil,
-            succeeded: nr.succeeded,
+        // Record all player bids for this round
+        for (const bid of bids) {
+          const player = this.state.players.find((p) => p.id === bid.playerId)!;
+          this.roundBids.push({
+            roundNumber,
+            playerId: bid.playerId,
+            position: player.position,
+            bid: bid.bid,
+            isNil: bid.isNil,
+            isBlindNil: bid.isBlindNil,
+            tricksWon: playerTricksWon[bid.playerId] ?? 0,
           });
         }
 

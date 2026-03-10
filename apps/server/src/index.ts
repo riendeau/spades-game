@@ -16,7 +16,7 @@ import { Server } from 'socket.io';
 import { authRouter } from './auth/auth-routes.js';
 import { DEV_USER, configurePassport } from './auth/passport-config.js';
 import { pool } from './db/client.js';
-import { getNilStats, getPlayerStats } from './db/game-results.js';
+import { getBidStats, getNilStats, getPlayerStats } from './db/game-results.js';
 import { createTables } from './db/schema.js';
 import { hookExecutor } from './mods/hook-executor.js';
 import { loadBuiltInMods } from './mods/mod-loader.js';
@@ -142,6 +142,17 @@ app.get(`${BASE_PATH}api/stats`, (req, res) => {
     (stats) => res.json(stats),
     (err) => {
       console.error('[api] /api/stats error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  );
+});
+
+// Get bid accuracy stats
+app.get(`${BASE_PATH}api/stats/bids`, (req, res) => {
+  void getBidStats(req.user!.id).then(
+    (stats) => res.json(stats),
+    (err) => {
+      console.error('[api] /api/stats/bids error:', err);
       res.status(500).json({ error: 'Internal server error' });
     }
   );
