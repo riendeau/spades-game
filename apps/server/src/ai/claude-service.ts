@@ -14,11 +14,8 @@ function getClient(): Anthropic | null {
 
 function sanitizeNickname(name: string): string {
   // Strip control characters (U+0000–U+001F, U+007F)
-  // eslint-disable-next-line no-control-regex
-  return name
-    .slice(0, 30)
-    .replace(/[\x00-\x1f\x7f]/g, '')
-    .trim();
+  const CONTROL_CHARS = /[\x00-\x1f\x7f]/g; // eslint-disable-line no-control-regex
+  return name.slice(0, 30).replace(CONTROL_CHARS, '').trim();
 }
 
 export async function generateTeamNames(players: {
