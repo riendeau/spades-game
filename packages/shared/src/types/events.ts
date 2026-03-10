@@ -121,7 +121,7 @@ export interface ClientGameState {
   currentPlayerPosition: Position;
   winningScore: number;
   disabledBids?: number[];
-  teamNames?: { team1: string; team2: string };
+  teamNames?: { team1: string; team2: string; startButton?: string };
 }
 
 export interface ScoreHistoryEntry {

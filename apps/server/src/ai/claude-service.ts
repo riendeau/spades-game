@@ -18,10 +18,16 @@ function sanitizeNickname(name: string): string {
   return name.slice(0, 30).replace(CONTROL_CHARS, '').trim();
 }
 
+export interface TeamNamesResult {
+  team1: string;
+  team2: string;
+  startButton: string;
+}
+
 export async function generateTeamNames(players: {
   team1: string[];
   team2: string[];
-}): Promise<{ team1: string; team2: string } | null> {
+}): Promise<TeamNamesResult | null> {
   const anthropic = getClient();
   if (!anthropic) return null;
 
@@ -40,16 +46,18 @@ export async function generateTeamNames(players: {
 Team 1 players: ${team1Names}
 Team 2 players: ${team2Names}
 
-Respond with ONLY valid JSON, no other text: {"team1":"...","team2":"..."}
+Also provide short text for a "start game" button — make it thematic based on the names, or just a fun exhortation like "Deal 'Em!" or "Shuffle Up!".
 
-Each name should be 2-4 words max.`,
+Respond with ONLY valid JSON, no other text: {"team1":"...","team2":"...","startButton":"..."}
+
+Team names: 2-4 words max. Button text: 2-4 words max.`,
         },
       ],
     });
 
     const text =
       response.content[0].type === 'text' ? response.content[0].text : '';
-    const parsed = JSON.parse(text) as { team1: string; team2: string };
+    const parsed = JSON.parse(text) as TeamNamesResult;
 
     if (
       typeof parsed.team1 !== 'string' ||
@@ -60,10 +68,13 @@ Each name should be 2-4 words max.`,
       return null;
     }
 
-    // Truncate team names to reasonable length
     return {
       team1: parsed.team1.slice(0, 40),
       team2: parsed.team2.slice(0, 40),
+      startButton:
+        typeof parsed.startButton === 'string' && parsed.startButton
+          ? parsed.startButton.slice(0, 30)
+          : "Let's Go!",
     };
   } catch (err) {
     console.warn('[ai] Failed to generate team names:', err);

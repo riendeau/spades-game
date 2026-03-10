@@ -39,7 +39,7 @@ describe('generateTeamNames', () => {
       content: [
         {
           type: 'text',
-          text: '{"team1":"Alice\'s Aces","team2":"Charlie\'s Chumps"}',
+          text: '{"team1":"Alice\'s Aces","team2":"Charlie\'s Chumps","startButton":"Deal the Pain!"}',
         },
       ],
     });
@@ -52,6 +52,7 @@ describe('generateTeamNames', () => {
     expect(result).toEqual({
       team1: "Alice's Aces",
       team2: "Charlie's Chumps",
+      startButton: 'Deal the Pain!',
     });
     expect(mockCreate).toHaveBeenCalledOnce();
   });
@@ -115,6 +116,7 @@ describe('generateTeamNames', () => {
 
     expect(result?.team1.length).toBe(40);
     expect(result?.team2).toBe('Short');
+    expect(result?.startButton).toBe("Let's Go!");
   });
 });
 

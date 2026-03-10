@@ -202,9 +202,8 @@ function AppInner() {
 
         {teamNameReveal && (
           <TeamNameRevealModal
-            team1={teamNameReveal.team1}
-            team2={teamNameReveal.team2}
             players={teamNameReveal.players}
+            teamNames={teamNameReveal.teamNames}
             onClose={clearTeamNameReveal}
           />
         )}

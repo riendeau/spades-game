@@ -799,12 +799,10 @@ async function generateTeamNamesForRoom(
       team2: team2Players,
     });
 
-    if (names) {
-      room.game.setTeamNames(names);
-      io.to(room.id).emit('game:state-update', {
-        state: getClientState(room),
-      });
-    }
+    room.game.setTeamNames(names ?? { team1: 'Team 1', team2: 'Team 2' });
+    io.to(room.id).emit('game:state-update', {
+      state: getClientState(room),
+    });
   } catch (err) {
     console.warn('[ai] generateTeamNamesForRoom failed:', err);
   }

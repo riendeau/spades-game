@@ -55,17 +55,24 @@ export function useGame() {
       }
     });
 
+    socket.on('game:started', () => {
+      const store = useGameStore.getState();
+      const players = store.gameState?.players ?? [];
+      store.setTeamNameReveal({
+        players: players.map((p) => ({ nickname: p.nickname, team: p.team })),
+        teamNames: null,
+      });
+    });
+
     socket.on('game:state-update', ({ state }) => {
       const store = useGameStore.getState();
-      // Trigger team name reveal when they first arrive
-      if (state.teamNames && !store.gameState?.teamNames) {
-        store.setTeamNameReveal({
-          ...state.teamNames,
-          players: state.players.map((p) => ({
-            nickname: p.nickname,
-            team: p.team,
-          })),
-        });
+      // Update team name reveal when names arrive from the server
+      if (
+        state.teamNames &&
+        store.teamNameReveal &&
+        !store.teamNameReveal.teamNames
+      ) {
+        store.updateTeamNameReveal(state.teamNames);
       }
       store.setGameState(state);
     });
@@ -152,6 +159,7 @@ export function useGame() {
     return () => {
       socket.off('room:created');
       socket.off('room:joined');
+      socket.off('game:started');
       socket.off('game:state-update');
       socket.off('game:cards-dealt');
       socket.off('game:card-played');
