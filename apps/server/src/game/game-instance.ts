@@ -30,6 +30,7 @@ export class GameInstance {
   private config: GameConfig;
   private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
+  private teamNames: { team1: string; team2: string } | null = null;
   private roundEffects: RoundEffect[] = [];
   private roundBids: RoundBidData[] = [];
   private scoreHistory: ScoreHistoryEntry[] = [
@@ -70,6 +71,14 @@ export class GameInstance {
 
   getRoundBids(): RoundBidData[] {
     return this.roundBids;
+  }
+
+  getTeamNames(): { team1: string; team2: string } | null {
+    return this.teamNames;
+  }
+
+  setTeamNames(names: { team1: string; team2: string }): void {
+    this.teamNames = names;
   }
 
   setModState(modId: string, state: unknown): void {
@@ -139,6 +148,7 @@ export class GameInstance {
       dealerPosition: this.state.dealerPosition,
       currentPlayerPosition: this.state.currentPlayerPosition,
       winningScore: this.state.winningScore,
+      teamNames: this.teamNames ?? undefined,
     };
 
     // Calculate disabled bids for current bidder

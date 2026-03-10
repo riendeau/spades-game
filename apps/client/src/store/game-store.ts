@@ -35,7 +35,9 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
+    teamNames?: { team1: string; team2: string };
   } | null;
+  gameSummary: string | null;
   cardsRevealed: boolean;
   availableSeats: AvailableSeat[] | null;
   seatSelectRoomId: string | null;
@@ -62,7 +64,9 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
+    teamNames?: { team1: string; team2: string };
   }) => void;
+  setGameSummary: (summary: string) => void;
   setMyPosition: (position: Position) => void;
   revealCards: () => void;
   setAvailableSeats: (roomId: string, seats: AvailableSeat[]) => void;
@@ -83,6 +87,7 @@ const initialState = {
   scoreHistory: [],
   error: null,
   gameEnded: null,
+  gameSummary: null,
   cardsRevealed: false,
   availableSeats: null,
   seatSelectRoomId: null,
@@ -123,7 +128,9 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setError: (error) => set({ error }),
 
-  setGameEnded: (data) => set({ gameEnded: data }),
+  setGameEnded: (data) => set({ gameEnded: data, gameSummary: null }),
+
+  setGameSummary: (summary) => set({ gameSummary: summary }),
 
   setMyPosition: (position) => set({ myPosition: position }),
 

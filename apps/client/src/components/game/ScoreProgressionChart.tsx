@@ -6,6 +6,7 @@ interface ScoreProgressionChartProps {
   scoreHistory: ScoreHistoryEntry[];
   winningScore: number;
   compact?: boolean;
+  teamNames?: { team1: string; team2: string };
 }
 
 const PADDING = { top: 20, right: 45, bottom: 30, left: 45 };
@@ -16,7 +17,10 @@ export function ScoreProgressionChart({
   scoreHistory,
   winningScore,
   compact,
+  teamNames,
 }: ScoreProgressionChartProps) {
+  const team1Name = teamNames?.team1 ?? 'Team 1';
+  const team2Name = teamNames?.team2 ?? 'Team 2';
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   if (scoreHistory.length <= 1) {
@@ -262,18 +266,23 @@ export function ScoreProgressionChart({
           strokeWidth={2.5}
         />
         <text x={20} y={4} fontSize={fontSize} fill="#6b7280">
-          Team 1
+          {team1Name}
         </text>
         <line
-          x1={70}
+          x1={20 + team1Name.length * (fontSize * 0.6) + 10}
           y1={0}
-          x2={86}
+          x2={20 + team1Name.length * (fontSize * 0.6) + 26}
           y2={0}
           stroke={TEAM2_COLOR}
           strokeWidth={2.5}
         />
-        <text x={90} y={4} fontSize={fontSize} fill="#6b7280">
-          Team 2
+        <text
+          x={20 + team1Name.length * (fontSize * 0.6) + 30}
+          y={4}
+          fontSize={fontSize}
+          fill="#6b7280"
+        >
+          {team2Name}
         </text>
       </g>
     </svg>

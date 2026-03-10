@@ -22,6 +22,7 @@ export function useGame() {
   const roundEffects = useGameStore((s) => s.roundEffects);
   const scoreHistory = useGameStore((s) => s.scoreHistory);
   const gameEnded = useGameStore((s) => s.gameEnded);
+  const gameSummary = useGameStore((s) => s.gameSummary);
   const error = useGameStore((s) => s.error);
   const availableSeats = useGameStore((s) => s.availableSeats);
   const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
@@ -86,11 +87,17 @@ export function useGame() {
     });
 
     socket.on('game:ended', ({ winningTeam, finalScores, scoreHistory }) => {
+      const { gameState } = useGameStore.getState();
       useGameStore.getState().setGameEnded({
         winner: winningTeam,
         scores: finalScores,
         scoreHistory,
+        teamNames: gameState?.teamNames,
       });
+    });
+
+    socket.on('game:summary', ({ summary }) => {
+      useGameStore.getState().setGameSummary(summary);
     });
 
     socket.on('reconnect:success', ({ state, hand, scoreHistory }) => {
@@ -139,6 +146,7 @@ export function useGame() {
       socket.off('game:trick-won');
       socket.off('game:round-end');
       socket.off('game:ended');
+      socket.off('game:summary');
       socket.off('room:seat-changed');
       socket.off('room:seats-available');
       socket.off('room:seat-opened');
@@ -260,6 +268,7 @@ export function useGame() {
     roundEffects,
     scoreHistory,
     gameEnded,
+    gameSummary,
     error,
     availableSeats,
     seatSelectRoomId,

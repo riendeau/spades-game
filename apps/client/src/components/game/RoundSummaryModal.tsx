@@ -6,12 +6,14 @@ import { Button } from '../ui/Button';
 interface RoundSummaryModalProps {
   summary: RoundSummary;
   scores: ClientGameState['scores'];
+  teamNames?: { team1: string; team2: string };
   onClose: () => void;
 }
 
 export function RoundSummaryModal({
   summary,
   scores,
+  teamNames,
   onClose,
 }: RoundSummaryModalProps) {
   return (
@@ -60,7 +62,8 @@ export function RoundSummaryModal({
                     fontSize: '18px',
                   }}
                 >
-                  Team {teamId === 'team1' ? '1' : '2'}
+                  {teamNames?.[teamId] ??
+                    `Team ${teamId === 'team1' ? '1' : '2'}`}
                 </h3>
 
                 <div style={{ fontSize: '14px', lineHeight: 1.8 }}>

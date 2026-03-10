@@ -10,6 +10,8 @@ interface GameEndModalProps {
   scoreHistory: ScoreHistoryEntry[];
   winningScore: number;
   myTeam: 'team1' | 'team2';
+  teamNames?: { team1: string; team2: string };
+  gameSummary?: string | null;
   onNewGame: () => void;
 }
 
@@ -19,9 +21,14 @@ export function GameEndModal({
   scoreHistory,
   winningScore,
   myTeam,
+  teamNames,
+  gameSummary,
   onNewGame,
 }: GameEndModalProps) {
   const didWin = winner === myTeam;
+  const team1Name = teamNames?.team1 ?? 'Team 1';
+  const team2Name = teamNames?.team2 ?? 'Team 2';
+  const winnerName = winner === 'team1' ? team1Name : team2Name;
 
   return (
     <div
@@ -44,6 +51,8 @@ export function GameEndModal({
           width: '90%',
           textAlign: 'center',
           color: '#1f2937',
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
       >
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>
@@ -55,7 +64,7 @@ export function GameEndModal({
         </h2>
 
         <p style={{ color: '#6b7280', marginBottom: '24px' }}>
-          Team {winner === 'team1' ? '1' : '2'} wins the game!
+          {winnerName} wins the game!
         </p>
 
         <div
@@ -67,13 +76,17 @@ export function GameEndModal({
           }}
         >
           <div>
-            <div style={{ color: TEAM1_COLOR, fontWeight: 600 }}>Team 1</div>
+            <div style={{ color: TEAM1_COLOR, fontWeight: 600 }}>
+              {team1Name}
+            </div>
             <div style={{ fontSize: '32px', fontWeight: 700 }}>
               {scores.team1.score}
             </div>
           </div>
           <div>
-            <div style={{ color: TEAM2_COLOR, fontWeight: 600 }}>Team 2</div>
+            <div style={{ color: TEAM2_COLOR, fontWeight: 600 }}>
+              {team2Name}
+            </div>
             <div style={{ fontSize: '32px', fontWeight: 700 }}>
               {scores.team2.score}
             </div>
@@ -85,8 +98,28 @@ export function GameEndModal({
             <ScoreProgressionChart
               scoreHistory={scoreHistory}
               winningScore={winningScore}
+              teamNames={teamNames}
               compact
             />
+          </div>
+        )}
+
+        {gameSummary && (
+          <div
+            style={{
+              marginBottom: '24px',
+              padding: '16px 20px',
+              backgroundColor: '#f9fafb',
+              borderLeft: '3px solid #d1d5db',
+              borderRadius: '0 8px 8px 0',
+              fontStyle: 'italic',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              color: '#4b5563',
+              textAlign: 'left',
+            }}
+          >
+            {gameSummary}
           </div>
         )}
 

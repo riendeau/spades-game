@@ -64,6 +64,7 @@ export interface ServerToClientEvents {
     finalScores: GameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
   }) => void;
+  'game:summary': (data: { summary: string }) => void;
   error: (data: { code: string; message: string }) => void;
   'reconnect:success': (data: {
     state: ClientGameState;
@@ -120,6 +121,7 @@ export interface ClientGameState {
   currentPlayerPosition: Position;
   winningScore: number;
   disabledBids?: number[];
+  teamNames?: { team1: string; team2: string };
 }
 
 export interface ScoreHistoryEntry {
