@@ -35,6 +35,12 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
+    teamNames?: { team1: string; team2: string };
+  } | null;
+  gameSummary: string | null;
+  teamNameReveal: {
+    players: { nickname: string; team: 'team1' | 'team2' }[];
+    teamNames: { team1: string; team2: string; startButton?: string } | null;
   } | null;
   cardsRevealed: boolean;
   availableSeats: AvailableSeat[] | null;
@@ -62,7 +68,23 @@ interface GameStore {
     winner: 'team1' | 'team2';
     scores: ClientGameState['scores'];
     scoreHistory: ScoreHistoryEntry[];
+    teamNames?: { team1: string; team2: string };
   }) => void;
+  setGameSummary: (summary: string) => void;
+  setTeamNameReveal: (data: {
+    players: { nickname: string; team: 'team1' | 'team2' }[];
+    teamNames: {
+      team1: string;
+      team2: string;
+      startButton?: string;
+    } | null;
+  }) => void;
+  updateTeamNameReveal: (teamNames: {
+    team1: string;
+    team2: string;
+    startButton?: string;
+  }) => void;
+  clearTeamNameReveal: () => void;
   setMyPosition: (position: Position) => void;
   revealCards: () => void;
   setAvailableSeats: (roomId: string, seats: AvailableSeat[]) => void;
@@ -83,6 +105,8 @@ const initialState = {
   scoreHistory: [],
   error: null,
   gameEnded: null,
+  gameSummary: null,
+  teamNameReveal: null,
   cardsRevealed: false,
   availableSeats: null,
   seatSelectRoomId: null,
@@ -123,7 +147,20 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setError: (error) => set({ error }),
 
-  setGameEnded: (data) => set({ gameEnded: data }),
+  setGameEnded: (data) => set({ gameEnded: data, gameSummary: null }),
+
+  setGameSummary: (summary) => set({ gameSummary: summary }),
+
+  setTeamNameReveal: (data) => set({ teamNameReveal: data }),
+
+  updateTeamNameReveal: (teamNames) =>
+    set((state) =>
+      state.teamNameReveal
+        ? { teamNameReveal: { ...state.teamNameReveal, teamNames } }
+        : {}
+    ),
+
+  clearTeamNameReveal: () => set({ teamNameReveal: null }),
 
   setMyPosition: (position) => set({ myPosition: position }),
 

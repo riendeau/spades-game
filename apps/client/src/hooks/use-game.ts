@@ -22,6 +22,8 @@ export function useGame() {
   const roundEffects = useGameStore((s) => s.roundEffects);
   const scoreHistory = useGameStore((s) => s.scoreHistory);
   const gameEnded = useGameStore((s) => s.gameEnded);
+  const gameSummary = useGameStore((s) => s.gameSummary);
+  const teamNameReveal = useGameStore((s) => s.teamNameReveal);
   const error = useGameStore((s) => s.error);
   const availableSeats = useGameStore((s) => s.availableSeats);
   const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
@@ -50,6 +52,22 @@ export function useGame() {
       // resets cardsRevealed to false via setHand).
       if (wasSelectingSeat) {
         setTimeout(() => useGameStore.getState().revealCards(), 0);
+      }
+    });
+
+    socket.on('game:started', () => {
+      const store = useGameStore.getState();
+      const players = store.gameState?.players ?? [];
+      store.setTeamNameReveal({
+        players: players.map((p) => ({ nickname: p.nickname, team: p.team })),
+        teamNames: null,
+      });
+    });
+
+    socket.on('game:team-names', (teamNames) => {
+      const store = useGameStore.getState();
+      if (store.teamNameReveal && !store.teamNameReveal.teamNames) {
+        store.updateTeamNameReveal(teamNames);
       }
     });
 
@@ -86,11 +104,17 @@ export function useGame() {
     });
 
     socket.on('game:ended', ({ winningTeam, finalScores, scoreHistory }) => {
+      const { gameState } = useGameStore.getState();
       useGameStore.getState().setGameEnded({
         winner: winningTeam,
         scores: finalScores,
         scoreHistory,
+        teamNames: gameState?.teamNames,
       });
+    });
+
+    socket.on('game:summary', ({ summary }) => {
+      useGameStore.getState().setGameSummary(summary);
     });
 
     socket.on('reconnect:success', ({ state, hand, scoreHistory }) => {
@@ -133,12 +157,15 @@ export function useGame() {
     return () => {
       socket.off('room:created');
       socket.off('room:joined');
+      socket.off('game:started');
+      socket.off('game:team-names');
       socket.off('game:state-update');
       socket.off('game:cards-dealt');
       socket.off('game:card-played');
       socket.off('game:trick-won');
       socket.off('game:round-end');
       socket.off('game:ended');
+      socket.off('game:summary');
       socket.off('room:seat-changed');
       socket.off('room:seats-available');
       socket.off('room:seat-opened');
@@ -246,8 +273,13 @@ export function useGame() {
   );
 
   // Actions are stable refs — destructure once for the return value
-  const { clearRoundSummary, clearRoundEffects, revealCards, reset } =
-    useGameStore.getState();
+  const {
+    clearRoundSummary,
+    clearRoundEffects,
+    clearTeamNameReveal,
+    revealCards,
+    reset,
+  } = useGameStore.getState();
 
   return {
     connected,
@@ -260,6 +292,9 @@ export function useGame() {
     roundEffects,
     scoreHistory,
     gameEnded,
+    gameSummary,
+    teamNameReveal,
+    clearTeamNameReveal,
     error,
     availableSeats,
     seatSelectRoomId,

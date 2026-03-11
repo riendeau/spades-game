@@ -25,6 +25,9 @@ function AppInner() {
     roundEffects,
     scoreHistory,
     gameEnded,
+    gameSummary,
+    teamNameReveal,
+    clearTeamNameReveal,
     error,
     createRoom,
     joinRoom,
@@ -194,6 +197,8 @@ function AppInner() {
           onBid={makeBid}
           onRevealCards={revealCards}
           onOpenSeat={openSeat}
+          teamNameReveal={teamNameReveal}
+          onDismissTeamNames={clearTeamNameReveal}
         />
 
         {roundEffects.length > 0 && (
@@ -208,6 +213,7 @@ function AppInner() {
           <RoundSummaryModal
             summary={roundSummary}
             scores={gameState.scores}
+            teamNames={gameState.teamNames}
             onClose={clearRoundSummary}
           />
         )}
@@ -219,6 +225,8 @@ function AppInner() {
             scoreHistory={gameEnded.scoreHistory}
             winningScore={gameState.winningScore}
             myTeam={myTeam}
+            teamNames={gameEnded.teamNames}
+            gameSummary={gameSummary}
             onNewGame={() => {
               reset();
               window.location.reload();

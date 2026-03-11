@@ -90,17 +90,6 @@ function PlayerSlot({
         <span style={{ fontSize: '12px', color: '#6b7280' }}>
           {POSITION_LABELS[pos]}
         </span>
-        {player && (
-          <span
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: TEAM_COLORS[player.team],
-            }}
-          >
-            Team {player.team === 'team1' ? '1' : '2'}
-          </span>
-        )}
       </div>
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>
         {player ? (

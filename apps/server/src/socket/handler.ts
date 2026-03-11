@@ -9,6 +9,10 @@ import { validatePlay, validateBid } from '@spades/shared';
 import type { Request } from 'express';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  generateTeamNames,
+  generateGameSummary,
+} from '../ai/claude-service.js';
 import { insertGameResult } from '../db/game-results.js';
 import { roomManager, type Room } from '../rooms/room-manager.js';
 
@@ -259,6 +263,9 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
       io.to(room.id).emit('game:state-update', {
         state: getClientState(room),
       });
+
+      // Generate AI team names (fire-and-forget)
+      void generateTeamNamesForRoom(room, io);
     }
   } else {
     io.to(room.id).emit('game:state-update', {
@@ -486,6 +493,9 @@ function handlePlayCard(
 
           // Record game result (fire-and-forget)
           void recordGameResult(room);
+
+          // Generate AI game summary (fire-and-forget)
+          void generateGameSummaryForRoom(room, effect.winner, io);
         }
       }
 
@@ -768,6 +778,89 @@ async function recordGameResult(room: Room): Promise<void> {
     );
   } catch (err) {
     console.error('[game-result] failed to record:', err);
+  }
+}
+
+async function generateTeamNamesForRoom(
+  room: Room,
+  io: TypedServer
+): Promise<void> {
+  try {
+    const players = room.game.getState().players;
+    const team1Players = players
+      .filter((p) => p.team === 'team1')
+      .map((p) => p.nickname);
+    const team2Players = players
+      .filter((p) => p.team === 'team2')
+      .map((p) => p.nickname);
+
+    const names = await generateTeamNames({
+      team1: team1Players,
+      team2: team2Players,
+    });
+
+    const { startButton, ...teamNames } = names ?? {
+      team1: 'Team 1',
+      team2: 'Team 2',
+    };
+    room.game.setTeamNames(teamNames);
+    io.to(room.id).emit('game:team-names', {
+      ...teamNames,
+      startButton,
+    });
+    io.to(room.id).emit('game:state-update', {
+      state: getClientState(room),
+    });
+  } catch (err) {
+    console.warn('[ai] generateTeamNamesForRoom failed:', err);
+  }
+}
+
+async function generateGameSummaryForRoom(
+  room: Room,
+  winningTeam: 'team1' | 'team2',
+  io: TypedServer
+): Promise<void> {
+  try {
+    const state = room.game.getState();
+    const teamNames = room.game.getTeamNames() ?? {
+      team1: 'Team 1',
+      team2: 'Team 2',
+    };
+
+    const summary = await generateGameSummary({
+      winningTeam,
+      finalScores: {
+        team1: {
+          score: state.scores.team1.score,
+          bags: state.scores.team1.bags,
+        },
+        team2: {
+          score: state.scores.team2.score,
+          bags: state.scores.team2.bags,
+        },
+      },
+      scoreHistory: room.game.getScoreHistory(),
+      roundBids: room.game.getRoundBids().map((rb) => ({
+        roundNumber: rb.roundNumber,
+        position: rb.position,
+        bid: rb.bid,
+        isNil: rb.isNil,
+        isBlindNil: rb.isBlindNil,
+        tricksWon: rb.tricksWon,
+      })),
+      players: state.players.map((p) => ({
+        nickname: p.nickname,
+        position: p.position,
+        team: p.team,
+      })),
+      teamNames,
+    });
+
+    io.to(room.id).emit('game:summary', { summary: summary ?? '' });
+  } catch (err) {
+    console.warn('[ai] generateGameSummaryForRoom failed:', err);
+    io.to(room.id).emit('game:summary', { summary: '' });
   }
 }
 

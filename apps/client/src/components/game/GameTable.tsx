@@ -16,6 +16,7 @@ import { PlayerHand } from './PlayerHand';
 import { ScoreBoard } from './ScoreBoard';
 import { ScoreChartModal } from './ScoreChartModal';
 import { TableFelt, TableWatermark } from './TableFelt';
+import { TeamNameRevealModal } from './TeamNameRevealModal';
 import { TrickArea } from './TrickArea';
 
 interface GameTableProps {
@@ -28,6 +29,11 @@ interface GameTableProps {
   onBid: (bid: number, isNil?: boolean, isBlindNil?: boolean) => void;
   onRevealCards: () => void;
   onOpenSeat?: (playerId: PlayerId) => void;
+  teamNameReveal?: {
+    players: { nickname: string; team: 'team1' | 'team2' }[];
+    teamNames: { team1: string; team2: string; startButton?: string } | null;
+  } | null;
+  onDismissTeamNames?: () => void;
 }
 
 export function GameTable({
@@ -40,6 +46,8 @@ export function GameTable({
   onBid,
   onRevealCards,
   onOpenSeat,
+  teamNameReveal,
+  onDismissTeamNames,
 }: GameTableProps) {
   const [showScoreChart, setShowScoreChart] = useState(false);
   const [isCollecting, setIsCollecting] = useState(false);
@@ -234,6 +242,27 @@ export function GameTable({
             compact={isMobile}
             onOpenSeat={onOpenSeat}
           />
+
+          {teamNameReveal && onDismissTeamNames && (
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                zIndex: 10,
+              }}
+            >
+              <TeamNameRevealModal
+                players={teamNameReveal.players}
+                teamNames={teamNameReveal.teamNames}
+                onClose={onDismissTeamNames}
+              />
+            </div>
+          )}
         </div>
 
         {/* My player name badge — south position on the table */}
