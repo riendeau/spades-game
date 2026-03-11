@@ -135,7 +135,11 @@ export function TeamNameRevealModal({
               </div>
             </div>
 
-            <Button onClick={onClose} size="large">
+            <Button
+              onClick={onClose}
+              size="large"
+              data-testid="team-reveal-dismiss"
+            >
               {teamNames.startButton ?? 'Let\u2019s Go!'}
             </Button>
           </>

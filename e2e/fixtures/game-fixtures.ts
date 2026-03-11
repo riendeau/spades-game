@@ -1,5 +1,6 @@
 import { test as base, type Page, type BrowserContext } from '@playwright/test';
 import { LOBBY_TITLE } from '../../apps/client/src/lobby-branding';
+import { dismissTeamNameReveal } from '../helpers/modal-helpers';
 import { createRoom, joinRoom } from '../helpers/room-helpers';
 
 interface GameFixtures {
@@ -89,6 +90,11 @@ export const test = base.extend<GameFixtures>({
     // All players ready up
     for (const page of players) {
       await page.getByRole('button', { name: 'Ready', exact: true }).click();
+    }
+
+    // Dismiss the team name reveal modal on all players
+    for (const page of players) {
+      await dismissTeamNameReveal(page);
     }
 
     // Wait for bidding phase to appear on any page
