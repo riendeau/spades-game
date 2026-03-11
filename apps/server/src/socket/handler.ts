@@ -857,11 +857,10 @@ async function generateGameSummaryForRoom(
       teamNames,
     });
 
-    if (summary) {
-      io.to(room.id).emit('game:summary', { summary });
-    }
+    io.to(room.id).emit('game:summary', { summary: summary ?? '' });
   } catch (err) {
     console.warn('[ai] generateGameSummaryForRoom failed:', err);
+    io.to(room.id).emit('game:summary', { summary: '' });
   }
 }
 
