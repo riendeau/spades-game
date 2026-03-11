@@ -38,113 +38,101 @@ export function TeamNameRevealModal({
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
+        backgroundColor: '#1a1a2e',
+        borderRadius: '16px',
+        padding: '40px 48px',
+        maxWidth: '460px',
+        width: '90%',
+        textAlign: 'center',
+        color: '#fff',
       }}
     >
-      <div
-        style={{
-          backgroundColor: '#1a1a2e',
-          borderRadius: '16px',
-          padding: '40px 48px',
-          maxWidth: '460px',
-          width: '90%',
-          textAlign: 'center',
-          color: '#fff',
-        }}
-      >
-        {!teamNames ? (
-          <div style={{ padding: '24px 0' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                border: '3px solid rgba(255,255,255,0.15)',
-                borderTopColor: '#fff',
-                borderRadius: '50%',
-                animation: 'team-reveal-spin 0.8s linear infinite',
-                margin: '0 auto 20px',
-              }}
-            />
-            <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.7)' }}>
-              Setting up game...
-            </div>
-            <style>{`@keyframes team-reveal-spin { to { transform: rotate(360deg) } }`}</style>
+      {!teamNames ? (
+        <div style={{ padding: '24px 0' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              border: '3px solid rgba(255,255,255,0.15)',
+              borderTopColor: '#fff',
+              borderRadius: '50%',
+              animation: 'team-reveal-spin 0.8s linear infinite',
+              margin: '0 auto 20px',
+            }}
+          />
+          <div style={{ fontSize: '18px', color: 'rgba(255,255,255,0.7)' }}>
+            Setting up game...
           </div>
-        ) : (
-          <>
-            <div style={{ marginBottom: '32px' }}>
-              <div
-                style={{
-                  fontSize: '32px',
-                  fontWeight: 800,
-                  color: TEAM1_COLOR,
-                  lineHeight: 1.2,
-                }}
-              >
-                {teamNames.team1}
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: 'rgba(255,255,255,0.5)',
-                  marginTop: '4px',
-                }}
-              >
-                {team1Players}
-              </div>
-            </div>
-
+          <style>{`@keyframes team-reveal-spin { to { transform: rotate(360deg) } }`}</style>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: '32px' }}>
             <div
               style={{
-                fontSize: '16px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.3)',
-                letterSpacing: '4px',
-                textTransform: 'uppercase',
-                marginBottom: '32px',
+                fontSize: '32px',
+                fontWeight: 800,
+                color: TEAM1_COLOR,
+                lineHeight: 1.2,
               }}
             >
-              vs
+              {teamNames.team1}
             </div>
-
-            <div style={{ marginBottom: '36px' }}>
-              <div
-                style={{
-                  fontSize: '32px',
-                  fontWeight: 800,
-                  color: TEAM2_COLOR,
-                  lineHeight: 1.2,
-                }}
-              >
-                {teamNames.team2}
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: 'rgba(255,255,255,0.5)',
-                  marginTop: '4px',
-                }}
-              >
-                {team2Players}
-              </div>
-            </div>
-
-            <Button
-              onClick={onClose}
-              size="large"
-              data-testid="team-reveal-dismiss"
+            <div
+              style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.5)',
+                marginTop: '4px',
+              }}
             >
-              {teamNames.startButton ?? 'Let\u2019s Go!'}
-            </Button>
-          </>
-        )}
-      </div>
+              {team1Players}
+            </div>
+          </div>
+
+          <div
+            style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              color: 'rgba(255,255,255,0.3)',
+              letterSpacing: '4px',
+              textTransform: 'uppercase',
+              marginBottom: '32px',
+            }}
+          >
+            vs
+          </div>
+
+          <div style={{ marginBottom: '36px' }}>
+            <div
+              style={{
+                fontSize: '32px',
+                fontWeight: 800,
+                color: TEAM2_COLOR,
+                lineHeight: 1.2,
+              }}
+            >
+              {teamNames.team2}
+            </div>
+            <div
+              style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.5)',
+                marginTop: '4px',
+              }}
+            >
+              {team2Players}
+            </div>
+          </div>
+
+          <Button
+            onClick={onClose}
+            size="large"
+            data-testid="team-reveal-dismiss"
+          >
+            {teamNames.startButton ?? 'Let\u2019s Go!'}
+          </Button>
+        </>
+      )}
     </div>
   );
 }

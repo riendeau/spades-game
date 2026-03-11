@@ -55,8 +55,12 @@ Team names: 2-4 words max. Button text: 2-4 words max.`,
       ],
     });
 
-    const text =
+    const raw =
       response.content[0].type === 'text' ? response.content[0].text : '';
+    // Strip markdown code fences the model sometimes wraps around JSON
+    const text = raw
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/, '');
     const parsed = JSON.parse(text) as TeamNamesResult;
 
     if (

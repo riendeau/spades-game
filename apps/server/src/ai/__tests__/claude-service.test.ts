@@ -97,6 +97,29 @@ describe('generateTeamNames', () => {
     expect(result).toBeNull();
   });
 
+  it('strips markdown code fences from JSON response', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'text',
+          text: '```json\n{"team1":"Fenced Aces","team2":"Fenced Chumps","startButton":"Go!"}\n```',
+        },
+      ],
+    });
+
+    const result = await generateTeamNames({
+      team1: ['Alice', 'Bob'],
+      team2: ['Charlie', 'Dana'],
+    });
+
+    expect(result).toEqual({
+      team1: 'Fenced Aces',
+      team2: 'Fenced Chumps',
+      startButton: 'Go!',
+    });
+  });
+
   it('truncates long team names', async () => {
     process.env.ANTHROPIC_API_KEY = 'test-key';
     const longName = 'A'.repeat(60);

@@ -5,7 +5,6 @@ import { EffectsOverlay } from './components/effects/EffectsOverlay';
 import { GameEndModal } from './components/game/GameEndModal';
 import { GameTable } from './components/game/GameTable';
 import { RoundSummaryModal } from './components/game/RoundSummaryModal';
-import { TeamNameRevealModal } from './components/game/TeamNameRevealModal';
 import { JoinRoom } from './components/lobby/JoinRoom';
 import { SeatSelection } from './components/lobby/SeatSelection';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
@@ -198,15 +197,9 @@ function AppInner() {
           onBid={makeBid}
           onRevealCards={revealCards}
           onOpenSeat={openSeat}
+          teamNameReveal={teamNameReveal}
+          onDismissTeamNames={clearTeamNameReveal}
         />
-
-        {teamNameReveal && (
-          <TeamNameRevealModal
-            players={teamNameReveal.players}
-            teamNames={teamNameReveal.teamNames}
-            onClose={clearTeamNameReveal}
-          />
-        )}
 
         {roundEffects.length > 0 && (
           <EffectsOverlay
