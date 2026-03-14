@@ -34,12 +34,7 @@ This is a real-time multiplayer Spades card game using a pnpm monorepo with Type
 
 **Server-Authoritative State**: All game logic runs on the server. Clients send intents (bid, play card), server validates and broadcasts state updates. Player hands are never sent to other players.
 
-**Hand Tracking** (`apps/server/src/game/game-instance.ts`): Player hands live in two places — `GameState.players[].hand` (the state machine's source of truth) and `GameInstance.playerHands` (a server-side `Map` cache used to validate plays and emit hands to individual clients via `game:cards-dealt`). The cache is updated at exactly two points:
-
-1. **Dealing** — `dispatch()` reads the `DEAL_HANDS` side effect from `processAction()` and populates `playerHands` for all four players.
-2. **Playing a card** — `playCard()` filters the played card out of the player's cached hand after `dispatch()` confirms the play.
-
-The state machine (`processAction`) also tracks hands in `player.hand`, but `toClientState()` only exposes `cardCount` (not the cards themselves) to prevent cheating. The `playerHands` cache is what `getPlayerHand()` returns and what `handler.ts` uses to emit each player's private hand.
+**Hand Tracking** (`apps/server/src/game/game-instance.ts`): The state machine is the single source of truth for player hands via `GameState.players[].hand`. `getPlayerHand()` reads directly from the state. `toClientState()` only exposes `cardCount` (not the cards themselves) to prevent cheating. Private hands are sent to individual clients via the `game:cards-dealt` socket event.
 
 **State Machine** (`packages/shared/src/state-machine/game-machine.ts`): Game phases flow: `waiting` → `ready` → `dealing` → `bidding` → `playing` ↔ `trick-end` → `round-end` → `game-end`. All state transitions go through `processAction()`.
 

@@ -28,7 +28,6 @@ export interface RoundBidData {
 export class GameInstance {
   private state: GameState;
   private config: GameConfig;
-  private playerHands = new Map<PlayerId, Card[]>();
   private modState = new Map<string, unknown>();
   private teamNames: { team1: string; team2: string } | null = null;
   private roundEffects: RoundEffect[] = [];
@@ -54,7 +53,7 @@ export class GameInstance {
   }
 
   getPlayerHand(playerId: PlayerId): Card[] {
-    return this.playerHands.get(playerId) ?? [];
+    return this.state.players.find((p) => p.id === playerId)?.hand ?? [];
   }
 
   getModState(modId: string): unknown {
@@ -90,17 +89,6 @@ export class GameInstance {
 
     if (result.valid) {
       this.state = result.state;
-
-      // Update player hands cache from side effects
-      if (result.sideEffects) {
-        for (const effect of result.sideEffects) {
-          if (effect.type === 'DEAL_HANDS') {
-            for (const [playerId, hand] of Object.entries(effect.hands)) {
-              this.playerHands.set(playerId, hand);
-            }
-          }
-        }
-      }
     }
 
     return result;
@@ -241,31 +229,11 @@ export class GameInstance {
   }
 
   playCard(playerId: PlayerId, card: Card): ActionResult {
-    // Validate card is in hand
-    const hand = this.playerHands.get(playerId);
-    if (!hand?.some((c) => c.suit === card.suit && c.rank === card.rank)) {
-      return {
-        state: this.state,
-        valid: false,
-        error: 'Card not in hand',
-      };
-    }
-
-    const result = this.dispatch({
+    return this.dispatch({
       type: 'PLAY_CARD',
       playerId,
       card,
     });
-
-    if (result.valid) {
-      // Update local hand cache
-      const newHand = hand.filter(
-        (c) => !(c.suit === card.suit && c.rank === card.rank)
-      );
-      this.playerHands.set(playerId, newHand);
-    }
-
-    return result;
   }
 
   // Dispatches COLLECT_TRICK (and END_ROUND if the round is over). Must only
