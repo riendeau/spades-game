@@ -343,7 +343,7 @@ export function GameTable({
             cards={myHand}
             onPlayCard={onPlayCard}
             isMyTurn={isPlaying && isMyTurn && !isCollecting}
-            faceDown={isBidding && !cardsRevealed}
+            faceDown={!cardsRevealed}
             playableCards={playableCards}
             compact={isMobile}
           />
