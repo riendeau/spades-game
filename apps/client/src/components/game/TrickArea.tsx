@@ -5,7 +5,8 @@ import type {
 } from '@spades/shared';
 import React from 'react';
 import { useGameStore } from '../../store/game-store';
-import { Card } from '../ui/Card';
+import { Card, CARD_WIDTH, CARD_HEIGHT } from '../ui/Card';
+import { detectSluff, type SluffInfo } from './sluff-detection';
 
 const slideKeyframes = `
 @keyframes slide-from-south {
@@ -100,9 +101,122 @@ const getCollectOffset = (
   return { x, y, rot };
 };
 
+// How far from the target toward the sluffer to place the sluff card (0=on target, 1=at sluffer)
+const SLUFF_FACTOR = 0.45;
+
+// True card-center offsets from container center. getSlotOffset returns edge-based
+// positions for west/east (card left/right edge) and top-edge for south/north;
+// this corrects to actual card centers so interpolation is direction-independent.
+const getTrueCenterOffset = (
+  relPos: Position,
+  containerWidth: number,
+  offset: number,
+  gap: number,
+  cardWidth: number,
+  cardHeight: number
+): { x: number; y: number } => {
+  const slot = getSlotOffset(relPos, containerWidth, offset, gap);
+  const corrections: Record<Position, { dx: number; dy: number }> = {
+    0: { dx: 0, dy: cardHeight / 2 },
+    1: { dx: cardWidth / 2, dy: 0 },
+    2: { dx: 0, dy: -cardHeight / 2 },
+    3: { dx: -cardWidth / 2, dy: 0 },
+  };
+  const c = corrections[relPos];
+  return { x: slot.x + c.dx, y: slot.y + c.dy };
+};
+
+// Position a sluffed card partway from the target card toward the sluffer,
+// so roughly half the card remains visible sticking out from under the target.
+const getSluffPositionStyle = (
+  slufferRelPos: Position,
+  targetRelPos: Position,
+  containerWidth: number,
+  offset: number,
+  gap: number,
+  cardWidth: number,
+  cardHeight: number
+): React.CSSProperties => {
+  const target = getTrueCenterOffset(
+    targetRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const sluffer = getTrueCenterOffset(
+    slufferRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const x = target.x + (sluffer.x - target.x) * SLUFF_FACTOR;
+  const y = target.y + (sluffer.y - target.y) * SLUFF_FACTOR;
+  return {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+  };
+};
+
+// Collect offset for a sluffed card: starts from the sluff position, not the normal slot
+const getSluffCollectOffset = (
+  slufferRelPos: Position,
+  targetRelPos: Position,
+  winnerRelPos: Position,
+  containerWidth: number,
+  offset: number,
+  gap: number,
+  cardWidth: number,
+  cardHeight: number,
+  slideDist: number,
+  slideDistX: number
+): { x: number; y: number; rot: number } => {
+  const target = getTrueCenterOffset(
+    targetRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const sluffer = getTrueCenterOffset(
+    slufferRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const cardPos = {
+    x: target.x + (sluffer.x - target.x) * SLUFF_FACTOR,
+    y: target.y + (sluffer.y - target.y) * SLUFF_FACTOR,
+  };
+  const winnerCenter = getTrueCenterOffset(
+    winnerRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const winnerEntry = getSlideInOffset(winnerRelPos, slideDist, slideDistX);
+
+  const x = winnerCenter.x + winnerEntry.x - cardPos.x;
+  const y = winnerCenter.y + winnerEntry.y - cardPos.y;
+  const rot = Math.abs(x) > Math.abs(y) ? (x > 0 ? 12 : -12) : y > 0 ? 8 : -8;
+
+  return { x, y, rot };
+};
+
 interface CollectingState {
   plays: { playerId: string; card: CardType }[];
   rotations: Map<string, { start: number; end: number }>;
+  sluffs: Map<string, SluffInfo>;
   winnerRelPos: Position;
 }
 
@@ -127,6 +241,7 @@ export function TrickArea({
   const rotationsRef = React.useRef(
     new Map<string, { start: number; end: number }>()
   );
+  const sluffInfoRef = React.useRef(new Map<string, SluffInfo>());
   const [, rerender] = React.useState(0);
 
   // Collection animation state
@@ -166,6 +281,7 @@ export function TrickArea({
         setCollecting({
           plays: prevPlays.map((p) => ({ playerId: p.playerId, card: p.card })),
           rotations: new Map(rotationsRef.current),
+          sluffs: new Map(sluffInfoRef.current),
           winnerRelPos,
         });
         onCollectingChange?.(true);
@@ -185,24 +301,35 @@ export function TrickArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plays.length, lastTrickWinner]);
 
-  // Rotation generation effect
+  // Rotation generation effect (also detects sluffs for new plays)
   React.useLayoutEffect(() => {
     const currentIds = new Set(plays.map((p) => p.playerId));
     for (const key of rotationsRef.current.keys()) {
       if (!currentIds.has(key)) rotationsRef.current.delete(key);
     }
+    for (const key of sluffInfoRef.current.keys()) {
+      if (!currentIds.has(key)) sluffInfoRef.current.delete(key);
+    }
 
     let added = false;
-    for (const play of plays) {
+    for (let i = 0; i < plays.length; i++) {
+      const play = plays[i];
       if (rotationsRef.current.has(play.playerId)) continue;
-      const player = gameState.players.find((p) => p.id === play.playerId);
-      if (!player) continue;
-      const relPos = ((player.position - myPosition + 4) % 4) as Position;
-      const sign = relPos === 0 || relPos === 3 ? 1 : -1;
-      rotationsRef.current.set(play.playerId, {
-        start: sign * (12 + Math.random() * 348),
-        end: (Math.random() - 0.5) * 8,
-      });
+
+      const sluff = detectSluff(plays, i, gameState);
+      if (sluff) {
+        sluffInfoRef.current.set(play.playerId, sluff);
+        rotationsRef.current.set(play.playerId, { start: 0, end: 0 });
+      } else {
+        const player = gameState.players.find((p) => p.id === play.playerId);
+        if (!player) continue;
+        const relPos = ((player.position - myPosition + 4) % 4) as Position;
+        const sign = relPos === 0 || relPos === 3 ? 1 : -1;
+        rotationsRef.current.set(play.playerId, {
+          start: sign * (12 + Math.random() * 348),
+          end: (Math.random() - 0.5) * 8,
+        });
+      }
       added = true;
     }
     if (added) rerender((c) => c + 1);
@@ -217,6 +344,8 @@ export function TrickArea({
   const gap = compact ? 4 : 10;
   const slideDist = compact ? 80 : 150;
   const slideDistX = compact ? 120 : 220;
+  const cardWidth = compact ? CARD_WIDTH.small : CARD_WIDTH.normal;
+  const cardHeight = compact ? CARD_HEIGHT.small : CARD_HEIGHT.normal;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -259,7 +388,7 @@ export function TrickArea({
       }
     >
       <style>{slideKeyframes}</style>
-      {displayPlays.map((play) => {
+      {displayPlays.map((play, playIndex) => {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
 
@@ -269,33 +398,73 @@ export function TrickArea({
           ? (collecting.rotations.get(play.playerId) ?? { start: 0, end: 0 })
           : (rotationsRef.current.get(play.playerId) ?? { start: 0, end: 0 });
 
+        const sluffData = collecting
+          ? collecting.sluffs.get(play.playerId)
+          : sluffInfoRef.current.get(play.playerId);
+        const isSluff = !!sluffData;
+
+        // Resolve target player's relative position for sluff positioning
+        let targetRelPos: Position | null = null;
+        if (isSluff) {
+          const targetPlayer = gameState.players.find(
+            (p) => p.id === sluffData.targetPlayerId
+          );
+          if (targetPlayer) {
+            targetRelPos = getRelativePosition(targetPlayer.position);
+          }
+        }
+
+        const positionStyle =
+          isSluff && targetRelPos !== null
+            ? getSluffPositionStyle(
+                relPos,
+                targetRelPos,
+                width,
+                offset,
+                gap,
+                cardWidth,
+                cardHeight
+              )
+            : { position: 'absolute' as const, ...getPositionStyle(relPos) };
+
+        const zIndex = isSluff ? 0 : playIndex + 1;
+        const animDuration = isSluff && !collecting ? '2000ms' : '350ms';
+
         return (
-          <div
-            key={play.playerId}
-            style={{
-              position: 'absolute',
-              ...getPositionStyle(relPos),
-            }}
-          >
+          <div key={play.playerId} style={{ ...positionStyle, zIndex }}>
             <div
               style={
                 {
                   animation: collecting
                     ? 'collect 400ms ease-in forwards'
-                    : `${getAnimationName(relPos)} 350ms ease-out forwards`,
+                    : `${getAnimationName(relPos)} ${animDuration} ease-out forwards`,
                   '--rot-start': `${rot.start}deg`,
                   '--rot-end': `${rot.end}deg`,
                   ...(collecting
                     ? (() => {
-                        const c = getCollectOffset(
-                          relPos,
-                          collecting.winnerRelPos,
-                          width,
-                          offset,
-                          gap,
-                          slideDist,
-                          slideDistX
-                        );
+                        const c =
+                          isSluff && targetRelPos !== null
+                            ? getSluffCollectOffset(
+                                relPos,
+                                targetRelPos,
+                                collecting.winnerRelPos,
+                                width,
+                                offset,
+                                gap,
+                                cardWidth,
+                                cardHeight,
+                                slideDist,
+                                slideDistX
+                              )
+                            : getCollectOffset(
+                                relPos,
+                                collecting.winnerRelPos,
+                                width,
+                                offset,
+                                gap,
+                                slideDist,
+                                slideDistX
+                              );
                         return {
                           '--collect-x': `${c.x}px`,
                           '--collect-y': `${c.y}px`,
