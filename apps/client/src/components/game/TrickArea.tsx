@@ -5,7 +5,7 @@ import type {
 } from '@spades/shared';
 import React from 'react';
 import { useGameStore } from '../../store/game-store';
-import { Card } from '../ui/Card';
+import { Card, CARD_WIDTH, CARD_HEIGHT } from '../ui/Card';
 import { detectSluff, type SluffInfo } from './sluff-detection';
 
 const slideKeyframes = `
@@ -344,8 +344,8 @@ export function TrickArea({
   const gap = compact ? 4 : 10;
   const slideDist = compact ? 80 : 150;
   const slideDistX = compact ? 120 : 220;
-  const cardWidth = compact ? 50 : 110;
-  const cardHeight = compact ? 75 : 160;
+  const cardWidth = compact ? CARD_WIDTH.small : CARD_WIDTH.normal;
+  const cardHeight = compact ? CARD_HEIGHT.small : CARD_HEIGHT.normal;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
