@@ -270,10 +270,10 @@ Completed games are recorded in the `game_results` table. Player identity is bri
 
 ## Dependency Management
 
-### Toolchain Versions (as of 2026-02)
+### Toolchain Versions (as of 2026-03)
 
 - **ESLint 10**: Project uses ESLint 10 with flat config (`eslint.config.js`). Three plugins (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-import`) haven't declared ESLint 10 peer support yet — they're wrapped with `fixupPluginRules()` from `@eslint/compat` to shim removed APIs like `context.getFilename()`. `eslint-plugin-react-refresh` explicitly declares ESLint 10 support as of v0.5.1 and is used directly without `fixupPluginRules()`.
-- **Vite 7 / Vitest 4**: Client uses Vite 7. Use Vitest 4 across all packages. Vite 7 requires Node `^20.19.0 || >=22.12.0` — the project `engines` field reflects this. (Historical note: Vitest 2 used to re-install Vite 5 as a transitive dep; that concern is no longer relevant.)
+- **Vite 8 / Vitest 4**: Client uses Vite 8 (upgraded from Vite 7). Vite 8 uses Rolldown instead of Rollup as its production bundler. Use Vitest 4 across all packages. `@vitejs/plugin-react` v6 dropped built-in Babel support (Vite 8 handles React Refresh via Oxc natively) — this project doesn't use Babel options so no impact. Vite 8 requires Node `>=20.19.0 || >=22.12.0`.
 - **pnpm.overrides**: `minimatch@3` → `3.1.4` and `minimatch@10` → `10.2.3` to resolve Dependabot ReDoS alerts. Both are within the semver ranges their consumers (`eslint-plugin-import`, `eslint-plugin-react`, `eslint`, `nodemon`) already declare, so no compatibility risk. These can be removed once the upstream packages ship with patched minimatch versions.
 - **pnpm.onlyBuiltDependencies**: `esbuild` is listed here so its postinstall script (which downloads the native binary) runs when the version changes.
 
