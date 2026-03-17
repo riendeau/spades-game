@@ -101,7 +101,8 @@ const getCollectOffset = (
   return { x, y, rot };
 };
 
-// Position a sluffed card halfway between its target card and the sluffer's normal slot
+// Position a sluffed card 75% of the way from the target card toward the sluffer's
+// normal slot, so half the card remains visible sticking out from under the target.
 const getSluffPositionStyle = (
   slufferRelPos: Position,
   targetRelPos: Position,
@@ -111,8 +112,8 @@ const getSluffPositionStyle = (
 ): React.CSSProperties => {
   const target = getSlotOffset(targetRelPos, width, offset, gap);
   const sluffer = getSlotOffset(slufferRelPos, width, offset, gap);
-  const x = target.x + (sluffer.x - target.x) * 0.5;
-  const y = target.y + (sluffer.y - target.y) * 0.5;
+  const x = target.x + (sluffer.x - target.x) * 0.75;
+  const y = target.y + (sluffer.y - target.y) * 0.75;
   return {
     position: 'absolute',
     top: '50%',
@@ -135,8 +136,8 @@ const getSluffCollectOffset = (
   const target = getSlotOffset(targetRelPos, width, offset, gap);
   const sluffer = getSlotOffset(slufferRelPos, width, offset, gap);
   const cardPos = {
-    x: target.x + (sluffer.x - target.x) * 0.5,
-    y: target.y + (sluffer.y - target.y) * 0.5,
+    x: target.x + (sluffer.x - target.x) * 0.75,
+    y: target.y + (sluffer.y - target.y) * 0.75,
   };
   const winnerSlot = getSlotOffset(winnerRelPos, width, offset, gap);
   const winnerEntry = getSlideInOffset(winnerRelPos, slideDist, slideDistX);
@@ -353,7 +354,7 @@ export function TrickArea({
             : { position: 'absolute' as const, ...getPositionStyle(relPos) };
 
         const zIndex = isSluff ? 0 : playIndex + 1;
-        const animDuration = isSluff && !collecting ? '700ms' : '350ms';
+        const animDuration = isSluff && !collecting ? '1400ms' : '350ms';
 
         return (
           <div key={play.playerId} style={{ ...positionStyle, zIndex }}>
