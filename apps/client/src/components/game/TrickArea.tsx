@@ -6,6 +6,7 @@ import type {
 import React from 'react';
 import { useGameStore } from '../../store/game-store';
 import { Card } from '../ui/Card';
+import { detectSluff, type SluffInfo } from './sluff-detection';
 
 const slideKeyframes = `
 @keyframes slide-from-south {
@@ -100,9 +101,57 @@ const getCollectOffset = (
   return { x, y, rot };
 };
 
+// Position a sluffed card halfway between its target card and the sluffer's normal slot
+const getSluffPositionStyle = (
+  slufferRelPos: Position,
+  targetRelPos: Position,
+  width: number,
+  gap: number,
+  offset: number
+): React.CSSProperties => {
+  const target = getSlotOffset(targetRelPos, width, offset, gap);
+  const sluffer = getSlotOffset(slufferRelPos, width, offset, gap);
+  const x = target.x + (sluffer.x - target.x) * 0.5;
+  const y = target.y + (sluffer.y - target.y) * 0.5;
+  return {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+  };
+};
+
+// Collect offset for a sluffed card: starts from the sluff midpoint, not the normal slot
+const getSluffCollectOffset = (
+  slufferRelPos: Position,
+  targetRelPos: Position,
+  winnerRelPos: Position,
+  width: number,
+  offset: number,
+  gap: number,
+  slideDist: number,
+  slideDistX: number
+): { x: number; y: number; rot: number } => {
+  const target = getSlotOffset(targetRelPos, width, offset, gap);
+  const sluffer = getSlotOffset(slufferRelPos, width, offset, gap);
+  const cardPos = {
+    x: target.x + (sluffer.x - target.x) * 0.5,
+    y: target.y + (sluffer.y - target.y) * 0.5,
+  };
+  const winnerSlot = getSlotOffset(winnerRelPos, width, offset, gap);
+  const winnerEntry = getSlideInOffset(winnerRelPos, slideDist, slideDistX);
+
+  const x = winnerSlot.x + winnerEntry.x - cardPos.x;
+  const y = winnerSlot.y + winnerEntry.y - cardPos.y;
+  const rot = Math.abs(x) > Math.abs(y) ? (x > 0 ? 12 : -12) : y > 0 ? 8 : -8;
+
+  return { x, y, rot };
+};
+
 interface CollectingState {
   plays: { playerId: string; card: CardType }[];
   rotations: Map<string, { start: number; end: number }>;
+  sluffs: Map<string, SluffInfo>;
   winnerRelPos: Position;
 }
 
@@ -127,6 +176,7 @@ export function TrickArea({
   const rotationsRef = React.useRef(
     new Map<string, { start: number; end: number }>()
   );
+  const sluffInfoRef = React.useRef(new Map<string, SluffInfo>());
   const [, rerender] = React.useState(0);
 
   // Collection animation state
@@ -166,6 +216,7 @@ export function TrickArea({
         setCollecting({
           plays: prevPlays.map((p) => ({ playerId: p.playerId, card: p.card })),
           rotations: new Map(rotationsRef.current),
+          sluffs: new Map(sluffInfoRef.current),
           winnerRelPos,
         });
         onCollectingChange?.(true);
@@ -185,24 +236,35 @@ export function TrickArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plays.length, lastTrickWinner]);
 
-  // Rotation generation effect
+  // Rotation generation effect (also detects sluffs for new plays)
   React.useLayoutEffect(() => {
     const currentIds = new Set(plays.map((p) => p.playerId));
     for (const key of rotationsRef.current.keys()) {
       if (!currentIds.has(key)) rotationsRef.current.delete(key);
     }
+    for (const key of sluffInfoRef.current.keys()) {
+      if (!currentIds.has(key)) sluffInfoRef.current.delete(key);
+    }
 
     let added = false;
-    for (const play of plays) {
+    for (let i = 0; i < plays.length; i++) {
+      const play = plays[i];
       if (rotationsRef.current.has(play.playerId)) continue;
-      const player = gameState.players.find((p) => p.id === play.playerId);
-      if (!player) continue;
-      const relPos = ((player.position - myPosition + 4) % 4) as Position;
-      const sign = relPos === 0 || relPos === 3 ? 1 : -1;
-      rotationsRef.current.set(play.playerId, {
-        start: sign * (12 + Math.random() * 348),
-        end: (Math.random() - 0.5) * 8,
-      });
+
+      const sluff = detectSluff(plays, i, gameState);
+      if (sluff) {
+        sluffInfoRef.current.set(play.playerId, sluff);
+        rotationsRef.current.set(play.playerId, { start: 0, end: 0 });
+      } else {
+        const player = gameState.players.find((p) => p.id === play.playerId);
+        if (!player) continue;
+        const relPos = ((player.position - myPosition + 4) % 4) as Position;
+        const sign = relPos === 0 || relPos === 3 ? 1 : -1;
+        rotationsRef.current.set(play.playerId, {
+          start: sign * (12 + Math.random() * 348),
+          end: (Math.random() - 0.5) * 8,
+        });
+      }
       added = true;
     }
     if (added) rerender((c) => c + 1);
@@ -259,7 +321,7 @@ export function TrickArea({
       }
     >
       <style>{slideKeyframes}</style>
-      {displayPlays.map((play) => {
+      {displayPlays.map((play, playIndex) => {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) return null;
 
@@ -269,33 +331,63 @@ export function TrickArea({
           ? (collecting.rotations.get(play.playerId) ?? { start: 0, end: 0 })
           : (rotationsRef.current.get(play.playerId) ?? { start: 0, end: 0 });
 
+        const sluffData = collecting
+          ? collecting.sluffs.get(play.playerId)
+          : sluffInfoRef.current.get(play.playerId);
+        const isSluff = !!sluffData;
+
+        // Resolve target player's relative position for sluff positioning
+        let targetRelPos: Position | null = null;
+        if (isSluff) {
+          const targetPlayer = gameState.players.find(
+            (p) => p.id === sluffData.targetPlayerId
+          );
+          if (targetPlayer) {
+            targetRelPos = getRelativePosition(targetPlayer.position);
+          }
+        }
+
+        const positionStyle =
+          isSluff && targetRelPos !== null
+            ? getSluffPositionStyle(relPos, targetRelPos, width, gap, offset)
+            : { position: 'absolute' as const, ...getPositionStyle(relPos) };
+
+        const zIndex = isSluff ? 0 : playIndex + 1;
+        const animDuration = isSluff && !collecting ? '700ms' : '350ms';
+
         return (
-          <div
-            key={play.playerId}
-            style={{
-              position: 'absolute',
-              ...getPositionStyle(relPos),
-            }}
-          >
+          <div key={play.playerId} style={{ ...positionStyle, zIndex }}>
             <div
               style={
                 {
                   animation: collecting
                     ? 'collect 400ms ease-in forwards'
-                    : `${getAnimationName(relPos)} 350ms ease-out forwards`,
+                    : `${getAnimationName(relPos)} ${animDuration} ease-out forwards`,
                   '--rot-start': `${rot.start}deg`,
                   '--rot-end': `${rot.end}deg`,
                   ...(collecting
                     ? (() => {
-                        const c = getCollectOffset(
-                          relPos,
-                          collecting.winnerRelPos,
-                          width,
-                          offset,
-                          gap,
-                          slideDist,
-                          slideDistX
-                        );
+                        const c =
+                          isSluff && targetRelPos !== null
+                            ? getSluffCollectOffset(
+                                relPos,
+                                targetRelPos,
+                                collecting.winnerRelPos,
+                                width,
+                                offset,
+                                gap,
+                                slideDist,
+                                slideDistX
+                              )
+                            : getCollectOffset(
+                                relPos,
+                                collecting.winnerRelPos,
+                                width,
+                                offset,
+                                gap,
+                                slideDist,
+                                slideDistX
+                              );
                         return {
                           '--collect-x': `${c.x}px`,
                           '--collect-y': `${c.y}px`,
