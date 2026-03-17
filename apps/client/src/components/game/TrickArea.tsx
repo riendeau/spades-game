@@ -101,19 +101,60 @@ const getCollectOffset = (
   return { x, y, rot };
 };
 
-// Position a sluffed card 75% of the way from the target card toward the sluffer's
-// normal slot, so half the card remains visible sticking out from under the target.
+// How far from the target toward the sluffer to place the sluff card (0=on target, 1=at sluffer)
+const SLUFF_FACTOR = 0.45;
+
+// True card-center offsets from container center. getSlotOffset returns edge-based
+// positions for west/east (card left/right edge) and top-edge for south/north;
+// this corrects to actual card centers so interpolation is direction-independent.
+const getTrueCenterOffset = (
+  relPos: Position,
+  containerWidth: number,
+  offset: number,
+  gap: number,
+  cardWidth: number,
+  cardHeight: number
+): { x: number; y: number } => {
+  const slot = getSlotOffset(relPos, containerWidth, offset, gap);
+  const corrections: Record<Position, { dx: number; dy: number }> = {
+    0: { dx: 0, dy: cardHeight / 2 },
+    1: { dx: cardWidth / 2, dy: 0 },
+    2: { dx: 0, dy: -cardHeight / 2 },
+    3: { dx: -cardWidth / 2, dy: 0 },
+  };
+  const c = corrections[relPos];
+  return { x: slot.x + c.dx, y: slot.y + c.dy };
+};
+
+// Position a sluffed card partway from the target card toward the sluffer,
+// so roughly half the card remains visible sticking out from under the target.
 const getSluffPositionStyle = (
   slufferRelPos: Position,
   targetRelPos: Position,
-  width: number,
+  containerWidth: number,
+  offset: number,
   gap: number,
-  offset: number
+  cardWidth: number,
+  cardHeight: number
 ): React.CSSProperties => {
-  const target = getSlotOffset(targetRelPos, width, offset, gap);
-  const sluffer = getSlotOffset(slufferRelPos, width, offset, gap);
-  const x = target.x + (sluffer.x - target.x) * 0.75;
-  const y = target.y + (sluffer.y - target.y) * 0.75;
+  const target = getTrueCenterOffset(
+    targetRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const sluffer = getTrueCenterOffset(
+    slufferRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const x = target.x + (sluffer.x - target.x) * SLUFF_FACTOR;
+  const y = target.y + (sluffer.y - target.y) * SLUFF_FACTOR;
   return {
     position: 'absolute',
     top: '50%',
@@ -122,28 +163,51 @@ const getSluffPositionStyle = (
   };
 };
 
-// Collect offset for a sluffed card: starts from the sluff midpoint, not the normal slot
+// Collect offset for a sluffed card: starts from the sluff position, not the normal slot
 const getSluffCollectOffset = (
   slufferRelPos: Position,
   targetRelPos: Position,
   winnerRelPos: Position,
-  width: number,
+  containerWidth: number,
   offset: number,
   gap: number,
+  cardWidth: number,
+  cardHeight: number,
   slideDist: number,
   slideDistX: number
 ): { x: number; y: number; rot: number } => {
-  const target = getSlotOffset(targetRelPos, width, offset, gap);
-  const sluffer = getSlotOffset(slufferRelPos, width, offset, gap);
+  const target = getTrueCenterOffset(
+    targetRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
+  const sluffer = getTrueCenterOffset(
+    slufferRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
   const cardPos = {
-    x: target.x + (sluffer.x - target.x) * 0.75,
-    y: target.y + (sluffer.y - target.y) * 0.75,
+    x: target.x + (sluffer.x - target.x) * SLUFF_FACTOR,
+    y: target.y + (sluffer.y - target.y) * SLUFF_FACTOR,
   };
-  const winnerSlot = getSlotOffset(winnerRelPos, width, offset, gap);
+  const winnerCenter = getTrueCenterOffset(
+    winnerRelPos,
+    containerWidth,
+    offset,
+    gap,
+    cardWidth,
+    cardHeight
+  );
   const winnerEntry = getSlideInOffset(winnerRelPos, slideDist, slideDistX);
 
-  const x = winnerSlot.x + winnerEntry.x - cardPos.x;
-  const y = winnerSlot.y + winnerEntry.y - cardPos.y;
+  const x = winnerCenter.x + winnerEntry.x - cardPos.x;
+  const y = winnerCenter.y + winnerEntry.y - cardPos.y;
   const rot = Math.abs(x) > Math.abs(y) ? (x > 0 ? 12 : -12) : y > 0 ? 8 : -8;
 
   return { x, y, rot };
@@ -280,6 +344,8 @@ export function TrickArea({
   const gap = compact ? 4 : 10;
   const slideDist = compact ? 80 : 150;
   const slideDistX = compact ? 120 : 220;
+  const cardWidth = compact ? 50 : 110;
+  const cardHeight = compact ? 75 : 160;
 
   // Calculate relative positions (rotate so my position is at bottom)
   const getRelativePosition = (pos: Position): Position => {
@@ -350,11 +416,19 @@ export function TrickArea({
 
         const positionStyle =
           isSluff && targetRelPos !== null
-            ? getSluffPositionStyle(relPos, targetRelPos, width, gap, offset)
+            ? getSluffPositionStyle(
+                relPos,
+                targetRelPos,
+                width,
+                offset,
+                gap,
+                cardWidth,
+                cardHeight
+              )
             : { position: 'absolute' as const, ...getPositionStyle(relPos) };
 
         const zIndex = isSluff ? 0 : playIndex + 1;
-        const animDuration = isSluff && !collecting ? '1400ms' : '350ms';
+        const animDuration = isSluff && !collecting ? '2000ms' : '350ms';
 
         return (
           <div key={play.playerId} style={{ ...positionStyle, zIndex }}>
@@ -377,6 +451,8 @@ export function TrickArea({
                                 width,
                                 offset,
                                 gap,
+                                cardWidth,
+                                cardHeight,
                                 slideDist,
                                 slideDistX
                               )
