@@ -1,7 +1,9 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import { getPartnerPosition } from '@spades/shared';
 import React, { useState } from 'react';
+import { useGameStore } from '../../store/game-store';
 import { Button } from '../ui/Button';
+import { BidAdviceModal } from './BidAdviceModal';
 
 interface BiddingPanelProps {
   gameState: ClientGameState;
@@ -21,6 +23,40 @@ export function BiddingPanel({
   compact = false,
 }: BiddingPanelProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
+  const [showAdvice, setShowAdvice] = useState(false);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [adviceData, setAdviceData] = useState<{
+    recommendedBid: number;
+    analysis: string;
+  } | null>(null);
+  const [adviceError, setAdviceError] = useState<string | null>(null);
+  const roomId = useGameStore((s) => s.roomId);
+
+  const handleAskClaude = async () => {
+    setShowAdvice(true);
+    setAdviceLoading(true);
+    setAdviceData(null);
+    setAdviceError(null);
+
+    try {
+      const res = await fetch('/api/bid-advice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setAdviceError(body.error || 'Failed to get advice');
+      } else {
+        setAdviceData(body);
+      }
+    } catch {
+      setAdviceError('Failed to connect to server');
+    } finally {
+      setAdviceLoading(false);
+    }
+  };
+
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const myBid = gameState.currentRound?.bids.find(
     (b) =>
@@ -212,6 +248,27 @@ export function BiddingPanel({
             </div>
           </div>
 
+          <div style={{ marginBottom: '12px' }}>
+            <button
+              onClick={() => void handleAskClaude()}
+              disabled={adviceLoading}
+              style={{
+                width: '100%',
+                padding: compact ? '6px' : '8px',
+                fontSize: '13px',
+                fontWeight: 500,
+                backgroundColor: 'transparent',
+                color: '#6b7280',
+                border: '1px dashed #d1d5db',
+                borderRadius: '8px',
+                cursor: adviceLoading ? 'not-allowed' : 'pointer',
+                opacity: adviceLoading ? 0.5 : 1,
+              }}
+            >
+              {adviceLoading ? 'Asking Claude...' : 'Help me, Claude!'}
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: compact ? '8px' : '12px' }}>
             <button
               onClick={handleNilBid}
@@ -253,6 +310,19 @@ export function BiddingPanel({
           }{' '}
           to bid...
         </div>
+      )}
+
+      {showAdvice && (
+        <BidAdviceModal
+          loading={adviceLoading}
+          error={adviceError}
+          data={adviceData}
+          onClose={() => setShowAdvice(false)}
+          onUseBid={(bid) => {
+            setSelectedBid(bid);
+            setShowAdvice(false);
+          }}
+        />
       )}
     </div>
   );

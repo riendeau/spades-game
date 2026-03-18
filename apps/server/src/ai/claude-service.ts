@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { Card, Position } from '@spades/shared';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 
@@ -158,6 +159,144 @@ Write the summary directly — no title, no heading. Keep it under 150 words.`,
     return text.trim() || null;
   } catch (err) {
     console.warn('[ai] Failed to generate game summary:', err);
+    return null;
+  }
+}
+
+export interface BidAdviceResult {
+  recommendedBid: number; // 0 = nil, 1-13 = trick count
+  analysis: string; // 2-3 sentence explanation
+}
+
+export async function generateBidAdvice(data: {
+  hand: Card[];
+  scores: {
+    team1: { score: number; bags: number };
+    team2: { score: number; bags: number };
+  };
+  currentBids: {
+    position: Position;
+    team: string;
+    bid: number;
+    isNil: boolean;
+    isBlindNil: boolean;
+  }[];
+  myPosition: Position;
+  myTeam: string;
+  dealerPosition: Position;
+  winningScore: number;
+}): Promise<BidAdviceResult | null> {
+  const anthropic = getClient();
+  if (!anthropic) return null;
+
+  // Group cards by suit for readability
+  const suitOrder = ['spades', 'hearts', 'diamonds', 'clubs'] as const;
+  const suitNames: Record<string, string> = {
+    spades: 'Spades',
+    hearts: 'Hearts',
+    diamonds: 'Diamonds',
+    clubs: 'Clubs',
+  };
+  const rankOrder = [
+    'A',
+    'K',
+    'Q',
+    'J',
+    '10',
+    '9',
+    '8',
+    '7',
+    '6',
+    '5',
+    '4',
+    '3',
+    '2',
+  ];
+
+  const handBySuit = suitOrder
+    .map((suit) => {
+      const cards = data.hand
+        .filter((c) => c.suit === suit)
+        .sort((a, b) => rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank))
+        .map((c) => c.rank);
+      return cards.length > 0
+        ? `${suitNames[suit]}: ${cards.join(', ')}`
+        : null;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  const bidsPlaced =
+    data.currentBids.length > 0
+      ? data.currentBids
+          .map(
+            (b) =>
+              `Position ${b.position} (${b.team}): ${b.isBlindNil ? 'Blind Nil' : b.isNil ? 'Nil' : b.bid}`
+          )
+          .join('\n')
+      : 'None yet — you are the first to bid.';
+
+  try {
+    const response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 300,
+      messages: [
+        {
+          role: 'user',
+          content: `You are a Spades card game bidding advisor. Analyze this hand and recommend a bid.
+
+Your hand (${data.hand.length} cards):
+${handBySuit}
+
+Current scores:
+Team 1: ${data.scores.team1.score} points, ${data.scores.team1.bags} bags
+Team 2: ${data.scores.team2.score} points, ${data.scores.team2.bags} bags
+Winning score: ${data.winningScore}
+
+You are Position ${data.myPosition} (${data.myTeam}). Dealer is Position ${data.dealerPosition}.
+
+Bids already placed:
+${bidsPlaced}
+
+Strategy reminders:
+- High spades (A, K, Q) are nearly guaranteed tricks
+- Off-suit Aces are likely tricks but not guaranteed
+- Voids (missing suits) let you trump with spades
+- Overbidding risks setting (losing 10× bid); underbidding accumulates bags (10 bags = -100 penalty)
+- Nil (0) is worth +100 if successful, -100 if you take any trick — only viable with very weak hands
+- Consider your partner's bid if already placed; your combined team bid matters
+
+Respond with ONLY valid JSON, no other text: {"recommendedBid": N, "analysis": "..."}
+
+recommendedBid: 0 for nil, 1-13 for trick count.
+analysis: 2-3 sentences explaining why.`,
+        },
+      ],
+    });
+
+    const raw =
+      response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = raw
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/, '');
+    const parsed = JSON.parse(text) as BidAdviceResult;
+
+    if (
+      typeof parsed.recommendedBid !== 'number' ||
+      parsed.recommendedBid < 0 ||
+      parsed.recommendedBid > 13 ||
+      typeof parsed.analysis !== 'string'
+    ) {
+      console.warn('[ai] Invalid bid advice response:', parsed);
+      return null;
+    }
+
+    return {
+      recommendedBid: Math.round(parsed.recommendedBid),
+      analysis: parsed.analysis.slice(0, 500),
+    };
+  } catch (err) {
+    console.warn('[ai] Failed to generate bid advice:', err);
     return null;
   }
 }
