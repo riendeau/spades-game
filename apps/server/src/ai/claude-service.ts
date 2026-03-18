@@ -235,67 +235,76 @@ export async function generateBidAdvice(data: {
       : 'None yet — you are the first to bid.';
 
   try {
+    // Build a structured trick-counting scratchpad for the prefill.
+    // This anchors the model to the actual hand and prevents hallucinations.
+    const suitAnalysis = suitOrder
+      .map((suit) => {
+        const cards = data.hand
+          .filter((c) => c.suit === suit)
+          .sort(
+            (a, b) => rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank)
+          );
+        const count = cards.length;
+        const label = suitNames[suit];
+        if (count === 0)
+          return `${label}: void (0 cards) — can trump when ${label.toLowerCase()} is led`;
+        const names = cards.map((c) => c.rank).join(', ');
+        return `${label}: ${names} (${count} card${count > 1 ? 's' : ''})`;
+      })
+      .join('\n');
+
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 400,
+      max_tokens: 500,
+      system: `You are an expert Spades card game bidding advisor. You must ONLY reference cards that appear in the player's hand — never invent or assume cards that are not listed. Accuracy is more important than optimism.
+
+Trick-counting rules (follow strictly):
+- A, K of spades: almost always win. Count each as 1 trick.
+- Q of spades: usually wins but can lose to A or K. Count as 0.5.
+- Lower spades: unreliable. Only count if you have 4+ spades total.
+- Off-suit Ace in a SHORT suit (1-3 cards): count as 1 trick.
+- Off-suit Ace in a LONG suit (4+ cards): count as 0.5 — opponents may be void and trump it.
+- Off-suit King in a 2-card suit: count as 0.5 (wins if Ace is played first round).
+- Off-suit King in 3+ card suit: do NOT count — too likely to lose to the Ace or get trumped.
+- Q, J, 10, and lower in ANY side suit: NEVER count as tricks (unless singleton/doubleton AND highest in suit, which is rare).
+- Void in a side suit: count as 0.5 if you have spades to trump with.
+
+Sum up using these fractional values, then ROUND DOWN to get your bid. Most hands produce 2-5 tricks. Bids of 6+ require multiple high spades or aces.`,
       messages: [
         {
           role: 'user',
-          content: `You are a Spades card game bidding advisor. Analyze this hand and recommend a bid.
+          content: `Recommend a bid for this hand. Here are the ONLY cards in my hand — do not reference any other cards:
 
-Your hand (${data.hand.length} cards):
 ${handBySuit}
 
-Current scores:
-Team 1: ${data.scores.team1.score} points, ${data.scores.team1.bags} bags
-Team 2: ${data.scores.team2.score} points, ${data.scores.team2.bags} bags
-Winning score: ${data.winningScore}
+Scores: Team 1: ${data.scores.team1.score} pts (${data.scores.team1.bags} bags) | Team 2: ${data.scores.team2.score} pts (${data.scores.team2.bags} bags) | Winning: ${data.winningScore}
+Position: ${data.myPosition} (${data.myTeam}) | Dealer: ${data.dealerPosition}
+Bids placed: ${bidsPlaced}
 
-You are Position ${data.myPosition} (${data.myTeam}). Dealer is Position ${data.dealerPosition}.
-
-Bids already placed:
-${bidsPlaced}
-
-Bidding strategy guide (follow carefully):
-
-SPADES (trump suit):
-- A, K of spades are almost guaranteed tricks
-- Q of spades is strong but can lose to A or K
-- Lower spades may win tricks but are less reliable — count cautiously
-- Having many spades is strong; having few means opponents trump your side-suit winners
-
-SIDE SUITS (hearts, diamonds, clubs) — distribution matters enormously:
-- A void (0 cards in a suit) is very valuable: you can trump when that suit is led
-- A singleton (1 card) means you'll likely be void after the first trick in that suit
-- With 2-3 cards in a suit, only the Ace is a reliable winner (K might lose to A from another player)
-- With 4+ cards in a suit, even high cards become unreliable — opponents with fewer cards in that suit will run out and trump your winners with spades
-- With 5+ cards, expect opponents to start trumping after 1-2 rounds. Do NOT count middle cards (Q, J, 10) as tricks in long suits
-- A "long suit" trick: if you hold 6-7 cards in a suit, you may win a late trick simply because no one else has any left AND no one has spades left — but this is speculative, not guaranteed
-
-COUNTING TRICKS:
-- Start with near-certain tricks: A/K of spades, Aces in short side suits (1-3 cards)
-- Add probable tricks: Q of spades, Kings in 2-card suits
-- Add speculative tricks cautiously: voids for trumping, long-suit establishment
-- Do NOT count cards below King as tricks unless the suit is very short (singleton/doubleton) or they are spades
-- A common beginner mistake is counting too many tricks in a long suit — avoid this
-
-GENERAL:
-- Overbidding risks setting (losing 10× your bid); underbidding accumulates bags (10 bags = -100 penalty)
-- Nil (0) is worth +100 if successful, -100 if you take any trick — only viable with very weak hands and no high cards
-- Consider your partner's bid if already placed; your combined team bid matters
-- Do NOT claim voids you don't have — carefully check which suits have zero cards
-
-Respond with ONLY valid JSON, no other text: {"recommendedBid": N, "analysis": "..."}
-
+Respond with ONLY valid JSON: {"recommendedBid": N, "analysis": "..."}
 recommendedBid: 0 for nil, 1-13 for trick count.
-analysis: 2-3 sentences explaining why.`,
+analysis: 2-3 sentences. Reference only cards listed above.`,
+        },
+        {
+          role: 'assistant',
+          content: `Let me count tricks suit by suit using only the cards listed:
+${suitAnalysis}
+
+Based on strict counting rules:`,
         },
       ],
     });
 
     const raw =
       response.content[0].type === 'text' ? response.content[0].text : '';
-    const text = raw
+    // The model continues after the prefill — extract the JSON object
+    // which may be preceded by reasoning text
+    const jsonMatch = /\{[\s\S]*"recommendedBid"[\s\S]*\}/.exec(raw);
+    if (!jsonMatch) {
+      console.warn('[ai] No JSON found in bid advice response:', raw);
+      return null;
+    }
+    const text = jsonMatch[0]
       .replace(/^```(?:json)?\s*\n?/i, '')
       .replace(/\n?```\s*$/, '');
     const parsed = JSON.parse(text) as BidAdviceResult;
