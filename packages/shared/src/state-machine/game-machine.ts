@@ -186,14 +186,8 @@ function handlePlayerLeave(state: GameState, playerId: PlayerId): ActionResult {
     return handlePlayerDisconnect(state, playerId);
   }
 
-  // In waiting phase, remove player and reposition remaining players
-  const remainingPlayers = state.players
-    .filter((p) => p.id !== playerId)
-    .map((p, idx) => ({
-      ...p,
-      position: idx as Position,
-      team: getTeamForPosition(idx as Position),
-    }));
+  // In waiting phase, remove player but preserve remaining players' seat selections
+  const remainingPlayers = state.players.filter((p) => p.id !== playerId);
 
   return {
     state: {
