@@ -47,11 +47,6 @@ export function validateBid(
     return { valid: false, errorMessage: 'Blind nil bids not allowed' };
   }
 
-  if (isBlindNil && gameState.currentRound?.bids.length !== 0) {
-    // Blind nil can only be bid before looking at cards (first bid)
-    // In practice, we allow it anytime but it's typically a house rule
-  }
-
   // Validate bid range
   if (isNil || isBlindNil) {
     if (bid !== 0) {
