@@ -219,11 +219,9 @@ export async function generateBidAdvice(data: {
         .filter((c) => c.suit === suit)
         .sort((a, b) => rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank))
         .map((c) => c.rank);
-      return cards.length > 0
-        ? `${suitNames[suit]}: ${cards.join(', ')}`
-        : null;
+      if (cards.length === 0) return `${suitNames[suit]}: (void)`;
+      return `${suitNames[suit]} (${cards.length}): ${cards.join(', ')}`;
     })
-    .filter(Boolean)
     .join('\n');
 
   const bidsPlaced =
@@ -239,7 +237,7 @@ export async function generateBidAdvice(data: {
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 300,
+      max_tokens: 400,
       messages: [
         {
           role: 'user',
@@ -258,13 +256,34 @@ You are Position ${data.myPosition} (${data.myTeam}). Dealer is Position ${data.
 Bids already placed:
 ${bidsPlaced}
 
-Strategy reminders:
-- High spades (A, K, Q) are nearly guaranteed tricks
-- Off-suit Aces are likely tricks but not guaranteed
-- Voids (missing suits) let you trump with spades
-- Overbidding risks setting (losing 10× bid); underbidding accumulates bags (10 bags = -100 penalty)
-- Nil (0) is worth +100 if successful, -100 if you take any trick — only viable with very weak hands
+Bidding strategy guide (follow carefully):
+
+SPADES (trump suit):
+- A, K of spades are almost guaranteed tricks
+- Q of spades is strong but can lose to A or K
+- Lower spades may win tricks but are less reliable — count cautiously
+- Having many spades is strong; having few means opponents trump your side-suit winners
+
+SIDE SUITS (hearts, diamonds, clubs) — distribution matters enormously:
+- A void (0 cards in a suit) is very valuable: you can trump when that suit is led
+- A singleton (1 card) means you'll likely be void after the first trick in that suit
+- With 2-3 cards in a suit, only the Ace is a reliable winner (K might lose to A from another player)
+- With 4+ cards in a suit, even high cards become unreliable — opponents with fewer cards in that suit will run out and trump your winners with spades
+- With 5+ cards, expect opponents to start trumping after 1-2 rounds. Do NOT count middle cards (Q, J, 10) as tricks in long suits
+- A "long suit" trick: if you hold 6-7 cards in a suit, you may win a late trick simply because no one else has any left AND no one has spades left — but this is speculative, not guaranteed
+
+COUNTING TRICKS:
+- Start with near-certain tricks: A/K of spades, Aces in short side suits (1-3 cards)
+- Add probable tricks: Q of spades, Kings in 2-card suits
+- Add speculative tricks cautiously: voids for trumping, long-suit establishment
+- Do NOT count cards below King as tricks unless the suit is very short (singleton/doubleton) or they are spades
+- A common beginner mistake is counting too many tricks in a long suit — avoid this
+
+GENERAL:
+- Overbidding risks setting (losing 10× your bid); underbidding accumulates bags (10 bags = -100 penalty)
+- Nil (0) is worth +100 if successful, -100 if you take any trick — only viable with very weak hands and no high cards
 - Consider your partner's bid if already placed; your combined team bid matters
+- Do NOT claim voids you don't have — carefully check which suits have zero cards
 
 Respond with ONLY valid JSON, no other text: {"recommendedBid": N, "analysis": "..."}
 
