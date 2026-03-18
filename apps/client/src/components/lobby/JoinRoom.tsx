@@ -1,3 +1,4 @@
+import { MAX_NICKNAME_LENGTH } from '@spades/shared';
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { LOBBY_MOTTO, LOBBY_TITLE } from '../../lobby-branding';
@@ -137,7 +138,7 @@ export function JoinRoom({
             placeholder="Enter your nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            maxLength={20}
+            maxLength={MAX_NICKNAME_LENGTH}
           />
 
           {mode === 'join' && (

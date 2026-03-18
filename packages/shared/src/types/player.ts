@@ -1,5 +1,7 @@
 import type { Card } from './card.js';
 
+export const MAX_NICKNAME_LENGTH = 20;
+
 export type PlayerId = string;
 export type TeamId = 'team1' | 'team2';
 export type Position = 0 | 1 | 2 | 3; // Clockwise from dealer's left

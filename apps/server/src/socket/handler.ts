@@ -5,7 +5,13 @@ import type {
   Card,
   Position,
 } from '@spades/shared';
-import { validatePlay, validateBid, SUITS, RANKS } from '@spades/shared';
+import {
+  validatePlay,
+  validateBid,
+  SUITS,
+  RANKS,
+  MAX_NICKNAME_LENGTH,
+} from '@spades/shared';
 import type { Request } from 'express';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,8 +28,6 @@ type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 function getUserId(socket: TypedSocket): string | null {
   return (socket.request as Request).user?.id ?? null;
 }
-
-const MAX_NICKNAME_LENGTH = 20;
 
 function validateNickname(nickname: unknown): string | null {
   if (typeof nickname !== 'string') return null;
@@ -133,7 +137,7 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
   if (!validNickname) {
     socket.emit('error', {
       code: 'INVALID_INPUT',
-      message: 'Nickname must be 1-20 characters',
+      message: `Nickname must be 1-${MAX_NICKNAME_LENGTH} characters`,
     });
     return;
   }
@@ -181,7 +185,7 @@ function handleJoinRoom(
   if (!validNickname) {
     socket.emit('error', {
       code: 'INVALID_INPUT',
-      message: 'Nickname must be 1-20 characters',
+      message: `Nickname must be 1-${MAX_NICKNAME_LENGTH} characters`,
     });
     return;
   }
@@ -735,7 +739,7 @@ function handleSelectSeat(
   if (!validNickname) {
     socket.emit('error', {
       code: 'INVALID_INPUT',
-      message: 'Nickname must be 1-20 characters',
+      message: `Nickname must be 1-${MAX_NICKNAME_LENGTH} characters`,
     });
     return;
   }
