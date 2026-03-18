@@ -3,6 +3,7 @@ export * from './trick.js';
 export * from './scoring.js';
 export {
   type BidResult,
+  validateBid,
   getNextBidder,
   allBidsComplete,
   createBid,
