@@ -247,6 +247,105 @@ describe('bidding', () => {
       );
       expect(result.valid).toBe(true);
     });
+
+    it('should reject bid when team total would exceed 13', () => {
+      // p1 (pos 1) has already bid 10, now p3 (pos 3, partner) tries to bid 4
+      const state = makeBiddingState({
+        currentPlayerPosition: 3,
+        bids: [
+          { playerId: 'p0', bid: 3, isNil: false, isBlindNil: false },
+          { playerId: 'p1', bid: 10, isNil: false, isBlindNil: false },
+          { playerId: 'p2', bid: 2, isNil: false, isBlindNil: false },
+        ],
+      });
+      const result = validateBid(
+        state,
+        'p3',
+        4,
+        false,
+        false,
+        DEFAULT_GAME_CONFIG
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errorMessage).toContain('Team bids cannot exceed 13');
+    });
+
+    it('should accept bid when team total equals exactly 13', () => {
+      const state = makeBiddingState({
+        currentPlayerPosition: 3,
+        bids: [
+          { playerId: 'p0', bid: 3, isNil: false, isBlindNil: false },
+          { playerId: 'p1', bid: 10, isNil: false, isBlindNil: false },
+          { playerId: 'p2', bid: 2, isNil: false, isBlindNil: false },
+        ],
+      });
+      const result = validateBid(
+        state,
+        'p3',
+        3,
+        false,
+        false,
+        DEFAULT_GAME_CONFIG
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should not restrict bid when partner has not bid yet', () => {
+      // p1 (pos 1) bids first, partner p3 hasn't bid
+      const state = makeBiddingState({
+        currentPlayerPosition: 1,
+      });
+      const result = validateBid(
+        state,
+        'p1',
+        13,
+        false,
+        false,
+        DEFAULT_GAME_CONFIG
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should not restrict bid when partner bid nil', () => {
+      // p1 (pos 1) bid nil, p3 (pos 3, partner) should be unrestricted
+      const state = makeBiddingState({
+        currentPlayerPosition: 3,
+        bids: [
+          { playerId: 'p0', bid: 3, isNil: false, isBlindNil: false },
+          { playerId: 'p1', bid: 0, isNil: true, isBlindNil: false },
+          { playerId: 'p2', bid: 2, isNil: false, isBlindNil: false },
+        ],
+      });
+      const result = validateBid(
+        state,
+        'p3',
+        13,
+        false,
+        false,
+        DEFAULT_GAME_CONFIG
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    it('should allow nil bid even when partner bid 13', () => {
+      const state = makeBiddingState({
+        currentPlayerPosition: 3,
+        bids: [
+          { playerId: 'p0', bid: 3, isNil: false, isBlindNil: false },
+          { playerId: 'p1', bid: 13, isNil: false, isBlindNil: false },
+          { playerId: 'p2', bid: 2, isNil: false, isBlindNil: false },
+        ],
+      });
+      const result = validateBid(
+        state,
+        'p3',
+        0,
+        true,
+        false,
+        DEFAULT_GAME_CONFIG
+      );
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('getNextBidder', () => {

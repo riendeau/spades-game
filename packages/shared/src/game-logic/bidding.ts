@@ -1,5 +1,6 @@
 import type { GameState, GameConfig } from '../types/game-state.js';
 import type { PlayerId, PlayerBid, Position } from '../types/player.js';
+import { getPartnerPosition } from '../types/player.js';
 
 export interface BidResult {
   valid: boolean;
@@ -59,6 +60,25 @@ export function validateBid(
   } else {
     if (bid < 1 || bid > 13) {
       return { valid: false, errorMessage: 'Bid must be between 1 and 13' };
+    }
+
+    // Enforce team bid cap: combined team bids cannot exceed 13
+    const partnerPosition = getPartnerPosition(player.position);
+    const partnerBid = gameState.currentRound?.bids.find((b) => {
+      const partner = gameState.players.find(
+        (p) => p.position === partnerPosition
+      );
+      return b.playerId === partner?.id;
+    });
+
+    if (partnerBid && !partnerBid.isNil && !partnerBid.isBlindNil) {
+      const maxBid = 13 - partnerBid.bid;
+      if (bid > maxBid) {
+        return {
+          valid: false,
+          errorMessage: `Team bids cannot exceed 13 (partner bid ${partnerBid.bid})`,
+        };
+      }
     }
   }
 
