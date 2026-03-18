@@ -299,6 +299,66 @@ describe('Game State Machine', () => {
     });
   });
 
+  describe('PLAYER_LEAVE', () => {
+    it('should remove player in waiting phase', () => {
+      let state = createInitialGameState('test-room');
+
+      for (let i = 0; i < 3; i++) {
+        state = processAction(state, {
+          type: 'PLAYER_JOIN',
+          playerId: `p${i}`,
+          nickname: `Player ${i}`,
+        }).state;
+      }
+
+      const result = processAction(state, {
+        type: 'PLAYER_LEAVE',
+        playerId: 'p1',
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.state.players).toHaveLength(2);
+      expect(result.state.players.map((p) => p.id)).toEqual(['p0', 'p2']);
+    });
+
+    it('should preserve seat selections when a player leaves', () => {
+      let state = createInitialGameState('test-room');
+
+      // Add 3 players (positions 0, 1, 2)
+      for (let i = 0; i < 3; i++) {
+        state = processAction(state, {
+          type: 'PLAYER_JOIN',
+          playerId: `p${i}`,
+          nickname: `Player ${i}`,
+        }).state;
+      }
+
+      // Player 2 moves to seat 3
+      state = processAction(state, {
+        type: 'PLAYER_CHANGE_SEAT',
+        playerId: 'p2',
+        newPosition: 3,
+      }).state;
+      expect(state.players.find((p) => p.id === 'p2')!.position).toBe(3);
+
+      // Player 1 leaves — player 2 should keep seat 3
+      const result = processAction(state, {
+        type: 'PLAYER_LEAVE',
+        playerId: 'p1',
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.state.players).toHaveLength(2);
+
+      const p0 = result.state.players.find((p) => p.id === 'p0')!;
+      const p2 = result.state.players.find((p) => p.id === 'p2')!;
+      expect(p0.position).toBe(0);
+      expect(p0.team).toBe('team1');
+      expect(p2.position).toBe(3);
+      expect(p2.team).toBe('team2');
+    });
+  });
+
   describe('PLAYER_REPLACE', () => {
     function setupBiddingGame() {
       let state = createInitialGameState('test-room');
