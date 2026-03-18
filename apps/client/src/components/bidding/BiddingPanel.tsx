@@ -31,6 +31,7 @@ export function BiddingPanel({
   } | null>(null);
   const [adviceError, setAdviceError] = useState<string | null>(null);
   const roomId = useGameStore((s) => s.roomId);
+  const sessionToken = useGameStore((s) => s.sessionToken);
 
   const handleAskClaude = async () => {
     setShowAdvice(true);
@@ -42,7 +43,7 @@ export function BiddingPanel({
       const res = await fetch('/api/bid-advice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId }),
+        body: JSON.stringify({ roomId, sessionToken }),
       });
       const body = await res.json();
       if (!res.ok) {

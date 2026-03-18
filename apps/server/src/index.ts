@@ -177,9 +177,12 @@ app.get(`${BASE_PATH}api/stats/nil`, (req, res) => {
 app.post(`${BASE_PATH}api/bid-advice`, (req, res) => {
   void (async () => {
     try {
-      const { roomId } = req.body as { roomId?: string };
-      if (!roomId) {
-        res.status(400).json({ error: 'roomId is required' });
+      const { roomId, sessionToken } = req.body as {
+        roomId?: string;
+        sessionToken?: string;
+      };
+      if (!roomId || !sessionToken) {
+        res.status(400).json({ error: 'roomId and sessionToken are required' });
         return;
       }
 
@@ -195,20 +198,9 @@ app.post(`${BASE_PATH}api/bid-advice`, (req, res) => {
         return;
       }
 
-      // Find player session by matching userId to req.user
-      const userId = req.user!.id;
-      let playerSession = null;
-      for (const session of roomManager.getAllSessions()) {
-        if (
-          session.roomId === roomId.toUpperCase() &&
-          session.userId === userId
-        ) {
-          playerSession = session;
-          break;
-        }
-      }
-
-      if (!playerSession) {
+      // Look up the player session directly by token
+      const playerSession = roomManager.getSession(sessionToken);
+      if (playerSession?.roomId !== roomId.toUpperCase()) {
         res.status(404).json({ error: 'Player not found in this room' });
         return;
       }
