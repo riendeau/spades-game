@@ -311,6 +311,29 @@ export class RoomManager {
       }
     }
 
+    // Clean up orphaned active game rooms (all sessions expired)
+    for (const [roomId, room] of this.rooms) {
+      const phase = room.game.getState().phase;
+      if (phase === 'waiting' || phase === 'game-end') continue;
+
+      // Check if any session remains for this room
+      let hasSession = false;
+      for (const session of this.sessions.values()) {
+        if (session.roomId === roomId) {
+          hasSession = true;
+          break;
+        }
+      }
+
+      if (!hasSession) {
+        console.log(
+          `[cleanup] deleting orphaned room=${roomId} phase=${phase} — all sessions expired`
+        );
+        this.rooms.delete(roomId);
+        deletedRooms++;
+      }
+    }
+
     if (deletedRooms > 0 || deletedSessions > 0) {
       console.log(
         `[cleanup] summary: deleted ${deletedRooms} rooms, ${deletedSessions} sessions (remaining: ${this.rooms.size} rooms, ${this.sessions.size} sessions)`
