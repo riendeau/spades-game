@@ -382,10 +382,11 @@ describe('RoomManager', () => {
       expect(rm.getRoomCount()).toBe(0);
     });
 
-    it('should not delete rooms with active games', () => {
+    it('should not delete rooms with active games that have sessions', () => {
       const room = rm.createRoom();
       for (let i = 0; i < 4; i++) {
         room.game.addPlayer(`p${i}`, `Player ${i}`);
+        rm.createSession(room.id, `p${i}`, `sock-${i}`);
       }
       for (let i = 0; i < 4; i++) {
         room.game.setPlayerReady(`p${i}`);
@@ -394,6 +395,29 @@ describe('RoomManager', () => {
 
       vi.advanceTimersByTime(31 * 60 * 1000);
       expect(rm.getRoom(room.id)).toBe(room);
+    });
+
+    it('should delete orphaned active game rooms when all sessions expire', () => {
+      const room = rm.createRoom();
+      for (let i = 0; i < 4; i++) {
+        room.game.addPlayer(`p${i}`, `Player ${i}`);
+        rm.createSession(room.id, `p${i}`, `sock-${i}`);
+      }
+      for (let i = 0; i < 4; i++) {
+        room.game.setPlayerReady(`p${i}`);
+      }
+      room.game.startGame();
+
+      // All players disconnect
+      for (let i = 0; i < 4; i++) {
+        rm.markSessionDisconnected(`sock-${i}`);
+      }
+
+      // Advance past disconnect grace period + cleanup interval
+      vi.advanceTimersByTime(6 * 60 * 1000);
+
+      expect(rm.getRoom(room.id)).toBeUndefined();
+      expect(rm.getRoomCount()).toBe(0);
     });
 
     it('should delete expired disconnected sessions', () => {
