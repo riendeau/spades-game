@@ -5,7 +5,13 @@ import type {
   Card,
   Position,
 } from '@spades/shared';
-import { validatePlay, validateBid } from '@spades/shared';
+import {
+  validatePlay,
+  validateBid,
+  SUITS,
+  RANKS,
+  MAX_NICKNAME_LENGTH,
+} from '@spades/shared';
 import type { Request } from 'express';
 import { type Server, type Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,6 +27,31 @@ type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 function getUserId(socket: TypedSocket): string | null {
   return (socket.request as Request).user?.id ?? null;
+}
+
+function validateNickname(nickname: unknown): string | null {
+  if (typeof nickname !== 'string') return null;
+  const trimmed = nickname.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_NICKNAME_LENGTH) return null;
+  return trimmed;
+}
+
+function validateRoomId(roomId: unknown): string | null {
+  if (typeof roomId !== 'string') return null;
+  const trimmed = roomId.trim().toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function isValidCard(card: unknown): card is Card {
+  if (typeof card !== 'object' || card === null) return false;
+  const c = card as Record<string, unknown>;
+  return (
+    typeof c.suit === 'string' &&
+    typeof c.rank === 'string' &&
+    (SUITS as string[]).includes(c.suit) &&
+    (RANKS as string[]).includes(c.rank)
+  );
 }
 
 function getClientState(room: Room): ClientGameState {
@@ -102,10 +133,19 @@ export function setupSocketHandlers(io: TypedServer): void {
 }
 
 function handleCreateRoom(socket: TypedSocket, nickname: string): void {
+  const validNickname = validateNickname(nickname);
+  if (!validNickname) {
+    socket.emit('error', {
+      code: 'INVALID_INPUT',
+      message: `Nickname must be 1-${MAX_NICKNAME_LENGTH} characters`,
+    });
+    return;
+  }
+
   const room = roomManager.createRoom();
   const playerId = uuidv4();
 
-  const result = room.game.addPlayer(playerId, nickname);
+  const result = room.game.addPlayer(playerId, validNickname);
   if (!result.valid) {
     socket.emit('error', {
       code: 'CREATE_FAILED',
@@ -141,14 +181,32 @@ function handleJoinRoom(
   roomId: string,
   nickname: string
 ): void {
-  const room = roomManager.getRoom(roomId);
+  const validNickname = validateNickname(nickname);
+  if (!validNickname) {
+    socket.emit('error', {
+      code: 'INVALID_INPUT',
+      message: `Nickname must be 1-${MAX_NICKNAME_LENGTH} characters`,
+    });
+    return;
+  }
+
+  const validRoomId = validateRoomId(roomId);
+  if (!validRoomId) {
+    socket.emit('error', {
+      code: 'INVALID_INPUT',
+      message: 'Invalid room code',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(validRoomId);
   if (!room) {
     socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
     return;
   }
 
   const playerId = uuidv4();
-  const result = room.game.addPlayer(playerId, nickname);
+  const result = room.game.addPlayer(playerId, validNickname);
 
   if (!result.valid) {
     // If game already started, check for open seats
@@ -196,7 +254,7 @@ function handleJoinRoom(
   // Notify others
   socket.to(room.id).emit('room:player-joined', {
     playerId,
-    nickname,
+    nickname: validNickname,
     position: player!.position,
   });
 
@@ -372,6 +430,14 @@ function handlePlayCard(
   io: TypedServer,
   card: Card
 ): void {
+  if (!isValidCard(card)) {
+    socket.emit('error', {
+      code: 'INVALID_INPUT',
+      message: 'Invalid card',
+    });
+    return;
+  }
+
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
     console.error(
@@ -669,7 +735,25 @@ function handleSelectSeat(
   position: Position,
   nickname: string
 ): void {
-  const room = roomManager.getRoom(roomId);
+  const validNickname = validateNickname(nickname);
+  if (!validNickname) {
+    socket.emit('error', {
+      code: 'INVALID_INPUT',
+      message: `Nickname must be 1-${MAX_NICKNAME_LENGTH} characters`,
+    });
+    return;
+  }
+
+  const validRoomId = validateRoomId(roomId);
+  if (!validRoomId) {
+    socket.emit('error', {
+      code: 'INVALID_INPUT',
+      message: 'Invalid room code',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(validRoomId);
   if (!room) {
     socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
     return;
@@ -688,7 +772,7 @@ function handleSelectSeat(
   }
 
   // Verify the seat is actually open (player disconnected + no valid session)
-  const abandonedIds = roomManager.getAbandonedPlayerIds(roomId);
+  const abandonedIds = roomManager.getAbandonedPlayerIds(validRoomId);
   if (!abandonedIds.includes(targetPlayer.id)) {
     socket.emit('error', {
       code: 'SEAT_TAKEN',
@@ -698,7 +782,7 @@ function handleSelectSeat(
   }
 
   // Replace the player in the game state
-  const result = room.game.replacePlayer(targetPlayer.id, nickname);
+  const result = room.game.replacePlayer(targetPlayer.id, validNickname);
   if (!result.valid) {
     socket.emit('error', {
       code: 'REPLACE_FAILED',
@@ -718,7 +802,7 @@ function handleSelectSeat(
   roomManager.touchRoom(room.id);
 
   console.log(
-    `[seat] player replaced id=${targetPlayer.id.slice(0, 8)}… position=${position} newNickname=${nickname} room=${room.id}`
+    `[seat] player replaced id=${targetPlayer.id.slice(0, 8)}… position=${position} newNickname=${validNickname} room=${room.id}`
   );
 
   // Send the new player their data
