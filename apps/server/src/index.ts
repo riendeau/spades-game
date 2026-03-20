@@ -13,6 +13,7 @@ import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import passport from 'passport';
 import { Server } from 'socket.io';
+import { generateBidAdvice } from './ai/claude-service.js';
 import { authRouter } from './auth/auth-routes.js';
 import { DEV_USER, configurePassport } from './auth/passport-config.js';
 import { pool } from './db/client.js';
@@ -122,6 +123,9 @@ if (!isProd) {
   });
 }
 
+// --- JSON body parser (for POST endpoints) ---
+app.use(express.json());
+
 // --- Auth routes (public) ---
 app.use('/auth', authRouter);
 
@@ -167,6 +171,101 @@ app.get(`${BASE_PATH}api/stats/nil`, (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   );
+});
+
+// Get AI bid advice
+app.post(`${BASE_PATH}api/bid-advice`, (req, res) => {
+  void (async () => {
+    try {
+      const { roomId, sessionToken } = req.body as {
+        roomId?: string;
+        sessionToken?: string;
+      };
+      if (!roomId || !sessionToken) {
+        res.status(400).json({ error: 'roomId and sessionToken are required' });
+        return;
+      }
+
+      const room = roomManager.getRoom(roomId);
+      if (!room) {
+        res.status(404).json({ error: 'Room not found' });
+        return;
+      }
+
+      const state = room.game.getState();
+      if (state.phase !== 'bidding') {
+        res.status(400).json({ error: 'Game is not in bidding phase' });
+        return;
+      }
+
+      // Look up the player session directly by token
+      const playerSession = roomManager.getSession(sessionToken);
+      if (playerSession?.roomId !== roomId.toUpperCase()) {
+        res.status(404).json({ error: 'Player not found in this room' });
+        return;
+      }
+
+      // Find player position
+      const player = state.players.find((p) => p.id === playerSession.playerId);
+      if (!player) {
+        res.status(404).json({ error: 'Player not found in game state' });
+        return;
+      }
+
+      // Verify it's this player's turn to bid
+      if (state.currentPlayerPosition !== player.position) {
+        res.status(400).json({ error: "It's not your turn to bid" });
+        return;
+      }
+
+      const hand = room.game.getPlayerHand(playerSession.playerId);
+      if (hand.length === 0) {
+        res.status(400).json({ error: 'No cards in hand' });
+        return;
+      }
+
+      // Gather current bids with position/team info
+      const currentBids = (state.currentRound?.bids ?? []).map((bid) => {
+        const bidPlayer = state.players.find((p) => p.id === bid.playerId);
+        return {
+          position: bidPlayer!.position,
+          team: bidPlayer!.team,
+          bid: bid.bid,
+          isNil: bid.isNil,
+          isBlindNil: bid.isBlindNil,
+        };
+      });
+
+      const result = await generateBidAdvice({
+        hand,
+        scores: {
+          team1: {
+            score: state.scores.team1.score,
+            bags: state.scores.team1.bags,
+          },
+          team2: {
+            score: state.scores.team2.score,
+            bags: state.scores.team2.bags,
+          },
+        },
+        currentBids,
+        myPosition: player.position,
+        myTeam: player.team,
+        dealerPosition: state.dealerPosition,
+        winningScore: state.winningScore,
+      });
+
+      if (!result) {
+        res.status(503).json({ error: 'AI advice is not available' });
+        return;
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('[api] /api/bid-advice error:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  })();
 });
 
 // --- DB schema (only when DATABASE_URL is set) ---

@@ -1,6 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { Card, Position } from '@spades/shared';
 
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL_HAIKU = 'claude-haiku-4-5';
+const MODEL_SONNET = 'claude-sonnet-4-6';
 
 let client: Anthropic | null = null;
 
@@ -36,7 +38,7 @@ export async function generateTeamNames(players: {
 
   try {
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model: MODEL_HAIKU,
       max_tokens: 150,
       messages: [
         {
@@ -130,12 +132,12 @@ export async function generateGameSummary(data: {
 
   try {
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model: MODEL_HAIKU,
       max_tokens: 400,
       messages: [
         {
           role: 'user',
-          content: `You are a witty sports commentator writing a recap of a Spades card game. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers, hype the winners.
+          content: `You are a witty sports commentator writing a recap of a Spades card game and mildly resentful at having to engage with such low-quality play. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers (and the winners too if they deserve it).
 
 Winner: ${data.teamNames[data.winningTeam]}
 Final score: ${data.teamNames.team1} ${data.finalScores.team1.score} (${data.finalScores.team1.bags} bags) - ${data.teamNames.team2} ${data.finalScores.team2.score} (${data.finalScores.team2.bags} bags)
@@ -158,6 +160,179 @@ Write the summary directly — no title, no heading. Keep it under 150 words.`,
     return text.trim() || null;
   } catch (err) {
     console.warn('[ai] Failed to generate game summary:', err);
+    return null;
+  }
+}
+
+export interface BidAdviceResult {
+  recommendedBid: number; // 0 = nil, 1-13 = trick count
+  analysis: string; // 2-3 sentence explanation
+}
+
+export async function generateBidAdvice(data: {
+  hand: Card[];
+  scores: {
+    team1: { score: number; bags: number };
+    team2: { score: number; bags: number };
+  };
+  currentBids: {
+    position: Position;
+    team: string;
+    bid: number;
+    isNil: boolean;
+    isBlindNil: boolean;
+  }[];
+  myPosition: Position;
+  myTeam: string;
+  dealerPosition: Position;
+  winningScore: number;
+}): Promise<BidAdviceResult | null> {
+  const anthropic = getClient();
+  if (!anthropic) return null;
+
+  // Group cards by suit for readability
+  const suitOrder = ['spades', 'hearts', 'diamonds', 'clubs'] as const;
+  const suitNames: Record<string, string> = {
+    spades: 'Spades',
+    hearts: 'Hearts',
+    diamonds: 'Diamonds',
+    clubs: 'Clubs',
+  };
+  const rankOrder = [
+    'A',
+    'K',
+    'Q',
+    'J',
+    '10',
+    '9',
+    '8',
+    '7',
+    '6',
+    '5',
+    '4',
+    '3',
+    '2',
+  ];
+
+  const handBySuit = suitOrder
+    .map((suit) => {
+      const cards = data.hand
+        .filter((c) => c.suit === suit)
+        .sort((a, b) => rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank))
+        .map((c) => c.rank);
+      if (cards.length === 0) return `${suitNames[suit]}: (void)`;
+      return `${suitNames[suit]} (${cards.length}): ${cards.join(', ')}`;
+    })
+    .join('\n');
+
+  const bidsPlaced =
+    data.currentBids.length > 0
+      ? data.currentBids
+          .map(
+            (b) =>
+              `Position ${b.position} (${b.team}): ${b.isBlindNil ? 'Blind Nil' : b.isNil ? 'Nil' : b.bid}`
+          )
+          .join('\n')
+      : 'None yet — you are the first to bid.';
+
+  try {
+    const response = await anthropic.messages.create({
+      model: MODEL_SONNET,
+      max_tokens: 500,
+      system: `You are a Spades bidding advisor. You will be given a hand of exactly 13 cards. Your job is to recommend a bid and provide a brief explanation.
+
+**IMPORTANT: Before analyzing, list back the exact cards you were given, organized by suit. Do not reference any card not in that list.**
+
+## Bidding Rules
+
+**These rules apply when evaluating a regular (non-nil) bid. They do not apply when evaluating nil — see the Nil Bid Consideration section below.**
+
+Regular bid calculation — sum the following:
+
+- Spades (high cards)
+  - A♠ = 1 trick
+  - K♠ = 1 trick if you hold at least one other spade
+  - Q♠ = 1 trick if you hold at least two other spades
+  - J♠ = 1 trick if you hold at least three other spades
+- Spades (length)
+  - Each spade beyond the 4th = 1 trick
+- Side suits
+  - Any side suit **Ace** = 1 trick
+  - K in a side suit where you hold 2+ cards of that suit = 0.5-1 trick (lower confidence with every card more than 2 in the suit, since opponents will be more likely to be short and thus trump)
+  - Q in a side suit where you hold 3+ cards of that suit = 0.1-0.5 tricks (lower confidence with every card more than 3 in the suit, since opponents will be more likely to be short and thus trump)
+- Short side suits (trumping potential)
+  - A void in a side suit = 1-2 additional tricks (you can trump early, **if** you have the spades to do it and those spades aren't already counted in your projected tricks)
+  - A singleton in a side suit = roughly 1 additional trick (again, **only if** you have unassigned spades to trump with)
+  - A doubleton in a side suit = 0.5 additional trick with unassigned spades
+- Rounding and adjustment
+  - When your trick count is a fraction, **always** round down, not up. A bid of 2 on a 2.5-count hand is correct; a bid of 3 is an overbid.
+  - If the sum of bids already placed is high (9+), shade your bid further downward — tricks are finite.
+  - The average sum of all four players' bids in well-played games is approximately 10-11 out of 13 tricks total. Consistently underbidding by a half-trick is better than overbidding by a half-trick — overtricks cost 1 point each, but a failed contract costs 10x your bid.
+
+## Nil bid consideration
+
+**The regular bid rules above do not apply here. When evaluating nil, high cards are assessed purely by suit length — a high card is only dangerous if the suit is likely to be led enough times to force it out before you are void.**
+
+Consider bidding nil (0) only if ALL of the following are true:
+
+- No A♠ (the Ace of Spades is literally always fatal for nil)
+- No K♠ or Q♠ without sufficient low spade cover (K♠ needs 1+ other spades; Q♠ needs 2+ other spades)
+- A total of 3 or fewer spades. With 4+ spades (no matter their rank) there is a very high risk of being the last player with spades and being forced to take a trick
+- For each side suit, evaluate high card danger by suit length and rank:
+  - **Ace** in a side suit: safe only with 4+ other cards in that suit (you cannot duck under a higher card — partner must trump or the suit must exhaust)
+  - **King** in a side suit: safe with 3+ other cards; marginal with 2; dangerous as singleton or doubleton
+  - **Queen** in a side suit: safe with 2+ other cards; marginal with 1; note that a Q can also be saved by ducking under partner's K or A if they hold one
+  - Multiple high cards in the same suit stack the danger — evaluate the suit as a whole, not card by card
+
+If the hand fails any of these checks, do not bid nil.`,
+      messages: [
+        {
+          role: 'user',
+          content: `Recommend a bid for this hand. Here are the ONLY cards in my hand — do not reference any other cards:
+
+${handBySuit}
+
+Scores: Team 1: ${data.scores.team1.score} pts (${data.scores.team1.bags} bags) | Team 2: ${data.scores.team2.score} pts (${data.scores.team2.bags} bags) | Winning: ${data.winningScore}
+Position: ${data.myPosition} (${data.myTeam}) | Dealer: ${data.dealerPosition}
+Bids placed: ${bidsPlaced}
+
+Count tricks suit by suit using the bidding rules, then respond with ONLY valid JSON: {"recommendedBid": N, "analysis": "..."}
+recommendedBid: 0 for nil, 1-13 for trick count.
+analysis: 2-3 sentences. Reference only cards listed above.`,
+        },
+      ],
+    });
+
+    const raw =
+      response.content[0].type === 'text' ? response.content[0].text : '';
+    // The model continues after the prefill — extract the JSON object
+    // which may be preceded by reasoning text
+    const jsonMatch = /\{[\s\S]*"recommendedBid"[\s\S]*\}/.exec(raw);
+    if (!jsonMatch) {
+      console.warn('[ai] No JSON found in bid advice response:', raw);
+      return null;
+    }
+    const text = jsonMatch[0]
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/, '');
+    const parsed = JSON.parse(text) as BidAdviceResult;
+
+    if (
+      typeof parsed.recommendedBid !== 'number' ||
+      parsed.recommendedBid < 0 ||
+      parsed.recommendedBid > 13 ||
+      typeof parsed.analysis !== 'string'
+    ) {
+      console.warn('[ai] Invalid bid advice response:', parsed);
+      return null;
+    }
+
+    return {
+      recommendedBid: Math.round(parsed.recommendedBid),
+      analysis: parsed.analysis.slice(0, 500),
+    };
+  } catch (err) {
+    console.warn('[ai] Failed to generate bid advice:', err);
     return null;
   }
 }

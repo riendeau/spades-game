@@ -1,7 +1,9 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import { getPartnerPosition } from '@spades/shared';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { useGameStore } from '../../store/game-store';
 import { Button } from '../ui/Button';
+import { BidAdviceModal } from './BidAdviceModal';
 
 interface BiddingPanelProps {
   gameState: ClientGameState;
@@ -20,7 +22,47 @@ export function BiddingPanel({
   onRevealCards,
   compact = false,
 }: BiddingPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
+  const [showAdvice, setShowAdvice] = useState(false);
+  const [adviceUsed, setAdviceUsed] = useState(false);
+  const [anchorY, setAnchorY] = useState<number | undefined>(undefined);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [adviceData, setAdviceData] = useState<{
+    recommendedBid: number;
+    analysis: string;
+  } | null>(null);
+  const [adviceError, setAdviceError] = useState<string | null>(null);
+  const roomId = useGameStore((s) => s.roomId);
+  const sessionToken = useGameStore((s) => s.sessionToken);
+
+  const handleAskClaude = async () => {
+    const rect = panelRef.current?.getBoundingClientRect();
+    setAnchorY(rect ? rect.top + rect.height / 2 : undefined);
+    setShowAdvice(true);
+    setAdviceLoading(true);
+    setAdviceData(null);
+    setAdviceError(null);
+
+    try {
+      const res = await fetch('/api/bid-advice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId, sessionToken }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setAdviceError(body.error || 'Failed to get advice');
+      } else {
+        setAdviceData(body);
+      }
+    } catch {
+      setAdviceError('Failed to connect to server');
+    } finally {
+      setAdviceLoading(false);
+    }
+  };
+
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const myBid = gameState.currentRound?.bids.find(
     (b) =>
@@ -82,6 +124,7 @@ export function BiddingPanel({
 
   return (
     <div
+      ref={panelRef}
       style={{
         backgroundColor: '#fff',
         borderRadius: '12px',
@@ -212,6 +255,34 @@ export function BiddingPanel({
             </div>
           </div>
 
+          <div style={{ marginBottom: '12px' }}>
+            <button
+              onClick={() => void handleAskClaude()}
+              disabled={adviceLoading || adviceUsed}
+              style={{
+                width: '100%',
+                padding: compact ? '7px 12px' : '9px 16px',
+                fontSize: '13px',
+                fontWeight: 600,
+                backgroundColor:
+                  adviceLoading || adviceUsed ? '#c4652a' : '#E07A2F',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: adviceLoading || adviceUsed ? 'not-allowed' : 'pointer',
+                opacity: adviceUsed ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                letterSpacing: '0.01em',
+              }}
+            >
+              <span style={{ fontSize: '15px', lineHeight: 1 }}>✦</span>
+              {adviceLoading ? 'Asking Claude...' : 'Help me, Claude!'}
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: compact ? '8px' : '12px' }}>
             <button
               onClick={handleNilBid}
@@ -253,6 +324,24 @@ export function BiddingPanel({
           }{' '}
           to bid...
         </div>
+      )}
+
+      {showAdvice && (
+        <BidAdviceModal
+          loading={adviceLoading}
+          error={adviceError}
+          data={adviceData}
+          anchorY={anchorY}
+          onClose={() => {
+            setShowAdvice(false);
+            setAdviceUsed(true);
+          }}
+          onUseBid={(bid) => {
+            setSelectedBid(bid);
+            setShowAdvice(false);
+            setAdviceUsed(true);
+          }}
+        />
       )}
     </div>
   );
