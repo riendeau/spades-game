@@ -47,35 +47,11 @@ export function BidAdviceModal({
               style={{
                 fontSize: '32px',
                 marginBottom: '16px',
-                animation: 'spin 1s linear infinite',
+                color: '#E07A2F',
+                animation: 'spin 2s ease-in-out infinite',
               }}
             >
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{
-                  animation: 'spin 1s linear infinite',
-                  display: 'inline-block',
-                }}
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="#d1d5db"
-                  strokeWidth="3"
-                  fill="none"
-                />
-                <path
-                  d="M12 2a10 10 0 0 1 10 10"
-                  stroke="#3b82f6"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-              </svg>
+              ✦
             </div>
             <div style={{ fontSize: '16px', color: '#6b7280' }}>
               Claude is analyzing your hand...
@@ -104,18 +80,22 @@ export function BidAdviceModal({
             <div
               style={{
                 fontSize: '14px',
-                color: '#6b7280',
+                color: '#9ca3af',
                 marginBottom: '8px',
                 fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
               }}
             >
-              Claude recommends
+              <span style={{ color: '#E07A2F' }}>✦</span> Claude recommends
             </div>
             <div
               style={{
                 fontSize: '48px',
                 fontWeight: 700,
-                color: '#3b82f6',
+                color: '#E07A2F',
                 marginBottom: '16px',
               }}
             >

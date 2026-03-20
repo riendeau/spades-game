@@ -255,17 +255,22 @@ export function BiddingPanel({
               disabled={adviceLoading}
               style={{
                 width: '100%',
-                padding: compact ? '6px' : '8px',
+                padding: compact ? '7px 12px' : '9px 16px',
                 fontSize: '13px',
-                fontWeight: 500,
-                backgroundColor: 'transparent',
-                color: '#6b7280',
-                border: '1px dashed #d1d5db',
+                fontWeight: 600,
+                backgroundColor: adviceLoading ? '#c4652a' : '#E07A2F',
+                color: '#fff',
+                border: 'none',
                 borderRadius: '8px',
                 cursor: adviceLoading ? 'not-allowed' : 'pointer',
-                opacity: adviceLoading ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                letterSpacing: '0.01em',
               }}
             >
+              <span style={{ fontSize: '15px', lineHeight: 1 }}>✦</span>
               {adviceLoading ? 'Asking Claude...' : 'Help me, Claude!'}
             </button>
           </div>

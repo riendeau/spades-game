@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Card, Position } from '@spades/shared';
 
-const MODEL = 'claude-haiku-4-5-20251001';
+const MODEL_HAIKU = 'claude-haiku-4-5';
+const MODEL_SONNET = 'claude-sonnet-4-6';
 
 let client: Anthropic | null = null;
 
@@ -37,7 +38,7 @@ export async function generateTeamNames(players: {
 
   try {
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model: MODEL_HAIKU,
       max_tokens: 150,
       messages: [
         {
@@ -131,12 +132,12 @@ export async function generateGameSummary(data: {
 
   try {
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model: MODEL_HAIKU,
       max_tokens: 400,
       messages: [
         {
           role: 'user',
-          content: `You are a witty sports commentator writing a recap of a Spades card game. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers, hype the winners.
+          content: `You are a witty sports commentator writing a recap of a Spades card game and mildly resentful at having to engage with such low-quality play. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers (and the winners too if they deserve it).
 
 Winner: ${data.teamNames[data.winningTeam]}
 Final score: ${data.teamNames.team1} ${data.finalScores.team1.score} (${data.finalScores.team1.bags} bags) - ${data.teamNames.team2} ${data.finalScores.team2.score} (${data.finalScores.team2.bags} bags)
@@ -235,41 +236,54 @@ export async function generateBidAdvice(data: {
       : 'None yet — you are the first to bid.';
 
   try {
-    // Build a structured trick-counting scratchpad for the prefill.
-    // This anchors the model to the actual hand and prevents hallucinations.
-    const suitAnalysis = suitOrder
-      .map((suit) => {
-        const cards = data.hand
-          .filter((c) => c.suit === suit)
-          .sort(
-            (a, b) => rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank)
-          );
-        const count = cards.length;
-        const label = suitNames[suit];
-        if (count === 0)
-          return `${label}: void (0 cards) — can trump when ${label.toLowerCase()} is led`;
-        const names = cards.map((c) => c.rank).join(', ');
-        return `${label}: ${names} (${count} card${count > 1 ? 's' : ''})`;
-      })
-      .join('\n');
-
     const response = await anthropic.messages.create({
-      model: MODEL,
+      model: MODEL_SONNET,
       max_tokens: 500,
-      system: `You are an expert Spades card game bidding advisor. You must ONLY reference cards that appear in the player's hand — never invent or assume cards that are not listed. Accuracy is more important than optimism.
+      system: `You are a Spades bidding advisor. You will be given a hand of exactly 13 cards. Your job is to recommend a bid and provide a brief explanation.
 
-Trick-counting rules (follow strictly):
-- A, K of spades: almost always win. Count each as 1 trick.
-- Q of spades: usually wins but can lose to A or K. Count as 0.5.
-- Lower spades: unreliable. Only count if you have 4+ spades total.
-- Off-suit Ace in a SHORT suit (1-3 cards): count as 1 trick.
-- Off-suit Ace in a LONG suit (4+ cards): count as 0.5 — opponents may be void and trump it.
-- Off-suit King in a 2-card suit: count as 0.5 (wins if Ace is played first round).
-- Off-suit King in 3+ card suit: do NOT count — too likely to lose to the Ace or get trumped.
-- Q, J, 10, and lower in ANY side suit: NEVER count as tricks (unless singleton/doubleton AND highest in suit, which is rare).
-- Void in a side suit: count as 0.5 if you have spades to trump with.
+**IMPORTANT: Before analyzing, list back the exact cards you were given, organized by suit. Do not reference any card not in that list.**
 
-Sum up using these fractional values, then ROUND DOWN to get your bid. Most hands produce 2-5 tricks. Bids of 6+ require multiple high spades or aces.`,
+## Bidding Rules
+
+**These rules apply when evaluating a regular (non-nil) bid. They do not apply when evaluating nil — see the Nil Bid Consideration section below.**
+
+Regular bid calculation — sum the following:
+
+- Spades (high cards)
+  - A♠ = 1 trick
+  - K♠ = 1 trick if you hold at least one other spade
+  - Q♠ = 1 trick if you hold at least two other spades
+  - J♠ = 1 trick if you hold at least three other spades
+- Spades (length)
+  - Each spade beyond the 4th = 1 trick
+- Side suits
+  - Any side suit **Ace** = 1 trick
+  - K in a side suit where you hold 2+ cards of that suit = 0.5-1 trick (lower confidence with every card more than 2 in the suit, since opponents will be more likely to be short and thus trump)
+  - Q in a side suit where you hold 3+ cards of that suit = 0.1-0.5 tricks (lower confidence with every card more than 3 in the suit, since opponents will be more likely to be short and thus trump)
+- Short side suits (trumping potential)
+  - A void in a side suit = 1-2 additional tricks (you can trump early, **if** you have the spades to do it and those spades aren't already counted in your projected tricks)
+  - A singleton in a side suit = roughly 1 additional trick (again, **only if** you have unassigned spades to trump with)
+  - A doubleton in a side suit = 0.5 additional trick with unassigned spades
+- Rounding and adjustment
+  - When your trick count is a fraction, **always** round down, not up. A bid of 2 on a 2.5-count hand is correct; a bid of 3 is an overbid.
+  - If the sum of bids already placed is high (9+), shade your bid further downward — tricks are finite.
+  - The average sum of all four players' bids in well-played games is approximately 10-11 out of 13 tricks total. Consistently underbidding by a half-trick is better than overbidding by a half-trick — overtricks cost 1 point each, but a failed contract costs 10x your bid.
+
+## Nil bid consideration
+
+**The regular bid rules above do not apply here. When evaluating nil, high cards are assessed purely by suit length — a high card is only dangerous if the suit is likely to be led enough times to force it out before you are void.**
+
+Consider bidding nil (0) only if ALL of the following are true:
+
+- No A♠ (the Ace of Spades is literally always fatal for nil)
+- No K♠ or Q♠ without sufficient low spade cover (K♠ needs 1+ other spades; Q♠ needs 2+ other spades)
+- For each side suit, evaluate high card danger by suit length and rank:
+  - **Ace** in a side suit: safe only with 4+ other cards in that suit (you cannot duck under a higher card — partner must trump or the suit must exhaust)
+  - **King** in a side suit: safe with 3+ other cards; marginal with 2; dangerous as singleton or doubleton
+  - **Queen** in a side suit: safe with 2+ other cards; marginal with 1; note that a Q can also be saved by ducking under partner's K or A if they hold one
+  - Multiple high cards in the same suit stack the danger — evaluate the suit as a whole, not card by card
+
+If the hand fails any of these checks, do not bid nil.`,
       messages: [
         {
           role: 'user',
@@ -281,16 +295,9 @@ Scores: Team 1: ${data.scores.team1.score} pts (${data.scores.team1.bags} bags) 
 Position: ${data.myPosition} (${data.myTeam}) | Dealer: ${data.dealerPosition}
 Bids placed: ${bidsPlaced}
 
-Respond with ONLY valid JSON: {"recommendedBid": N, "analysis": "..."}
+Count tricks suit by suit using the bidding rules, then respond with ONLY valid JSON: {"recommendedBid": N, "analysis": "..."}
 recommendedBid: 0 for nil, 1-13 for trick count.
 analysis: 2-3 sentences. Reference only cards listed above.`,
-        },
-        {
-          role: 'assistant',
-          content: `Let me count tricks suit by suit using only the cards listed:
-${suitAnalysis}
-
-Based on strict counting rules:`,
         },
       ],
     });
