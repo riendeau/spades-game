@@ -277,6 +277,7 @@ Consider bidding nil (0) only if ALL of the following are true:
 
 - No A♠ (the Ace of Spades is literally always fatal for nil)
 - No K♠ or Q♠ without sufficient low spade cover (K♠ needs 1+ other spades; Q♠ needs 2+ other spades)
+- A total of 3 or fewer spades. With 4+ spades (no matter their rank) there is a very high risk of being the last player with spades and being forced to take a trick
 - For each side suit, evaluate high card danger by suit length and rank:
   - **Ace** in a side suit: safe only with 4+ other cards in that suit (you cannot duck under a higher card — partner must trump or the suit must exhaust)
   - **King** in a side suit: safe with 3+ other cards; marginal with 2; dangerous as singleton or doubleton
