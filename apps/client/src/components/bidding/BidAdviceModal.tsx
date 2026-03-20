@@ -1,10 +1,12 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '../ui/Button';
 
 interface BidAdviceModalProps {
   loading: boolean;
   error: string | null;
   data: { recommendedBid: number; analysis: string } | null;
+  anchorY?: number;
   onClose: () => void;
   onUseBid: (bid: number) => void;
 }
@@ -13,25 +15,27 @@ export function BidAdviceModal({
   loading,
   error,
   data,
+  anchorY,
   onClose,
   onUseBid,
 }: BidAdviceModalProps) {
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         zIndex: 1000,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
+          position: 'fixed',
+          left: '50%',
+          top: anchorY ?? '50%',
+          transform: 'translate(-50%, -50%)',
           backgroundColor: '#fff',
           borderRadius: '16px',
           padding: '32px',
@@ -126,6 +130,7 @@ export function BidAdviceModal({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
