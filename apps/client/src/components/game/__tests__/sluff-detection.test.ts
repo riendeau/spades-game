@@ -91,6 +91,7 @@ function makeGameState(
     },
     dealerPosition: 3 as const,
     currentPlayerPosition: 0 as const,
+    turnStartedAt: null,
     winningScore: 500,
   };
 }

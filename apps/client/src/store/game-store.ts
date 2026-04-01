@@ -45,6 +45,7 @@ interface GameStore {
   cardsRevealed: boolean;
   availableSeats: AvailableSeat[] | null;
   seatSelectRoomId: string | null;
+  kickedForIdle: boolean;
 
   // Actions
   setSession: (
@@ -89,6 +90,7 @@ interface GameStore {
   revealCards: () => void;
   setAvailableSeats: (roomId: string, seats: AvailableSeat[]) => void;
   clearAvailableSeats: () => void;
+  setKickedForIdle: () => void;
   reset: () => void;
 }
 
@@ -110,6 +112,7 @@ const initialState = {
   cardsRevealed: false,
   availableSeats: null,
   seatSelectRoomId: null,
+  kickedForIdle: false,
 };
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -171,6 +174,8 @@ export const useGameStore = create<GameStore>((set) => ({
 
   clearAvailableSeats: () =>
     set({ availableSeats: null, seatSelectRoomId: null }),
+
+  setKickedForIdle: () => set({ kickedForIdle: true }),
 
   reset: () => set(initialState),
 }));

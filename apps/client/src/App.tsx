@@ -38,6 +38,8 @@ function AppInner() {
     changeSeat,
     openSeat,
     selectSeat,
+    kickIdle,
+    kickedForIdle,
     availableSeats,
     seatSelectRoomId,
     clearRoundSummary,
@@ -116,6 +118,59 @@ function AppInner() {
       {error}
     </div>
   );
+
+  // Kicked for inactivity
+  if (kickedForIdle) {
+    return (
+      <div
+        style={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
+        }}
+      >
+        <div
+          style={{
+            textAlign: 'center',
+            color: '#fff',
+            maxWidth: '400px',
+            padding: '32px',
+          }}
+        >
+          <div
+            style={{ fontSize: '24px', fontWeight: 600, marginBottom: '12px' }}
+          >
+            Removed for Inactivity
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '24px' }}>
+            You were removed from the game because you did not act within the
+            time limit. Your seat has been opened for another player.
+          </div>
+          <button
+            onClick={() => {
+              reset();
+              window.location.reload();
+            }}
+            style={{
+              padding: '10px 24px',
+              fontSize: '16px',
+              fontWeight: 600,
+              backgroundColor: '#fff',
+              color: '#1a472a',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            Return to Lobby
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Seat selection for joining an in-progress game
   if (availableSeats && seatSelectRoomId) {
@@ -197,6 +252,7 @@ function AppInner() {
           onBid={makeBid}
           onRevealCards={revealCards}
           onOpenSeat={openSeat}
+          onKickIdle={kickIdle}
           teamNameReveal={teamNameReveal}
           onDismissTeamNames={clearTeamNameReveal}
         />

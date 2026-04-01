@@ -135,6 +135,7 @@ export class GameInstance {
         : null,
       dealerPosition: this.state.dealerPosition,
       currentPlayerPosition: this.state.currentPlayerPosition,
+      turnStartedAt: null,
       winningScore: this.state.winningScore,
       teamNames: this.teamNames ?? undefined,
     };

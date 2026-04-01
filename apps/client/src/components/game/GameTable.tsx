@@ -6,7 +6,7 @@ import type {
   ScoreHistoryEntry,
 } from '@spades/shared';
 import { getPlayableCards } from '@spades/shared';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
 import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 import { AdUnit } from '../ads/AdUnit';
@@ -29,6 +29,7 @@ interface GameTableProps {
   onBid: (bid: number, isNil?: boolean, isBlindNil?: boolean) => void;
   onRevealCards: () => void;
   onOpenSeat?: (playerId: PlayerId) => void;
+  onKickIdle?: (playerId: PlayerId) => void;
   teamNameReveal?: {
     players: { nickname: string; team: 'team1' | 'team2' }[];
     teamNames: { team1: string; team2: string; startButton?: string } | null;
@@ -46,6 +47,7 @@ export function GameTable({
   onBid,
   onRevealCards,
   onOpenSeat,
+  onKickIdle,
   teamNameReveal,
   onDismissTeamNames,
 }: GameTableProps) {
@@ -55,6 +57,35 @@ export function GameTable({
   const isMyTurn = gameState.currentPlayerPosition === myPosition;
   const isBidding = gameState.phase === 'bidding';
   const isPlaying = gameState.phase === 'playing';
+
+  // Self-warning for idle timer: show after 90s of own inactivity
+  const idleTimerActive =
+    isMyTurn && (isBidding || isPlaying) && gameState.turnStartedAt != null;
+  const [idleWarningSeconds, setIdleWarningSeconds] = useState<number | null>(
+    null
+  );
+  useEffect(() => {
+    if (!idleTimerActive || !gameState.turnStartedAt) {
+      return () => setIdleWarningSeconds(null);
+    }
+    const WARNING_THRESHOLD = 90; // seconds
+    const KICK_THRESHOLD = 120;
+    const turnStartedAt = gameState.turnStartedAt;
+    const tick = () => {
+      const elapsed = (Date.now() - turnStartedAt) / 1000;
+      if (elapsed >= WARNING_THRESHOLD) {
+        setIdleWarningSeconds(Math.max(0, Math.ceil(KICK_THRESHOLD - elapsed)));
+      } else {
+        setIdleWarningSeconds(null);
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => {
+      clearInterval(interval);
+      setIdleWarningSeconds(null);
+    };
+  }, [idleTimerActive, gameState.turnStartedAt]);
 
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const myPlayerId = myPlayer?.id;
@@ -180,6 +211,7 @@ export function GameTable({
             relativePosition="top"
             compact={isMobile}
             onOpenSeat={onOpenSeat}
+            onKickIdle={onKickIdle}
           />
         </div>
 
@@ -202,6 +234,7 @@ export function GameTable({
             relativePosition="left"
             compact={isMobile}
             onOpenSeat={onOpenSeat}
+            onKickIdle={onKickIdle}
           />
 
           {/* Absolutely centered so side opponents don't affect position */}
@@ -241,6 +274,7 @@ export function GameTable({
             relativePosition="right"
             compact={isMobile}
             onOpenSeat={onOpenSeat}
+            onKickIdle={onKickIdle}
           />
 
           {teamNameReveal && onDismissTeamNames && (
@@ -324,6 +358,18 @@ export function GameTable({
                   return `Bid: ${bidLabel} | Won: ${tricksWon}`;
                 })()}
               </span>
+              {idleWarningSeconds !== null && (
+                <span
+                  style={{
+                    fontSize: isMobile ? '10px' : '12px',
+                    color: idleWarningSeconds <= 10 ? '#ef4444' : '#f59e0b',
+                    fontWeight: 600,
+                    marginTop: '2px',
+                  }}
+                >
+                  Kick in {idleWarningSeconds}s — make your move!
+                </span>
+              )}
             </div>
           </div>
         )}

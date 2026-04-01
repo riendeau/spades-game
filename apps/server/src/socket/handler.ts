@@ -20,7 +20,10 @@ import {
   generateGameSummary,
 } from '../ai/claude-service.js';
 import { insertGameResult } from '../db/game-results.js';
+import { IdleTimerManager } from '../rooms/idle-timer.js';
 import { roomManager, type Room } from '../rooms/room-manager.js';
+
+const idleTimer = new IdleTimerManager();
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -54,21 +57,34 @@ function isValidCard(card: unknown): card is Card {
   );
 }
 
+/** Sync the idle timer whenever the turn or phase changes. */
+function syncIdleTimer(room: Room): void {
+  const state = room.game.getState();
+  if (state.phase === 'bidding' || state.phase === 'playing') {
+    idleTimer.startTurn(room.id);
+  } else {
+    idleTimer.clearTurn(room.id);
+  }
+}
+
 function getClientState(room: Room): ClientGameState {
   const state = room.game.toClientState();
   const abandonedIds = roomManager.getAbandonedPlayerIds(room.id);
 
+  const turnStartedAt = idleTimer.getTurnStartedAt(room.id);
+  const withTimer: ClientGameState = { ...state, turnStartedAt };
+
   if (abandonedIds.length > 0) {
     return {
-      ...state,
-      players: state.players.map((p) => ({
+      ...withTimer,
+      players: withTimer.players.map((p) => ({
         ...p,
         openForReplacement: abandonedIds.includes(p.id) ? true : undefined,
       })),
     };
   }
 
-  return state;
+  return withTimer;
 }
 
 export function setupSocketHandlers(io: TypedServer): void {
@@ -120,6 +136,10 @@ export function setupSocketHandlers(io: TypedServer): void {
 
     socket.on('player:open-seat', ({ playerId }) => {
       handleOpenSeat(socket, io, playerId);
+    });
+
+    socket.on('player:kick-idle', ({ playerId }) => {
+      handleKickIdle(socket, io, playerId);
     });
 
     socket.on('room:select-seat', ({ roomId, position, nickname }) => {
@@ -317,6 +337,9 @@ function handlePlayerReady(socket: TypedSocket, io: TypedServer): void {
         }
       }
 
+      // Start idle timer for first bidder
+      syncIdleTimer(room);
+
       // Update state
       io.to(room.id).emit('game:state-update', {
         state: getClientState(room),
@@ -413,6 +436,7 @@ function handleBid(
   }
 
   roomManager.touchRoom(room.id);
+  syncIdleTimer(room);
 
   io.to(room.id).emit('game:bid-made', {
     playerId: session.playerId,
@@ -484,6 +508,7 @@ function handlePlayCard(
   }
 
   roomManager.touchRoom(room.id);
+  syncIdleTimer(room);
 
   io.to(room.id).emit('game:card-played', {
     playerId: session.playerId,
@@ -512,6 +537,7 @@ function handlePlayCard(
     // and process any round/game-end side effects.
     setTimeout(() => {
       const collectResult = room.game.collectTrick();
+      syncIdleTimer(room);
 
       for (const effect of collectResult.sideEffects ?? []) {
         if (effect.type === 'ROUND_COMPLETE') {
@@ -528,6 +554,7 @@ function handlePlayCard(
             setTimeout(() => {
               const nextResult = room.game.startNextRound();
               if (nextResult.valid) {
+                syncIdleTimer(room);
                 for (const player of room.game.getState().players) {
                   const playerSession = Array.from(
                     roomManager.getAllSessions()
@@ -947,6 +974,100 @@ async function generateGameSummaryForRoom(
     console.warn('[ai] generateGameSummaryForRoom failed:', err);
     io.to(room.id).emit('game:summary', { summary: '' });
   }
+}
+
+function handleKickIdle(
+  socket: TypedSocket,
+  io: TypedServer,
+  targetPlayerId: string
+): void {
+  const session = roomManager.getSessionBySocketId(socket.id);
+  if (!session) {
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(session.roomId);
+  if (!room) {
+    socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+    return;
+  }
+
+  const state = room.game.getState();
+  if (state.phase !== 'bidding' && state.phase !== 'playing') {
+    socket.emit('error', {
+      code: 'KICK_FAILED',
+      message: 'Can only kick during bidding or playing',
+    });
+    return;
+  }
+
+  const targetPlayer = state.players.find((p) => p.id === targetPlayerId);
+  if (!targetPlayer) {
+    socket.emit('error', {
+      code: 'KICK_FAILED',
+      message: 'Player not found',
+    });
+    return;
+  }
+
+  if (targetPlayer.position !== state.currentPlayerPosition) {
+    socket.emit('error', {
+      code: 'KICK_FAILED',
+      message: 'Player is not the current player',
+    });
+    return;
+  }
+
+  if (targetPlayerId === session.playerId) {
+    socket.emit('error', {
+      code: 'KICK_FAILED',
+      message: 'Cannot kick yourself',
+    });
+    return;
+  }
+
+  if (!idleTimer.isKickable(room.id)) {
+    socket.emit('error', {
+      code: 'KICK_FAILED',
+      message: 'Player has not been idle long enough',
+    });
+    return;
+  }
+
+  // Find the idle player's socket to notify them before disconnection
+  const targetSession = Array.from(roomManager.getAllSessions()).find(
+    (s) => s.playerId === targetPlayerId && s.roomId === room.id && s.socketId
+  );
+
+  if (targetSession?.socketId) {
+    const targetSocket = io.sockets.sockets.get(targetSession.socketId);
+    if (targetSocket) {
+      targetSocket.emit('player:kicked-for-idle');
+      targetSocket.disconnect(true);
+    }
+  }
+
+  // Delete their sessions so they can't reconnect
+  roomManager.deleteSessionsForPlayer(targetPlayerId);
+
+  // Mark player as disconnected in game state
+  room.game.disconnectPlayer(targetPlayerId);
+
+  idleTimer.clearTurn(room.id);
+
+  console.log(
+    `[kick] idle player kicked id=${targetPlayerId.slice(0, 8)}… position=${targetPlayer.position} room=${room.id} by=${session.playerId.slice(0, 8)}…`
+  );
+
+  io.to(room.id).emit('room:seat-opened', {
+    playerId: targetPlayerId,
+    position: targetPlayer.position,
+  });
+  io.to(room.id).emit('game:state-update', { state: getClientState(room) });
 }
 
 function handleDisconnect(socket: TypedSocket, io: TypedServer): void {

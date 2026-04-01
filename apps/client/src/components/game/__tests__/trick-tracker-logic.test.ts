@@ -76,6 +76,7 @@ function makeGameState(
     },
     dealerPosition: 0,
     currentPlayerPosition: 1,
+    turnStartedAt: null,
     winningScore: 500,
     ...overrides,
   };
