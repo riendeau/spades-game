@@ -77,6 +77,17 @@ export class RoomManager {
     socketId: string,
     userId: string | null = null
   ): PlayerSession {
+    // If this socket already has a session, detach the socket from the old
+    // session so that a later cleanup of the old session doesn't delete the
+    // new socketToSession mapping.
+    const existingToken = this.socketToSession.get(socketId);
+    if (existingToken) {
+      const existingSession = this.sessions.get(existingToken);
+      if (existingSession) {
+        existingSession.socketId = null;
+      }
+    }
+
     const sessionToken = uuidv4();
     const session: PlayerSession = {
       sessionToken,
@@ -236,6 +247,20 @@ export class RoomManager {
         return true;
       })
       .map((p) => p.id);
+  }
+
+  deleteSession(sessionToken: string): void {
+    const session = this.sessions.get(sessionToken);
+    if (!session) return;
+
+    if (session.socketId) {
+      this.socketToSession.delete(session.socketId);
+    }
+    this.sessions.delete(sessionToken);
+
+    console.log(
+      `[session] deleted token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId}`
+    );
   }
 
   deleteSessionsForPlayer(playerId: string): void {
