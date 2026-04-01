@@ -75,51 +75,8 @@ function AppInner() {
     .exec(window.location.pathname)?.[1]
     ?.toUpperCase();
 
-  if (!connected) {
-    return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background:
-            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <div
-            style={{ fontSize: '24px', marginBottom: '8px', color: '#ffffff' }}
-          >
-            Connecting...
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.5)' }}>Please wait</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error toast
-  const errorToast = error && (
-    <div
-      style={{
-        position: 'fixed',
-        top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        backgroundColor: '#dc2626',
-        color: '#fff',
-        padding: '12px 24px',
-        borderRadius: '8px',
-        zIndex: 2000,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-      }}
-    >
-      {error}
-    </div>
-  );
-
-  // Kicked for inactivity
+  // Kicked for inactivity — check before !connected so the disconnect
+  // that follows the kick doesn't mask this screen with "Connecting..."
   if (kickedForIdle) {
     return (
       <div
@@ -171,6 +128,50 @@ function AppInner() {
       </div>
     );
   }
+
+  if (!connected) {
+    return (
+      <div
+        style={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{ fontSize: '24px', marginBottom: '8px', color: '#ffffff' }}
+          >
+            Connecting...
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.5)' }}>Please wait</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error toast
+  const errorToast = error && (
+    <div
+      style={{
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        backgroundColor: '#dc2626',
+        color: '#fff',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        zIndex: 2000,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      }}
+    >
+      {error}
+    </div>
+  );
 
   // Seat selection for joining an in-progress game
   if (availableSeats && seatSelectRoomId) {

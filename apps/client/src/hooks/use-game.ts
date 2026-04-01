@@ -145,6 +145,8 @@ export function useGame() {
     socket.on('player:kicked-for-idle', () => {
       useGameStore.getState().setKickedForIdle();
       clearSession();
+      // Disconnect from client side to prevent auto-reconnect attempts
+      socket.disconnect();
     });
 
     socket.on('reconnect:failed', ({ reason }) => {

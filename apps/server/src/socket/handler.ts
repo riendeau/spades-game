@@ -1043,16 +1043,17 @@ function handleKickIdle(
     (s) => s.playerId === targetPlayerId && s.roomId === room.id && s.socketId
   );
 
+  // Delete their sessions first so any reconnect attempt is rejected
+  roomManager.deleteSessionsForPlayer(targetPlayerId);
+
   if (targetSession?.socketId) {
     const targetSocket = io.sockets.sockets.get(targetSession.socketId);
     if (targetSocket) {
       targetSocket.emit('player:kicked-for-idle');
-      targetSocket.disconnect(true);
+      // Delay disconnect so the event is delivered before the transport closes
+      setTimeout(() => targetSocket.disconnect(true), 100);
     }
   }
-
-  // Delete their sessions so they can't reconnect
-  roomManager.deleteSessionsForPlayer(targetPlayerId);
 
   // Mark player as disconnected in game state
   room.game.disconnectPlayer(targetPlayerId);
