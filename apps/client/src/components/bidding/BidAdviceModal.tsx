@@ -112,6 +112,8 @@ export function BidAdviceModal({
                 lineHeight: '1.5',
                 marginBottom: '24px',
                 textAlign: 'left',
+                maxHeight: '30vh',
+                overflowY: 'auto',
               }}
             >
               {data.analysis}
