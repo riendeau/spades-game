@@ -110,6 +110,41 @@ describe('RoomManager', () => {
       expect(rm.getSessionCount()).toBe(1);
       expect(rm.getRoom(room2.id)).toBe(room2);
     });
+
+    it('should not break socketToSession for a socket that reused across rooms', () => {
+      // Reproduces production bug: a single socket creates sessions in two
+      // different rooms. When the first room is cleaned up, the stale session
+      // still references the socket ID, so deleteRoom nukes the socketToSession
+      // entry — breaking the active session in the other room.
+      //
+      // Timeline from logs:
+      //   1. socket-A creates session in room1 (NEW7XE)
+      //   2. socket-A creates session in room2 (DLJAC2) — same socket
+      //   3. socket-A creates session in room1 again
+      //   4. room2 gets cleaned up → deletes stale session's socketId mapping
+      //   5. socket-A tries to play a card → SESSION_NOT_FOUND
+
+      const room1 = rm.createRoom();
+      const room2 = rm.createRoom();
+
+      // Step 1: socket-A joins room1
+      rm.createSession(room1.id, 'player-1', 'socket-A');
+
+      // Step 2: socket-A joins room2 (same socket, different room)
+      rm.createSession(room2.id, 'player-2', 'socket-A');
+
+      // Step 3: socket-A joins room1 again
+      const activeSession = rm.createSession(room1.id, 'player-3', 'socket-A');
+
+      // Step 4: room2 gets deleted (cleanup)
+      rm.deleteRoom(room2.id);
+
+      // Step 5: socket-A should still be able to look up its active session
+      const found = rm.getSessionBySocketId('socket-A');
+      expect(found).toBe(activeSession);
+      expect(found?.playerId).toBe('player-3');
+      expect(found?.roomId).toBe(room1.id);
+    });
   });
 
   describe('touchRoom', () => {
@@ -261,6 +296,70 @@ describe('RoomManager', () => {
   });
 
   // ── Player/session helpers ─────────────────────────────────
+
+  describe('deleteSession', () => {
+    it('should remove the session and its socket mapping', () => {
+      const room = rm.createRoom();
+      const session = rm.createSession(room.id, 'p1', 'sock-1');
+
+      rm.deleteSession(session.sessionToken);
+
+      expect(rm.getSession(session.sessionToken)).toBeUndefined();
+      expect(rm.getSessionBySocketId('sock-1')).toBeUndefined();
+      expect(rm.getSessionCount()).toBe(0);
+    });
+
+    it('should not affect other sessions', () => {
+      const room = rm.createRoom();
+      const session1 = rm.createSession(room.id, 'p1', 'sock-1');
+      rm.createSession(room.id, 'p2', 'sock-2');
+
+      rm.deleteSession(session1.sessionToken);
+
+      expect(rm.getSessionCount()).toBe(1);
+      expect(rm.getSessionBySocketId('sock-2')).toBeDefined();
+    });
+
+    it('should handle already-disconnected session (null socketId)', () => {
+      const room = rm.createRoom();
+      const session = rm.createSession(room.id, 'p1', 'sock-1');
+      rm.markSessionDisconnected('sock-1');
+
+      rm.deleteSession(session.sessionToken);
+
+      expect(rm.getSession(session.sessionToken)).toBeUndefined();
+      expect(rm.getSessionCount()).toBe(0);
+    });
+
+    it('should no-op for unknown token', () => {
+      // Should not throw
+      rm.deleteSession('nonexistent-token');
+    });
+
+    it('should prevent stale sessions from collateral damage during room cleanup', () => {
+      // Simulates the handlePlayerLeave flow: player leaves a room,
+      // session is deleted immediately, then room is cleaned up later.
+      // Without deleteSession, the stale session lingers and its socketId
+      // can collaterally delete a newer session's mapping during cleanup.
+      const room1 = rm.createRoom();
+      const room2 = rm.createRoom();
+
+      // socket-A joins room1
+      rm.createSession(room1.id, 'player-1', 'socket-A');
+
+      // socket-A leaves room1, joins room2 — old session is deleted (handlePlayerLeave)
+      const oldSession = rm.getSessionBySocketId('socket-A')!;
+      rm.deleteSession(oldSession.sessionToken);
+      const activeSession = rm.createSession(room2.id, 'player-2', 'socket-A');
+
+      // room1 gets cleaned up
+      rm.deleteRoom(room1.id);
+
+      // socket-A's active session should be unaffected
+      const found = rm.getSessionBySocketId('socket-A');
+      expect(found).toBe(activeSession);
+    });
+  });
 
   describe('deleteSessionsForPlayer', () => {
     it('should remove all sessions for a given player ID', () => {

@@ -349,6 +349,7 @@ function handlePlayerLeave(socket: TypedSocket, io: TypedServer): void {
   if (!room) return;
 
   room.game.removePlayer(session.playerId);
+  roomManager.deleteSession(session.sessionToken);
   void socket.leave(session.roomId);
 
   io.to(session.roomId).emit('room:player-left', {
