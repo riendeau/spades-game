@@ -27,6 +27,7 @@ export function useGame() {
   const error = useGameStore((s) => s.error);
   const availableSeats = useGameStore((s) => s.availableSeats);
   const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
+  const kickedForIdle = useGameStore((s) => s.kickedForIdle);
 
   // Setup socket listeners
   useEffect(() => {
@@ -141,6 +142,13 @@ export function useGame() {
       // Informational — the real data comes via game:state-update
     });
 
+    socket.on('player:kicked-for-idle', () => {
+      useGameStore.getState().setKickedForIdle();
+      clearSession();
+      // Disconnect from client side to prevent auto-reconnect attempts
+      socket.disconnect();
+    });
+
     socket.on('reconnect:failed', ({ reason }) => {
       console.warn(`[game] reconnect:failed reason=${reason}`);
       useGameStore.getState().setError(`Reconnection failed: ${reason}`);
@@ -169,6 +177,7 @@ export function useGame() {
       socket.off('room:seat-changed');
       socket.off('room:seats-available');
       socket.off('room:seat-opened');
+      socket.off('player:kicked-for-idle');
       socket.off('reconnect:success');
       socket.off('reconnect:failed');
       socket.off('error');
@@ -272,6 +281,14 @@ export function useGame() {
     [socket]
   );
 
+  const kickIdle = useCallback(
+    (playerId: PlayerId) => {
+      if (!socket) return;
+      socket.emit('player:kick-idle', { playerId });
+    },
+    [socket]
+  );
+
   // Actions are stable refs — destructure once for the return value
   const {
     clearRoundSummary,
@@ -311,5 +328,7 @@ export function useGame() {
     changeSeat,
     openSeat,
     selectSeat,
+    kickIdle,
+    kickedForIdle,
   };
 }

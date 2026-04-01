@@ -40,6 +40,8 @@ This is a real-time multiplayer Spades card game using a pnpm monorepo with Type
 
 **Session Management**: 6-character room codes for joining. Session tokens stored in `sessionStorage` (per-tab) enable reconnection during games with 5-minute grace period.
 
+**Idle Player Kick** (`apps/server/src/rooms/idle-timer.ts`): A 2-minute idle timer runs server-side during each player's turn (bidding/playing phases). The server tracks `turnStartedAt` per room and exposes it in `ClientGameState`. Clients compute countdowns locally. After 2 minutes, other players can kick the idle player via `player:kick-idle` → the server validates, notifies the kicked player with `player:kicked-for-idle`, disconnects their socket, and opens the seat for replacement (reuses the existing Replace flow). The `syncIdleTimer(room)` helper in `handler.ts` must be called after every action that changes the turn or phase.
+
 **Mod System**: Rule mods implement hooks (`onCalculateScore`, `onCalculateDisabledBids`, etc.) that intercept game events. Theme mods provide CSS variable definitions.
 
 **Important Hook Semantics:**
@@ -50,9 +52,9 @@ This is a real-time multiplayer Spades card game using a pnpm monorepo with Type
 
 ### Socket Events
 
-Client → Server: `room:create`, `room:join`, `room:ready`, `game:bid`, `game:play-card`, `player:reconnect`
+Client → Server: `room:create`, `room:join`, `room:ready`, `game:bid`, `game:play-card`, `player:reconnect`, `player:kick-idle`
 
-Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game:trick-won`, `game:round-end`
+Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game:trick-won`, `game:round-end`, `player:kicked-for-idle`
 
 ### Important Files
 
@@ -60,6 +62,7 @@ Server → Client: `room:joined`, `game:state-update`, `game:cards-dealt`, `game
 - `packages/shared/src/game-logic/` - Deck, trick resolution, scoring, bidding rules
 - `apps/server/src/socket/handler.ts` - All socket event handlers
 - `apps/server/src/rooms/room-manager.ts` - Room and session management (includes modifyConfig hook invocation)
+- `apps/server/src/rooms/idle-timer.ts` - Idle player kick timer (2-minute inactivity threshold)
 - `apps/server/src/mods/mod-loader.ts` - Registers built-in mods (controls which mods are active)
 - `apps/server/src/mods/hook-executor.ts` - Executes mod hooks in sequence
 - `apps/server/src/db/game-results.ts` - Game result persistence and player stats queries

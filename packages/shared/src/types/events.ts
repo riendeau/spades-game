@@ -18,6 +18,7 @@ export interface ClientToServerEvents {
   'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
   'player:change-seat': (data: { newPosition: Position }) => void;
   'player:open-seat': (data: { playerId: PlayerId }) => void;
+  'player:kick-idle': (data: { playerId: PlayerId }) => void;
   'room:select-seat': (data: {
     roomId: string;
     position: Position;
@@ -90,6 +91,7 @@ export interface ServerToClientEvents {
     playerId: PlayerId;
     position: Position;
   }) => void;
+  'player:kicked-for-idle': () => void;
 }
 
 // Client-safe game state (hides other players' hands)
@@ -124,6 +126,7 @@ export interface ClientGameState {
   } | null;
   dealerPosition: Position;
   currentPlayerPosition: Position;
+  turnStartedAt: number | null;
   winningScore: number;
   disabledBids?: number[];
   teamNames?: { team1: string; team2: string };
