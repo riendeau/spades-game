@@ -238,10 +238,8 @@ export async function generateBidAdvice(data: {
   try {
     const response = await anthropic.messages.create({
       model: MODEL_SONNET,
-      max_tokens: 500,
-      system: `You are a Spades bidding advisor. You will be given a hand of exactly 13 cards. Your job is to recommend a bid and provide a brief explanation.
-
-**IMPORTANT: Before analyzing, list back the exact cards you were given, organized by suit. Do not reference any card not in that list.**
+      max_tokens: 1024,
+      system: `You are a Spades bidding advisor. You will be given a hand of exactly 13 cards. Your job is to recommend a bid and provide a brief explanation. Do not reference any card not in the hand you are given.
 
 ## Bidding Rules
 
@@ -285,6 +283,30 @@ Consider bidding nil (0) only if ALL of the following are true:
   - Multiple high cards in the same suit stack the danger — evaluate the suit as a whole, not card by card
 
 If the hand fails any of these checks, do not bid nil.`,
+      tools: [
+        {
+          name: 'recommend_bid',
+          description:
+            'Recommend a bid based on the hand analysis. Count tricks suit by suit using the bidding rules.',
+          input_schema: {
+            type: 'object' as const,
+            properties: {
+              recommendedBid: {
+                type: 'number' as const,
+                description:
+                  'The recommended bid: 0 for nil, 1-13 for trick count',
+              },
+              analysis: {
+                type: 'string' as const,
+                description:
+                  '1-2 short sentences (under 200 characters). Name only the key cards driving the bid — do not list every suit.',
+              },
+            },
+            required: ['recommendedBid', 'analysis'],
+          },
+        },
+      ],
+      tool_choice: { type: 'tool' as const, name: 'recommend_bid' },
       messages: [
         {
           role: 'user',
@@ -294,28 +316,18 @@ ${handBySuit}
 
 Scores: Team 1: ${data.scores.team1.score} pts (${data.scores.team1.bags} bags) | Team 2: ${data.scores.team2.score} pts (${data.scores.team2.bags} bags) | Winning: ${data.winningScore}
 Position: ${data.myPosition} (${data.myTeam}) | Dealer: ${data.dealerPosition}
-Bids placed: ${bidsPlaced}
-
-Count tricks suit by suit using the bidding rules, then respond with ONLY valid JSON: {"recommendedBid": N, "analysis": "..."}
-recommendedBid: 0 for nil, 1-13 for trick count.
-analysis: 2-3 sentences. Reference only cards listed above.`,
+Bids placed: ${bidsPlaced}`,
         },
       ],
     });
 
-    const raw =
-      response.content[0].type === 'text' ? response.content[0].text : '';
-    // The model continues after the prefill — extract the JSON object
-    // which may be preceded by reasoning text
-    const jsonMatch = /\{[\s\S]*"recommendedBid"[\s\S]*\}/.exec(raw);
-    if (!jsonMatch) {
-      console.warn('[ai] No JSON found in bid advice response:', raw);
+    const toolUse = response.content.find((block) => block.type === 'tool_use');
+    if (toolUse?.type !== 'tool_use') {
+      console.warn('[ai] No tool use found in bid advice response');
       return null;
     }
-    const text = jsonMatch[0]
-      .replace(/^```(?:json)?\s*\n?/i, '')
-      .replace(/\n?```\s*$/, '');
-    const parsed = JSON.parse(text) as BidAdviceResult;
+
+    const parsed = toolUse.input as BidAdviceResult;
 
     if (
       typeof parsed.recommendedBid !== 'number' ||
@@ -329,7 +341,7 @@ analysis: 2-3 sentences. Reference only cards listed above.`,
 
     return {
       recommendedBid: Math.round(parsed.recommendedBid),
-      analysis: parsed.analysis.slice(0, 500),
+      analysis: parsed.analysis.slice(0, 250),
     };
   } catch (err) {
     console.warn('[ai] Failed to generate bid advice:', err);

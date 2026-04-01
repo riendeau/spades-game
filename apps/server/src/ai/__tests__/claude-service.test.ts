@@ -11,7 +11,7 @@ vi.mock('@anthropic-ai/sdk', () => {
 });
 
 // Must import after mock is set up
-const { generateTeamNames, generateGameSummary } =
+const { generateTeamNames, generateGameSummary, generateBidAdvice } =
   await import('../../ai/claude-service.js');
 
 beforeEach(() => {
@@ -140,6 +140,139 @@ describe('generateTeamNames', () => {
     expect(result?.team1.length).toBe(40);
     expect(result?.team2).toBe('Short');
     expect(result?.startButton).toBe("Let's Go!");
+  });
+});
+
+describe('generateBidAdvice', () => {
+  const sampleHand = [
+    { suit: 'spades', rank: 'A' },
+    { suit: 'spades', rank: 'K' },
+    { suit: 'spades', rank: '5' },
+    { suit: 'hearts', rank: 'A' },
+    { suit: 'hearts', rank: 'J' },
+    { suit: 'hearts', rank: '8' },
+    { suit: 'hearts', rank: '3' },
+    { suit: 'diamonds', rank: 'Q' },
+    { suit: 'diamonds', rank: '10' },
+    { suit: 'diamonds', rank: '6' },
+    { suit: 'clubs', rank: 'K' },
+    { suit: 'clubs', rank: '9' },
+    { suit: 'clubs', rank: '4' },
+  ] as Parameters<typeof generateBidAdvice>[0]['hand'];
+
+  const sampleData: Parameters<typeof generateBidAdvice>[0] = {
+    hand: sampleHand,
+    scores: {
+      team1: { score: 120, bags: 2 },
+      team2: { score: 80, bags: 1 },
+    },
+    currentBids: [],
+    myPosition: 0,
+    myTeam: 'team1',
+    dealerPosition: 3,
+    winningScore: 500,
+  };
+
+  it('returns null when no API key is set', async () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    const result = await generateBidAdvice(sampleData);
+    expect(result).toBeNull();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('parses tool_use response correctly', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'tool_use',
+          id: 'toolu_123',
+          name: 'recommend_bid',
+          input: {
+            recommendedBid: 4,
+            analysis:
+              'A♠ and K♠ with cover give 2 spade tricks. A♥ is a sure trick. K♣ with two other clubs is worth half a trick.',
+          },
+        },
+      ],
+    });
+
+    const result = await generateBidAdvice(sampleData);
+    expect(result).toEqual({
+      recommendedBid: 4,
+      analysis:
+        'A♠ and K♠ with cover give 2 spade tricks. A♥ is a sure trick. K♣ with two other clubs is worth half a trick.',
+    });
+  });
+
+  it('returns null when response has no tool_use block', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [{ type: 'text', text: 'I cannot help with that.' }],
+    });
+
+    const result = await generateBidAdvice(sampleData);
+    expect(result).toBeNull();
+  });
+
+  it('returns null on invalid recommendedBid', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'tool_use',
+          id: 'toolu_123',
+          name: 'recommend_bid',
+          input: { recommendedBid: 15, analysis: 'Overbid.' },
+        },
+      ],
+    });
+
+    const result = await generateBidAdvice(sampleData);
+    expect(result).toBeNull();
+  });
+
+  it('returns null on API error', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockRejectedValueOnce(new Error('API rate limited'));
+
+    const result = await generateBidAdvice(sampleData);
+    expect(result).toBeNull();
+  });
+
+  it('truncates long analysis', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    const longAnalysis = 'A'.repeat(600);
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'tool_use',
+          id: 'toolu_123',
+          name: 'recommend_bid',
+          input: { recommendedBid: 3, analysis: longAnalysis },
+        },
+      ],
+    });
+
+    const result = await generateBidAdvice(sampleData);
+    expect(result?.analysis.length).toBe(250);
+  });
+
+  it('rounds fractional recommendedBid', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'tool_use',
+          id: 'toolu_123',
+          name: 'recommend_bid',
+          input: { recommendedBid: 3.7, analysis: 'Close call.' },
+        },
+      ],
+    });
+
+    const result = await generateBidAdvice(sampleData);
+    expect(result?.recommendedBid).toBe(4);
   });
 });
 
