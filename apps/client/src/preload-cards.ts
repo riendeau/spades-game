@@ -23,15 +23,19 @@ export function getCardImageUrl(card: Card): string {
 
 export const preloadedCardUrls = new Set<string>();
 
+// Keep references so GC doesn't collect Image objects before they load
+const preloadImages: HTMLImageElement[] = [];
+
 export function preloadCardImages(): void {
   for (const suit of SUITS) {
     for (const rank of RANKS) {
       const url = getCardImageUrl({ rank, suit });
-      if (!preloadedCardUrls.has(url)) {
+      const img = new Image();
+      img.onload = () => {
         preloadedCardUrls.add(url);
-        const img = new Image();
-        img.src = url;
-      }
+      };
+      img.src = url;
+      preloadImages.push(img);
     }
   }
 }
