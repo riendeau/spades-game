@@ -171,7 +171,7 @@ export function OpponentArea({
               }}
             >
               {isKickable
-                ? 'Idle — can be kicked'
+                ? 'Idle — can be booted'
                 : `Idle ${formatCountdown(idleSeconds)}`}
             </div>
             {isKickable && onKickIdle && (
@@ -179,7 +179,7 @@ export function OpponentArea({
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Kick ${player.nickname} for inactivity? Their seat will be opened for a new player.`
+                      `Boot ${player.nickname} for inactivity? Their seat will be opened for a new player.`
                     )
                   ) {
                     onKickIdle(player.id);
@@ -196,7 +196,7 @@ export function OpponentArea({
                   cursor: 'pointer',
                 }}
               >
-                Kick
+                Boot
               </button>
             )}
           </div>

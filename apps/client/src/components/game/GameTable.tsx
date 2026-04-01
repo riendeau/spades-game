@@ -367,7 +367,7 @@ export function GameTable({
                     marginTop: '2px',
                   }}
                 >
-                  Kick in {idleWarningSeconds}s — make your move!
+                  Bootable in {idleWarningSeconds}s — make your move!
                 </span>
               )}
             </div>
