@@ -401,6 +401,7 @@ export function GameTable({
           scoreHistory={scoreHistory}
           winningScore={gameState.winningScore}
           onClose={() => setShowScoreChart(false)}
+          teamNames={gameState.teamNames}
         />
       )}
     </div>
