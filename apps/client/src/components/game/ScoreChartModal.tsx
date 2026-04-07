@@ -7,12 +7,14 @@ interface ScoreChartModalProps {
   scoreHistory: ScoreHistoryEntry[];
   winningScore: number;
   onClose: () => void;
+  teamNames?: { team1: string; team2: string };
 }
 
 export function ScoreChartModal({
   scoreHistory,
   winningScore,
   onClose,
+  teamNames,
 }: ScoreChartModalProps) {
   return (
     <div
@@ -46,6 +48,7 @@ export function ScoreChartModal({
         <ScoreProgressionChart
           scoreHistory={scoreHistory}
           winningScore={winningScore}
+          teamNames={teamNames}
         />
 
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
