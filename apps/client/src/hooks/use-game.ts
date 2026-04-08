@@ -1,5 +1,5 @@
 import type { Card, PlayerId, Position } from '@spades/shared';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useSocket } from '../socket/socket-context';
 import {
   useGameStore,
@@ -28,6 +28,11 @@ export function useGame() {
   const availableSeats = useGameStore((s) => s.availableSeats);
   const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
   const kickedForIdle = useGameStore((s) => s.kickedForIdle);
+
+  // Guard against duplicate game:play-card emissions during server round-trip.
+  // Between emitting and receiving the server's response, the React component
+  // hasn't re-rendered so the card button is still enabled and clickable.
+  const playPendingRef = useRef(false);
 
   // Setup socket listeners
   useEffect(() => {
@@ -86,6 +91,7 @@ export function useGame() {
         (p) => p.position === myPosition
       );
       if (localPlayer?.id === playerId) {
+        playPendingRef.current = false;
         useGameStore.getState().removeCard(card);
       }
     });
@@ -157,6 +163,9 @@ export function useGame() {
 
     socket.on('error', ({ code, message }) => {
       console.error(`[game] error code=${code} message=${message}`);
+      if (code === 'INVALID_PLAY' || code === 'PLAY_FAILED') {
+        playPendingRef.current = false;
+      }
       const { setError } = useGameStore.getState();
       setError(message);
       setTimeout(() => setError(null), 5000);
@@ -244,7 +253,8 @@ export function useGame() {
 
   const playCard = useCallback(
     (card: Card) => {
-      if (!socket) return;
+      if (!socket || playPendingRef.current) return;
+      playPendingRef.current = true;
       socket.emit('game:play-card', { card });
     },
     [socket]
