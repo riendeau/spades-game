@@ -42,14 +42,15 @@ const httpServer = createServer(app);
 // from X-Forwarded-Proto rather than defaulting to http://
 app.set('trust proxy', 1);
 
-// Rate limiting for all HTTP routes (Socket.io traffic is unaffected)
+// Rate limiting for API and auth routes only (not static assets or SPA fallback)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // generous limit for SPA + API calls per IP
+  max: 300, // per IP across /api + /auth combined
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
+app.use('/api', limiter);
+app.use('/auth', limiter);
 
 // Health check — always public, before auth middleware
 app.get('/health', (_req, res) => {
