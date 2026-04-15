@@ -42,15 +42,25 @@ const httpServer = createServer(app);
 // from X-Forwarded-Proto rather than defaulting to http://
 app.set('trust proxy', 1);
 
-// Rate limiting for API and auth routes only (not static assets or SPA fallback)
-const limiter = rateLimit({
+// Strict rate limiting for API and auth routes (DB queries, OAuth, AI calls)
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 300, // per IP across /api + /auth combined
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api', limiter);
-app.use('/auth', limiter);
+app.use('/api', apiLimiter);
+app.use('/auth', apiLimiter);
+
+// Generous rate limiting for the SPA fallback (res.sendFile — filesystem I/O).
+// express.static is excluded: it runs before this and short-circuits matched files.
+// This satisfies CodeQL js/missing-rate-limiting without penalizing normal browsing.
+const pageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // page navigations only — static assets don't count
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Health check — always public, before auth middleware
 app.get('/health', (_req, res) => {
@@ -303,7 +313,7 @@ if (servingClient) {
   app.use(BASE_PATH, express.static(clientDistPath));
 
   // SPA fallback: serve index.html for any non-API, non-file request under BASE_PATH
-  app.get(`${BASE_PATH}*path`, (_req, res) => {
+  app.get(`${BASE_PATH}*path`, pageLimiter, (_req, res) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 
