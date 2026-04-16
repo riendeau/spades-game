@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import passport from 'passport';
 import type { User } from './passport-config.js';
 import { DEV_USER } from './passport-config.js';
@@ -12,6 +13,17 @@ declare module 'express-session' {
 }
 
 export const authRouter: express.Router = express.Router();
+
+// Rate limiting applied directly on the router so CodeQL can trace it
+// (the mount-point limiter in index.ts is not visible to static analysis)
+authRouter.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
 
 const oauthConfigured = Boolean(
   process.env.GOOGLE_CLIENT_ID &&

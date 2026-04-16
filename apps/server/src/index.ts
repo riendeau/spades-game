@@ -42,15 +42,15 @@ const httpServer = createServer(app);
 // from X-Forwarded-Proto rather than defaulting to http://
 app.set('trust proxy', 1);
 
-// Strict rate limiting for API and auth routes (DB queries, OAuth, AI calls)
+// Strict rate limiting for API routes (DB queries, AI calls)
+// Auth routes have their own limiter inside auth-routes.ts.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // per IP across /api + /auth combined
+  max: 300, // per IP
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/api', apiLimiter);
-app.use('/auth', apiLimiter);
 
 // Generous rate limiting for the SPA fallback (res.sendFile — filesystem I/O).
 // express.static is excluded: it runs before this and short-circuits matched files.
