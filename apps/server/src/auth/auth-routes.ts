@@ -1,7 +1,6 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
-import type { User } from './passport-config.js';
 import { DEV_USER } from './passport-config.js';
 
 // Extend express-session's SessionData so passport's failure messages are typed
@@ -100,7 +99,7 @@ authRouter.get('/me', (req, res) => {
     return;
   }
 
-  const user = req.user as User;
+  const user = req.user;
   res.json({
     id: user.id,
     email: user.email,
