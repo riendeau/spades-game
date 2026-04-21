@@ -80,7 +80,7 @@ export default tseslint.config(
     files: ['apps/client/**/*.tsx', 'apps/client/**/*.ts'],
     plugins: {
       react: fixupPluginRules(reactPlugin),
-      'react-hooks': fixupPluginRules(reactHooksPlugin),
+      'react-hooks': reactHooksPlugin,
       'react-refresh': reactRefreshPlugin,
     },
     settings: {

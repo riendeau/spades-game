@@ -237,12 +237,15 @@ export function TrickArea({
   const plays = trick?.plays ?? [];
   const lastTrickWinner = useGameStore((s) => s.lastTrickWinner);
 
-  // Generate random rotations for new plays in a layout effect (before paint)
-  const rotationsRef = React.useRef(
-    new Map<string, { start: number; end: number }>()
+  // Random rotations and sluff metadata for each play. Stored as state (not
+  // refs) so render can read them without violating react-hooks/refs, and so
+  // updates propagate via normal setState instead of a forced rerender.
+  const [rotations, setRotations] = React.useState<
+    Map<string, { start: number; end: number }>
+  >(() => new Map());
+  const [sluffInfo, setSluffInfo] = React.useState<Map<string, SluffInfo>>(
+    () => new Map()
   );
-  const sluffInfoRef = React.useRef(new Map<string, SluffInfo>());
-  const [, rerender] = React.useState(0);
 
   // Collection animation state
   const [collecting, setCollecting] = React.useState<CollectingState | null>(
@@ -280,8 +283,8 @@ export function TrickArea({
           4) as Position;
         setCollecting({
           plays: prevPlays.map((p) => ({ playerId: p.playerId, card: p.card })),
-          rotations: new Map(rotationsRef.current),
-          sluffs: new Map(sluffInfoRef.current),
+          rotations: new Map(rotations),
+          sluffs: new Map(sluffInfo),
           winnerRelPos,
         });
         onCollectingChange?.(true);
@@ -301,39 +304,54 @@ export function TrickArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plays.length, lastTrickWinner]);
 
-  // Rotation generation effect (also detects sluffs for new plays)
+  // Rotation generation effect (also detects sluffs for new plays).
+  // Builds a new Map when anything changes and commits via setState — the
+  // conditional commit keeps this from triggering set-state-in-effect as a
+  // forced-rerender antipattern.
   React.useLayoutEffect(() => {
     const currentIds = new Set(plays.map((p) => p.playerId));
-    for (const key of rotationsRef.current.keys()) {
-      if (!currentIds.has(key)) rotationsRef.current.delete(key);
+    const newRotations = new Map(rotations);
+    const newSluffs = new Map(sluffInfo);
+    let changed = false;
+
+    for (const key of newRotations.keys()) {
+      if (!currentIds.has(key)) {
+        newRotations.delete(key);
+        changed = true;
+      }
     }
-    for (const key of sluffInfoRef.current.keys()) {
-      if (!currentIds.has(key)) sluffInfoRef.current.delete(key);
+    for (const key of newSluffs.keys()) {
+      if (!currentIds.has(key)) {
+        newSluffs.delete(key);
+        changed = true;
+      }
     }
 
-    let added = false;
     for (let i = 0; i < plays.length; i++) {
       const play = plays[i];
-      if (rotationsRef.current.has(play.playerId)) continue;
+      if (newRotations.has(play.playerId)) continue;
 
       const sluff = detectSluff(plays, i, gameState);
       if (sluff) {
-        sluffInfoRef.current.set(play.playerId, sluff);
-        rotationsRef.current.set(play.playerId, { start: 0, end: 0 });
+        newSluffs.set(play.playerId, sluff);
+        newRotations.set(play.playerId, { start: 0, end: 0 });
       } else {
         const player = gameState.players.find((p) => p.id === play.playerId);
         if (!player) continue;
         const relPos = ((player.position - myPosition + 4) % 4) as Position;
         const sign = relPos === 0 || relPos === 3 ? 1 : -1;
-        rotationsRef.current.set(play.playerId, {
+        newRotations.set(play.playerId, {
           start: sign * (12 + Math.random() * 348),
           end: (Math.random() - 0.5) * 8,
         });
       }
-      added = true;
+      changed = true;
     }
-    if (added) rerender((c) => c + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on plays length to avoid ref churn
+    if (changed) {
+      setRotations(newRotations);
+      setSluffInfo(newSluffs);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on plays length to avoid rotation churn
   }, [plays.length]);
 
   if (!trick && !collecting) return null;
@@ -396,11 +414,11 @@ export function TrickArea({
 
         const rot = collecting
           ? (collecting.rotations.get(play.playerId) ?? { start: 0, end: 0 })
-          : (rotationsRef.current.get(play.playerId) ?? { start: 0, end: 0 });
+          : (rotations.get(play.playerId) ?? { start: 0, end: 0 });
 
         const sluffData = collecting
           ? collecting.sluffs.get(play.playerId)
-          : sluffInfoRef.current.get(play.playerId);
+          : sluffInfo.get(play.playerId);
         const isSluff = !!sluffData;
 
         // Resolve target player's relative position for sluff positioning
