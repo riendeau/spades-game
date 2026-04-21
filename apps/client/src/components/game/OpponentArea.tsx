@@ -1,5 +1,6 @@
 import type { ClientGameState, PlayerId, Position } from '@spades/shared';
 import React, { useEffect, useState } from 'react';
+import { badgePulseKeyframes } from '../../styles/animations';
 import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 
 const IDLE_TIMEOUT_S = 120; // must match server IDLE_TIMEOUT_MS / 1000
@@ -86,6 +87,12 @@ export function OpponentArea({
       ? `0 0 12px rgba(${TEAM_RGB[player.team]}, 0.6)`
       : 'none',
     transition: 'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
+    ...(isCurrentPlayer
+      ? {
+          '--team-rgb': TEAM_RGB[player.team],
+          animation: 'badge-pulse 1.8s ease-in-out infinite',
+        }
+      : {}),
   };
 
   const formatCountdown = (seconds: number): string => {
@@ -97,6 +104,7 @@ export function OpponentArea({
 
   return (
     <div style={containerStyle}>
+      <style>{badgePulseKeyframes}</style>
       <div
         style={{
           textAlign: 'center',

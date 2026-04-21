@@ -8,6 +8,7 @@ import type {
 import { getPlayableCards } from '@spades/shared';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
+import { badgePulseKeyframes } from '../../styles/animations';
 import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
 import { AdUnit } from '../ads/AdUnit';
 import { BiddingPanel } from '../bidding/BiddingPanel';
@@ -325,8 +326,15 @@ export function GameTable({
                   : 'none',
                 transition:
                   'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
+                ...(isMyTurn
+                  ? {
+                      '--team-rgb': TEAM_RGB[myPlayer.team],
+                      animation: 'badge-pulse 1.8s ease-in-out infinite',
+                    }
+                  : {}),
               }}
             >
+              <style>{badgePulseKeyframes}</style>
               <span
                 style={{
                   fontWeight: 600,
