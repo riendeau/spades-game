@@ -78,7 +78,7 @@ export function configurePassport(): void {
   );
 
   passport.serializeUser((user, done) => {
-    done(null, (user as User).id);
+    done(null, user.id);
   });
 
   // Use promise chain to avoid no-misused-promises on async deserializeUser
