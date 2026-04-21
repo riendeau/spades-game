@@ -84,7 +84,7 @@ export function createInitialGameState(id: string): GameState {
     },
     currentRound: null,
     dealerPosition: Math.floor(Math.random() * 4) as Position,
-    currentPlayerPosition: 0 as Position, // set by state machine when round starts
+    currentPlayerPosition: 0, // set by state machine when round starts
     winningScore: DEFAULT_GAME_CONFIG.winningScore,
     createdAt: Date.now(),
     lastActivity: Date.now(),
