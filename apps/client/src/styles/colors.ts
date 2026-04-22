@@ -68,7 +68,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 const ACCENT_SAT_BOOST = 17;
 const ACCENT_LIGHTNESS_BOOST = 10;
 
-function brightenForAccent(hex: string): string {
+export function brightenForAccent(hex: string): string {
   const [r, g, b] = hexToRgbTuple(hex);
   const [h, s, l] = rgbToHsl(r, g, b);
   const [r2, g2, b2] = hslToRgb(

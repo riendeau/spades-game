@@ -1,41 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import {
-  TEAM_ACCENT_COLORS,
-  TEAM_ACCENT_RGB,
-  TEAM_COLORS,
-  TEAM_RGB,
-} from '../colors';
+import { brightenForAccent } from '../colors';
 
-describe('TEAM_COLORS', () => {
-  it('exports the base team hex colors', () => {
-    expect(TEAM_COLORS.team1).toBe('#861F41');
-    expect(TEAM_COLORS.team2).toBe('#E5751F');
-  });
-});
-
-describe('TEAM_RGB', () => {
-  it('exports the base team colors as "r, g, b" triples', () => {
-    expect(TEAM_RGB.team1).toBe('134, 31, 65');
-    expect(TEAM_RGB.team2).toBe('229, 117, 31');
-  });
-});
-
-// The accent values exercise the full hex → RGB → HSL → boost → RGB → hex
-// pipeline in colors.ts. Retuning ACCENT_SAT_BOOST / ACCENT_LIGHTNESS_BOOST
-// will break these — update the expected hexes when that happens.
-describe('TEAM_ACCENT_COLORS', () => {
-  it('brightens team1 maroon into a rose accent', () => {
-    expect(TEAM_ACCENT_COLORS.team1).toBe('#c2164f');
+// These pin the full hex → RGB → HSL → (+17 saturation, +10 lightness,
+// clamped at 100) → RGB → hex pipeline. If ACCENT_SAT_BOOST /
+// ACCENT_LIGHTNESS_BOOST are retuned in colors.ts, update these values.
+describe('brightenForAccent', () => {
+  it('brightens a medium blue', () => {
+    expect(brightenForAccent('#3366CC')).toBe('#4a7fe8');
   });
 
-  it('brightens team2 orange into a slightly brighter orange', () => {
-    expect(TEAM_ACCENT_COLORS.team2).toBe('#fb8f3c');
+  it('brightens a dark green', () => {
+    expect(brightenForAccent('#2E5F1F')).toBe('#39941d');
   });
-});
 
-describe('TEAM_ACCENT_RGB', () => {
-  it('exports accent RGB triples that match TEAM_ACCENT_COLORS', () => {
-    expect(TEAM_ACCENT_RGB.team1).toBe('194, 22, 79');
-    expect(TEAM_ACCENT_RGB.team2).toBe('251, 143, 60');
+  it('brightens a magenta', () => {
+    expect(brightenForAccent('#B04080')).toBe('#d74c9b');
+  });
+
+  it('clamps saturation at 100 for a fully-saturated color', () => {
+    // Pure red is s=100, l=50. The +17 saturation boost is clipped to 100;
+    // only the +10 lightness applies, lifting red toward (255, 51, 51).
+    expect(brightenForAccent('#FF0000')).toBe('#ff3333');
+  });
+
+  it('clamps lightness at 100 — white stays white', () => {
+    expect(brightenForAccent('#FFFFFF')).toBe('#ffffff');
+  });
+
+  it('documents the achromatic edge case (gray picks up a red tint)', () => {
+    // Pure gray has HSL (h=0, s=0, l=50). Boosting saturation against the
+    // default hue=0 produces a reddish tint. Not a concern for team colors
+    // which are fully chromatic — pinned here to catch regressions.
+    expect(brightenForAccent('#808080')).toBe('#ab8888');
   });
 });
