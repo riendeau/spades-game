@@ -147,8 +147,9 @@ http://localhost:5173/room/ABC123?mobile   # Pre-fills room code
 All four player positions (three opponents + the local player) use a consistent badge style:
 
 - **Team colors**: team1 = maroon (`#861F41`), team2 = orange (`#E5751F`)
-- **Active player**: full-saturation border + background tint + `box-shadow` glow in team color
-- **Inactive players**: faded border (`rgba(..., 0.35)`) + very subtle background tint (`rgba(..., 0.07)`)
+- **Team accent colors** (`apps/client/src/styles/colors.ts`): `TEAM_ACCENT_COLORS` / `TEAM_ACCENT_RGB` are brighter, same-hue variants used only for the active-turn highlight (border + glow + background tint). Derived from the base team colors by `brightenForAccent()`, which does an HSL nudge of `+17 saturation, +10 lightness` (clamped at 100). The base maroon is too dark to pop as a box-shadow glow against the dark green table; the accent produces a vibrant rose instead. Orange accent barely differs from the base (it was already bright). To retune, edit the `ACCENT_SAT_BOOST` / `ACCENT_LIGHTNESS_BOOST` constants — per-team overrides aren't supported on purpose.
+- **Active player**: accent-colored border + `rgba(accent, 0.22)` background tint + layered `box-shadow` (2px inner accent ring at 0.35 alpha + 20px/4px outer glow at 0.85 alpha)
+- **Inactive players**: faded border (`rgba(base, 0.35)`) + very subtle background tint (`rgba(base, 0.07)`)
 - **Player names**: near-white (`#f9fafb`) for legibility on the dark green table; gray (`#9ca3af`) when disconnected
 - **Bid/Won line**: always shown under every player name — displays `—` for bid until a bid is placed
 - **Local player badge**: rendered between the trick area and hand section (south table position), styled identically to `OpponentArea` badges. Padding should match `OpponentArea`'s `12px` desktop / `6px` mobile to keep visual consistency.

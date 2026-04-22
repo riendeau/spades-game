@@ -8,7 +8,12 @@ import type {
 import { getPlayableCards } from '@spades/shared';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
-import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
+import {
+  TEAM_ACCENT_COLORS,
+  TEAM_ACCENT_RGB,
+  TEAM_COLORS,
+  TEAM_RGB,
+} from '../../styles/colors';
 import { AdUnit } from '../ads/AdUnit';
 import { BiddingPanel } from '../bidding/BiddingPanel';
 import { OpponentArea } from './OpponentArea';
@@ -316,12 +321,14 @@ export function GameTable({
                 gap: '2px',
                 padding: isMobile ? '6px' : '16px',
                 borderRadius: '10px',
-                backgroundColor: `rgba(${TEAM_RGB[myPlayer.team]}, ${isMyTurn ? 0.2 : 0.07})`,
+                backgroundColor: isMyTurn
+                  ? `rgba(${TEAM_ACCENT_RGB[myPlayer.team]}, 0.22)`
+                  : `rgba(${TEAM_RGB[myPlayer.team]}, 0.07)`,
                 border: isMyTurn
-                  ? `2px solid ${TEAM_COLORS[myPlayer.team]}`
+                  ? `2px solid ${TEAM_ACCENT_COLORS[myPlayer.team]}`
                   : `2px solid rgba(${TEAM_RGB[myPlayer.team]}, 0.35)`,
                 boxShadow: isMyTurn
-                  ? `0 0 12px rgba(${TEAM_RGB[myPlayer.team]}, 0.6)`
+                  ? `0 0 0 2px rgba(${TEAM_ACCENT_RGB[myPlayer.team]}, 0.35), 0 0 20px 4px rgba(${TEAM_ACCENT_RGB[myPlayer.team]}, 0.85)`
                   : 'none',
                 transition:
                   'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
