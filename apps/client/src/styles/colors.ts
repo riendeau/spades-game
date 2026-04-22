@@ -63,8 +63,8 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 // lightness in HSL produces a brighter, same-hue variant.
 //
 // The deltas below were chosen to match hand-tuned accents that read well:
-//   #861F41 → #C2185B (team1, maroon → rose)
-//   #E5751F → #FB923C (team2, orange → brighter orange)
+//   #861F41 → #C2164F (team1, maroon → rose)
+//   #E5751F → #FB8F3C (team2, orange → brighter orange)
 const ACCENT_SAT_BOOST = 17;
 const ACCENT_LIGHTNESS_BOOST = 10;
 
@@ -85,11 +85,8 @@ export const TEAM1_RGB = hexToRgb(TEAM1_COLOR);
 export const TEAM2_COLOR = '#E5751F';
 export const TEAM2_RGB = hexToRgb(TEAM2_COLOR);
 
-export const TEAM1_ACCENT = brightenForAccent(TEAM1_COLOR);
-export const TEAM1_ACCENT_RGB = hexToRgb(TEAM1_ACCENT);
-
-export const TEAM2_ACCENT = brightenForAccent(TEAM2_COLOR);
-export const TEAM2_ACCENT_RGB = hexToRgb(TEAM2_ACCENT);
+const TEAM1_ACCENT = brightenForAccent(TEAM1_COLOR);
+const TEAM2_ACCENT = brightenForAccent(TEAM2_COLOR);
 
 export const TEAM_COLORS: Record<'team1' | 'team2', string> = {
   team1: TEAM1_COLOR,
@@ -107,6 +104,6 @@ export const TEAM_ACCENT_COLORS: Record<'team1' | 'team2', string> = {
 };
 
 export const TEAM_ACCENT_RGB: Record<'team1' | 'team2', string> = {
-  team1: TEAM1_ACCENT_RGB,
-  team2: TEAM2_ACCENT_RGB,
+  team1: hexToRgb(TEAM1_ACCENT),
+  team2: hexToRgb(TEAM2_ACCENT),
 };
