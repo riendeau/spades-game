@@ -1,6 +1,10 @@
 import type { ClientGameState, PlayerId, Position } from '@spades/shared';
 import React, { useEffect, useState } from 'react';
-import { TEAM_COLORS, TEAM_RGB } from '../../styles/colors';
+import {
+  TEAM_ACCENT_COLORS,
+  TEAM_ACCENT_RGB,
+  TEAM_RGB,
+} from '../../styles/colors';
 
 const IDLE_TIMEOUT_S = 120; // must match server IDLE_TIMEOUT_MS / 1000
 
@@ -77,13 +81,15 @@ export function OpponentArea({
     alignItems: 'center',
     gap: compact ? (isSideOpponent ? '4px' : '6px') : '16px',
     padding: compact ? (isSideOpponent ? '4px 2px' : '6px') : '16px',
-    backgroundColor: `rgba(${TEAM_RGB[player.team]}, ${isCurrentPlayer ? 0.2 : 0.07})`,
+    backgroundColor: isCurrentPlayer
+      ? `rgba(${TEAM_ACCENT_RGB[player.team]}, 0.22)`
+      : `rgba(${TEAM_RGB[player.team]}, 0.07)`,
     borderRadius: '12px',
     border: isCurrentPlayer
-      ? `2px solid ${TEAM_COLORS[player.team]}`
+      ? `2px solid ${TEAM_ACCENT_COLORS[player.team]}`
       : `2px solid rgba(${TEAM_RGB[player.team]}, 0.35)`,
     boxShadow: isCurrentPlayer
-      ? `0 0 12px rgba(${TEAM_RGB[player.team]}, 0.6)`
+      ? `0 0 0 2px rgba(${TEAM_ACCENT_RGB[player.team]}, 0.35), 0 0 20px 4px rgba(${TEAM_ACCENT_RGB[player.team]}, 0.85)`
       : 'none',
     transition: 'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
   };
