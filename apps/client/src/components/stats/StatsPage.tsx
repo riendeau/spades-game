@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { BidStats, NilStats, RecentGame } from '../../hooks/use-stats';
 import { useStats } from '../../hooks/use-stats';
 
@@ -484,11 +485,13 @@ function BiddingSection({ bidStats }: { bidStats: BidStats }) {
           label="Bid Accuracy"
           value={`${bidStats.bidAccuracy}%`}
           color="#16a34a"
+          tooltip="Percent of rounds where you personally took at least as many tricks as you bid. This is an individual stat — it doesn't account for your partner, so it may differ from whether your team actually made its combined bid (Set Rate, in contrast, is a team-level stat). Overbids still count as accurate here (though the extra tricks become bags). Nil bids are excluded; see Nil Bids below."
         />
         <BidStatCell
           label="Set Rate"
           value={`${bidStats.setBidRate}%`}
           color="#dc2626"
+          tooltip="Percent of rounds where your team was set — you and your partner's combined tricks fell short of your combined bid. Only rounds where you bid a number (not nil) count toward the denominator. If your partner bid nil, only your bid counts toward the team bid. See Nil Bids below for how nil outcomes are tracked."
         />
       </div>
       <div
@@ -509,17 +512,92 @@ function BidStatCell({
   label,
   value,
   color = '#374151',
+  tooltip,
 }: {
   label: string;
   value: string;
   color?: string;
+  tooltip?: string;
 }) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  const showTooltip = (e: React.SyntheticEvent<HTMLSpanElement>) => {
+    setRect(e.currentTarget.getBoundingClientRect());
+  };
+  const hideTooltip = () => setRect(null);
+
   return (
-    <div style={{ backgroundColor: '#fff', padding: '14px 20px' }}>
+    <div
+      style={{
+        backgroundColor: '#fff',
+        padding: '14px 20px',
+      }}
+    >
       <div style={{ fontSize: '20px', fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+      <div
+        style={{
+          fontSize: '12px',
+          color: '#6b7280',
+          marginTop: '2px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
         {label}
+        {tooltip && (
+          <span
+            onMouseEnter={showTooltip}
+            onMouseLeave={hideTooltip}
+            tabIndex={0}
+            onFocus={showTooltip}
+            onBlur={hideTooltip}
+            aria-label={tooltip}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '13px',
+              height: '13px',
+              borderRadius: '50%',
+              border: '1px solid #9ca3af',
+              color: '#9ca3af',
+              fontSize: '10px',
+              fontWeight: 600,
+              lineHeight: 1,
+              cursor: 'help',
+            }}
+          >
+            ?
+          </span>
+        )}
       </div>
+      {tooltip &&
+        rect &&
+        createPortal(
+          <div
+            role="tooltip"
+            style={{
+              position: 'fixed',
+              top: rect.bottom + 8,
+              left: rect.left + rect.width / 2,
+              transform: 'translateX(-50%)',
+              width: 'min(300px, calc(100vw - 24px))',
+              backgroundColor: '#1f2937',
+              color: '#f9fafb',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              lineHeight: 1.5,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+              zIndex: 1000,
+              pointerEvents: 'none',
+            }}
+          >
+            {tooltip}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
