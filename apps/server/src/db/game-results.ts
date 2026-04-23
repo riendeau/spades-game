@@ -468,19 +468,26 @@ export async function getBidStats(userId: string): Promise<BidStats> {
     avg_tricks: string;
     met_bid: string;
     over_bid: string;
-    under_bid: string;
+    team_set: string;
   }>(
     `SELECT
        COUNT(*)::text AS total_rounds,
-       COALESCE(AVG(bid)::numeric(4,1)::text, '0') AS avg_bid,
-       COALESCE(AVG(tricks_won)::numeric(4,1)::text, '0') AS avg_tricks,
-       COUNT(*) FILTER (WHERE tricks_won >= bid)::text AS met_bid,
-       COUNT(*) FILTER (WHERE tricks_won > bid)::text AS over_bid,
-       COUNT(*) FILTER (WHERE tricks_won < bid)::text AS under_bid
-     FROM round_bids
-     WHERE player_id = $1
-       AND NOT is_nil
-       AND NOT is_blind_nil`,
+       COALESCE(AVG(rb.bid)::numeric(4,1)::text, '0') AS avg_bid,
+       COALESCE(AVG(rb.tricks_won)::numeric(4,1)::text, '0') AS avg_tricks,
+       COUNT(*) FILTER (WHERE rb.tricks_won >= rb.bid)::text AS met_bid,
+       COUNT(*) FILTER (WHERE rb.tricks_won > rb.bid)::text AS over_bid,
+       COUNT(*) FILTER (
+         WHERE (rb.tricks_won + partner.tricks_won) <
+               (rb.bid + CASE WHEN partner.is_nil OR partner.is_blind_nil THEN 0 ELSE partner.bid END)
+       )::text AS team_set
+     FROM round_bids rb
+     JOIN round_bids partner
+       ON partner.game_result_id = rb.game_result_id
+      AND partner.round_number = rb.round_number
+      AND partner.player_position = (rb.player_position + 2) % 4
+     WHERE rb.player_id = $1
+       AND NOT rb.is_nil
+       AND NOT rb.is_blind_nil`,
     [userId]
   );
 
@@ -490,7 +497,7 @@ export async function getBidStats(userId: string): Promise<BidStats> {
 
   const metBid = parseInt(row.met_bid, 10);
   const overBid = parseInt(row.over_bid, 10);
-  const underBid = parseInt(row.under_bid, 10);
+  const teamSet = parseInt(row.team_set, 10);
 
   return {
     totalRounds,
@@ -498,6 +505,6 @@ export async function getBidStats(userId: string): Promise<BidStats> {
     averageTricks: parseFloat(row.avg_tricks),
     bidAccuracy: Math.round((metBid / totalRounds) * 100),
     underbidRate: Math.round((overBid / totalRounds) * 100),
-    setBidRate: Math.round((underBid / totalRounds) * 100),
+    setBidRate: Math.round((teamSet / totalRounds) * 100),
   };
 }

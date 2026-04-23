@@ -417,7 +417,7 @@ describe('game-results', () => {
             avg_tricks: '0',
             met_bid: '0',
             over_bid: '0',
-            under_bid: '0',
+            team_set: '0',
           },
         ],
       });
@@ -426,7 +426,7 @@ describe('game-results', () => {
       expect(stats.totalRounds).toBe(0);
     });
 
-    it('should compute bid accuracy and rates', async () => {
+    it('should compute bid accuracy and team set rate', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
           {
@@ -435,7 +435,7 @@ describe('game-results', () => {
             avg_tricks: '3.8',
             met_bid: '7',
             over_bid: '5',
-            under_bid: '3',
+            team_set: '2',
           },
         ],
       });
@@ -444,9 +444,9 @@ describe('game-results', () => {
       expect(stats.totalRounds).toBe(10);
       expect(stats.averageBid).toBe(3.5);
       expect(stats.averageTricks).toBe(3.8);
-      expect(stats.bidAccuracy).toBe(70); // 7/10
+      expect(stats.bidAccuracy).toBe(70); // 7/10 — individual met-or-exceeded-bid
       expect(stats.underbidRate).toBe(50); // 5/10 (over_bid = underbid in UI terminology)
-      expect(stats.setBidRate).toBe(30); // 3/10
+      expect(stats.setBidRate).toBe(20); // 2/10 — team set (fewer than the 3 individual sets because partner covered)
     });
   });
 });
