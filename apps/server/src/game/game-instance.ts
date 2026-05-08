@@ -114,6 +114,7 @@ export class GameInstance {
       players: this.state.players.map((p) => ({
         id: p.id,
         nickname: p.nickname,
+        pictureUrl: p.pictureUrl,
         position: p.position,
         team: p.team,
         cardCount: p.hand.length,
@@ -171,11 +172,16 @@ export class GameInstance {
     return result;
   }
 
-  addPlayer(playerId: PlayerId, nickname: string): ActionResult {
+  addPlayer(
+    playerId: PlayerId,
+    nickname: string,
+    pictureUrl: string | null = null
+  ): ActionResult {
     return this.dispatch({
       type: 'PLAYER_JOIN',
       playerId,
       nickname,
+      pictureUrl,
     });
   }
 
@@ -330,11 +336,16 @@ export class GameInstance {
     return this.dispatch({ type: 'DEAL_CARDS' });
   }
 
-  replacePlayer(playerId: PlayerId, nickname: string): ActionResult {
+  replacePlayer(
+    playerId: PlayerId,
+    nickname: string,
+    pictureUrl: string | null = null
+  ): ActionResult {
     return this.dispatch({
       type: 'PLAYER_REPLACE',
       playerId,
       nickname,
+      pictureUrl,
     });
   }
 

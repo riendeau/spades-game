@@ -84,12 +84,28 @@ function PlayerSlot({
         style={{
           display: 'flex',
           justifyContent: 'space-between',
+          alignItems: 'center',
           marginBottom: '8px',
+          gap: '8px',
         }}
       >
         <span style={{ fontSize: '12px', color: '#6b7280' }}>
           {POSITION_LABELS[pos]}
         </span>
+        {player?.pictureUrl && (
+          <img
+            src={player.pictureUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              flexShrink: 0,
+            }}
+          />
+        )}
       </div>
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>
         {player ? (
