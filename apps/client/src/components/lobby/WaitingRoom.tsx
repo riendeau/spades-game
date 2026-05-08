@@ -63,6 +63,7 @@ function PlayerSlot({
       data-testid={`seat-${pos}`}
       style={{
         flex: 1,
+        minWidth: 0,
         padding: '16px',
         backgroundColor: player ? '#f9fafb' : '#f3f4f6',
         border: `2px solid ${player ? TEAM_COLORS[player.team] : '#e5e7eb'}`,
@@ -88,10 +89,14 @@ function PlayerSlot({
         />
       )}
       <div
+        title={player?.nickname}
         style={{
           fontWeight: 600,
           marginBottom: '4px',
           paddingRight: player?.pictureUrl ? '40px' : 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
         {player ? (
