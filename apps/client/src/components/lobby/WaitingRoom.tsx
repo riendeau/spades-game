@@ -57,16 +57,13 @@ function generateRandomName(): string {
 function PlayerSlot({
   position: pos,
   gameState,
-  myPosition,
   onSitHere,
 }: {
   position: Position;
   gameState: ClientGameState;
-  myPosition: Position;
   onSitHere?: () => void;
 }) {
   const player = gameState.players.find((p) => p.position === pos);
-  const isMe = pos === myPosition;
 
   return (
     <div
@@ -84,7 +81,7 @@ function PlayerSlot({
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           marginBottom: '8px',
           gap: '8px',
         }}
@@ -109,10 +106,7 @@ function PlayerSlot({
       </div>
       <div style={{ fontWeight: 600, marginBottom: '4px' }}>
         {player ? (
-          <>
-            {player.nickname}
-            {isMe && <span style={{ color: '#6b7280' }}> (you)</span>}
-          </>
+          player.nickname
         ) : onSitHere ? (
           <button
             onClick={onSitHere}
@@ -361,25 +355,21 @@ export function WaitingRoom({
             <PlayerSlot
               position={2}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(2)}
             />
             <PlayerSlot
               position={3}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(3)}
             />
             <PlayerSlot
               position={0}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(0)}
             />
             <PlayerSlot
               position={1}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(1)}
             />
           </div>
@@ -399,7 +389,6 @@ export function WaitingRoom({
               <PlayerSlot
                 position={2}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(2)}
               />
             </div>
@@ -408,13 +397,11 @@ export function WaitingRoom({
               <PlayerSlot
                 position={1}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(1)}
               />
               <PlayerSlot
                 position={3}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(3)}
               />
             </div>
@@ -423,7 +410,6 @@ export function WaitingRoom({
               <PlayerSlot
                 position={0}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(0)}
               />
             </div>
