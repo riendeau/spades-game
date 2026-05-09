@@ -121,16 +121,15 @@ function PlayerSlot({
           <span style={{ color: '#9ca3af' }}>Waiting...</span>
         )}
       </div>
-      {player && (
-        <div
-          style={{
-            fontSize: '12px',
-            color: player.ready ? '#10b981' : '#f59e0b',
-          }}
-        >
-          {player.ready ? 'Ready' : 'Not ready'}
-        </div>
-      )}
+      <div
+        style={{
+          fontSize: '12px',
+          color: player?.ready ? '#10b981' : '#f59e0b',
+          visibility: player ? 'visible' : 'hidden',
+        }}
+      >
+        {player?.ready ? 'Ready' : 'Not ready'}
+      </div>
     </div>
   );
 }
