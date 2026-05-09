@@ -64,12 +64,17 @@ function PlayerSlot({
       style={{
         flex: 1,
         minWidth: 0,
+        minHeight: '80px',
+        boxSizing: 'border-box',
         padding: '16px',
         backgroundColor: player ? '#f9fafb' : '#f3f4f6',
         border: `2px solid ${player ? TEAM_COLORS[player.team] : '#e5e7eb'}`,
         borderRadius: '12px',
         opacity: player || onSitHere ? 1 : 0.6,
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: player ? 'flex-start' : 'center',
       }}
     >
       {player?.pictureUrl && (
@@ -121,15 +126,16 @@ function PlayerSlot({
           <span style={{ color: '#9ca3af' }}>Waiting...</span>
         )}
       </div>
-      <div
-        style={{
-          fontSize: '12px',
-          color: player?.ready ? '#10b981' : '#f59e0b',
-          visibility: player ? 'visible' : 'hidden',
-        }}
-      >
-        {player?.ready ? 'Ready' : 'Not ready'}
-      </div>
+      {player && (
+        <div
+          style={{
+            fontSize: '12px',
+            color: player.ready ? '#10b981' : '#f59e0b',
+          }}
+        >
+          {player.ready ? 'Ready' : 'Not ready'}
+        </div>
+      )}
     </div>
   );
 }
