@@ -14,13 +14,6 @@ interface WaitingRoomProps {
   onChangeSeat: (position: Position) => void;
 }
 
-const POSITION_LABELS: Record<Position, string> = {
-  0: 'South',
-  1: 'West',
-  2: 'North',
-  3: 'East',
-};
-
 // Fun name generator for auto-join feature
 const ADJECTIVES = [
   'Swift',
@@ -57,46 +50,62 @@ function generateRandomName(): string {
 function PlayerSlot({
   position: pos,
   gameState,
-  myPosition,
   onSitHere,
 }: {
   position: Position;
   gameState: ClientGameState;
-  myPosition: Position;
   onSitHere?: () => void;
 }) {
   const player = gameState.players.find((p) => p.position === pos);
-  const isMe = pos === myPosition;
 
   return (
     <div
       data-testid={`seat-${pos}`}
       style={{
         flex: 1,
+        minWidth: 0,
+        minHeight: '80px',
+        boxSizing: 'border-box',
         padding: '16px',
         backgroundColor: player ? '#f9fafb' : '#f3f4f6',
         border: `2px solid ${player ? TEAM_COLORS[player.team] : '#e5e7eb'}`,
         borderRadius: '12px',
         opacity: player || onSitHere ? 1 : 0.6,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: player ? 'flex-start' : 'center',
       }}
     >
+      {player?.pictureUrl && (
+        <img
+          src={player.pictureUrl}
+          alt=""
+          referrerPolicy="no-referrer"
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            objectFit: 'cover',
+          }}
+        />
+      )}
       <div
+        title={player?.nickname}
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: '8px',
+          fontWeight: 600,
+          marginBottom: '4px',
+          paddingRight: player?.pictureUrl ? '40px' : 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
-        <span style={{ fontSize: '12px', color: '#6b7280' }}>
-          {POSITION_LABELS[pos]}
-        </span>
-      </div>
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>
         {player ? (
-          <>
-            {player.nickname}
-            {isMe && <span style={{ color: '#6b7280' }}> (you)</span>}
-          </>
+          player.nickname
         ) : onSitHere ? (
           <button
             onClick={onSitHere}
@@ -345,25 +354,21 @@ export function WaitingRoom({
             <PlayerSlot
               position={2}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(2)}
             />
             <PlayerSlot
               position={3}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(3)}
             />
             <PlayerSlot
               position={0}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(0)}
             />
             <PlayerSlot
               position={1}
               gameState={gameState}
-              myPosition={myPosition}
               onSitHere={getSitHereHandler(1)}
             />
           </div>
@@ -383,7 +388,6 @@ export function WaitingRoom({
               <PlayerSlot
                 position={2}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(2)}
               />
             </div>
@@ -392,13 +396,11 @@ export function WaitingRoom({
               <PlayerSlot
                 position={1}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(1)}
               />
               <PlayerSlot
                 position={3}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(3)}
               />
             </div>
@@ -407,7 +409,6 @@ export function WaitingRoom({
               <PlayerSlot
                 position={0}
                 gameState={gameState}
-                myPosition={myPosition}
                 onSitHere={getSitHereHandler(0)}
               />
             </div>

@@ -9,6 +9,7 @@ export type Position = 0 | 1 | 2 | 3; // Clockwise from dealer's left
 export interface Player {
   id: PlayerId;
   nickname: string;
+  pictureUrl: string | null;
   position: Position;
   team: TeamId;
   hand: Card[];

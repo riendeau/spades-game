@@ -18,7 +18,12 @@ import type { Player, PlayerId, Position } from '../types/player.js';
 import { getTeamForPosition } from '../types/player.js';
 
 export type GameAction =
-  | { type: 'PLAYER_JOIN'; playerId: PlayerId; nickname: string }
+  | {
+      type: 'PLAYER_JOIN';
+      playerId: PlayerId;
+      nickname: string;
+      pictureUrl?: string | null;
+    }
   | { type: 'PLAYER_LEAVE'; playerId: PlayerId }
   | { type: 'PLAYER_READY'; playerId: PlayerId }
   | { type: 'PLAYER_RECONNECT'; playerId: PlayerId }
@@ -37,7 +42,12 @@ export type GameAction =
   | { type: 'END_ROUND' }
   | { type: 'START_NEXT_ROUND' }
   | { type: 'PLAYER_CHANGE_SEAT'; playerId: PlayerId; newPosition: Position }
-  | { type: 'PLAYER_REPLACE'; playerId: PlayerId; nickname: string };
+  | {
+      type: 'PLAYER_REPLACE';
+      playerId: PlayerId;
+      nickname: string;
+      pictureUrl?: string | null;
+    };
 
 export interface ActionResult {
   state: GameState;
@@ -76,7 +86,12 @@ export function processAction(
 
   switch (action.type) {
     case 'PLAYER_JOIN':
-      return handlePlayerJoin(newState, action.playerId, action.nickname);
+      return handlePlayerJoin(
+        newState,
+        action.playerId,
+        action.nickname,
+        action.pictureUrl ?? null
+      );
 
     case 'PLAYER_LEAVE':
       return handlePlayerLeave(newState, action.playerId);
@@ -126,7 +141,12 @@ export function processAction(
       );
 
     case 'PLAYER_REPLACE':
-      return handlePlayerReplace(newState, action.playerId, action.nickname);
+      return handlePlayerReplace(
+        newState,
+        action.playerId,
+        action.nickname,
+        action.pictureUrl ?? null
+      );
 
     default:
       return { state, valid: false, error: 'Unknown action' };
@@ -136,7 +156,8 @@ export function processAction(
 function handlePlayerJoin(
   state: GameState,
   playerId: PlayerId,
-  nickname: string
+  nickname: string,
+  pictureUrl: string | null
 ): ActionResult {
   if (state.phase !== 'waiting') {
     return { state, valid: false, error: 'Game already started' };
@@ -159,6 +180,7 @@ function handlePlayerJoin(
   const newPlayer: Player = {
     id: playerId,
     nickname,
+    pictureUrl,
     position,
     team,
     hand: [],
@@ -584,7 +606,8 @@ function handlePlayerChangeSeat(
 function handlePlayerReplace(
   state: GameState,
   playerId: PlayerId,
-  nickname: string
+  nickname: string,
+  pictureUrl: string | null
 ): ActionResult {
   const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex === -1) {
@@ -597,7 +620,12 @@ function handlePlayerReplace(
   }
 
   const newPlayers = [...state.players];
-  newPlayers[playerIndex] = { ...player, connected: true, nickname };
+  newPlayers[playerIndex] = {
+    ...player,
+    connected: true,
+    nickname,
+    pictureUrl,
+  };
 
   return {
     state: { ...state, players: newPlayers },

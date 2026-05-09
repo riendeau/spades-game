@@ -18,6 +18,7 @@ function makePlayer(id: string, position: Position): Player {
   return {
     id,
     nickname: `Player ${position}`,
+    pictureUrl: null,
     position,
     team: position % 2 === 0 ? 'team1' : 'team2',
     hand: [],

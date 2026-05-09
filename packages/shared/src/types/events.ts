@@ -101,6 +101,7 @@ export interface ClientGameState {
   players: {
     id: PlayerId;
     nickname: string;
+    pictureUrl: string | null;
     position: Position;
     team: 'team1' | 'team2';
     cardCount: number;

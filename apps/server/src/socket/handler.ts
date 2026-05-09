@@ -32,6 +32,10 @@ function getUserId(socket: TypedSocket): string | null {
   return (socket.request as Request).user?.id ?? null;
 }
 
+function getUserPictureUrl(socket: TypedSocket): string | null {
+  return (socket.request as Request).user?.pictureUrl ?? null;
+}
+
 function validateNickname(nickname: unknown): string | null {
   if (typeof nickname !== 'string') return null;
   const trimmed = nickname.trim();
@@ -165,7 +169,11 @@ function handleCreateRoom(socket: TypedSocket, nickname: string): void {
   const room = roomManager.createRoom();
   const playerId = uuidv4();
 
-  const result = room.game.addPlayer(playerId, validNickname);
+  const result = room.game.addPlayer(
+    playerId,
+    validNickname,
+    getUserPictureUrl(socket)
+  );
   if (!result.valid) {
     socket.emit('error', {
       code: 'CREATE_FAILED',
@@ -226,7 +234,11 @@ function handleJoinRoom(
   }
 
   const playerId = uuidv4();
-  const result = room.game.addPlayer(playerId, validNickname);
+  const result = room.game.addPlayer(
+    playerId,
+    validNickname,
+    getUserPictureUrl(socket)
+  );
 
   if (!result.valid) {
     // If game already started, check for open seats
@@ -810,7 +822,11 @@ function handleSelectSeat(
   }
 
   // Replace the player in the game state
-  const result = room.game.replacePlayer(targetPlayer.id, validNickname);
+  const result = room.game.replacePlayer(
+    targetPlayer.id,
+    validNickname,
+    getUserPictureUrl(socket)
+  );
   if (!result.valid) {
     socket.emit('error', {
       code: 'REPLACE_FAILED',
