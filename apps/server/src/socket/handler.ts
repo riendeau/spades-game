@@ -857,13 +857,24 @@ function handleSelectSeat(
   });
 
   const hand = room.game.getPlayerHand(targetPlayer.id);
-  socket.emit('game:cards-dealt', { hand });
+  // Past the bidding phase, the player has no See Cards / Bid Blind Nil
+  // choice left to make, so signal the client to reveal immediately. During
+  // bidding (or dealing, which precedes it), keep cards face-down so the
+  // replacement player can still choose blind nil.
+  const phase = room.game.getState().phase;
+  const autoReveal =
+    phase !== 'waiting' &&
+    phase !== 'ready' &&
+    phase !== 'dealing' &&
+    phase !== 'bidding';
+  socket.emit('game:cards-dealt', { hand, autoReveal });
+
+  console.log(
+    `[seat] cards-dealt to replacement phase=${phase} handSize=${hand.length} autoReveal=${autoReveal} room=${room.id}`
+  );
 
   const clientState = getClientState(room);
   socket.emit('game:state-update', { state: clientState });
-
-  // Auto-reveal cards since they're joining mid-game
-  // (the client will handle this on the room:joined event when cards exist)
 
   // Broadcast to rest of room
   socket.to(room.id).emit('game:state-update', { state: clientState });
