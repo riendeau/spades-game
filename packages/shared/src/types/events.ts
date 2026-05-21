@@ -15,6 +15,7 @@ export interface ClientToServerEvents {
     isBlindNil?: boolean;
   }) => void;
   'game:play-card': (data: { card: Card }) => void;
+  'game:see-cards': () => void;
   'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
   'player:change-seat': (data: { newPosition: Position }) => void;
   'player:open-seat': (data: { playerId: PlayerId }) => void;

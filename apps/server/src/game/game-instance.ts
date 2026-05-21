@@ -349,6 +349,10 @@ export class GameInstance {
     });
   }
 
+  viewCards(playerId: PlayerId): ActionResult {
+    return this.dispatch({ type: 'PLAYER_VIEW_CARDS', playerId });
+  }
+
   movePlayerToSeat(playerId: PlayerId, newPosition: Position): ActionResult {
     return this.dispatch({
       type: 'PLAYER_CHANGE_SEAT',

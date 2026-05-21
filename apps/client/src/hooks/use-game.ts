@@ -304,13 +304,16 @@ export function useGame() {
   );
 
   // Actions are stable refs — destructure once for the return value
-  const {
-    clearRoundSummary,
-    clearRoundEffects,
-    clearTeamNameReveal,
-    revealCards,
-    reset,
-  } = useGameStore.getState();
+  const { clearRoundSummary, clearRoundEffects, clearTeamNameReveal, reset } =
+    useGameStore.getState();
+
+  // Reveal locally AND notify the server so it can auto-reveal on a future
+  // Replace into this seat if the player disconnects after clicking See
+  // Cards but before bidding.
+  const revealCards = useCallback(() => {
+    useGameStore.getState().revealCards();
+    socket?.emit('game:see-cards');
+  }, [socket]);
 
   return {
     connected,

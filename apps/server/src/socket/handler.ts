@@ -130,6 +130,10 @@ export function setupSocketHandlers(io: TypedServer): void {
       handlePlayCard(socket, io, card);
     });
 
+    socket.on('game:see-cards', () => {
+      handleSeeCards(socket);
+    });
+
     socket.on('player:reconnect', ({ sessionToken, roomId }) => {
       handleReconnect(socket, io, sessionToken, roomId);
     });
@@ -460,6 +464,31 @@ function handleBid(
   io.to(room.id).emit('game:state-update', {
     state: getClientState(room),
   });
+}
+
+function handleSeeCards(socket: TypedSocket): void {
+  const session = roomManager.getSessionBySocketId(socket.id);
+  if (!session) {
+    console.error(
+      `[socket] SESSION_NOT_FOUND in handleSeeCards socket=${socket.id}`
+    );
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(session.roomId);
+  if (!room) {
+    socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+    return;
+  }
+
+  // Best-effort flag-set. Idempotent and unconditional: even if the player
+  // is mid-bid or somehow past bidding, recording hasViewedCards=true is
+  // harmless and the flag resets each new round.
+  room.game.viewCards(session.playerId);
 }
 
 function handlePlayCard(
@@ -857,20 +886,25 @@ function handleSelectSeat(
   });
 
   const hand = room.game.getPlayerHand(targetPlayer.id);
-  // Past the bidding phase, the player has no See Cards / Bid Blind Nil
-  // choice left to make, so signal the client to reveal immediately. During
-  // bidding (or dealing, which precedes it), keep cards face-down so the
-  // replacement player can still choose blind nil.
-  const phase = room.game.getState().phase;
+  // Auto-reveal whenever the seat has no See Cards / Bid Blind Nil decision
+  // left to make: past bidding entirely, or still in bidding but the seat
+  // has either placed a bid or clicked See Cards earlier this round (both
+  // are recorded server-side as `hasViewedCards`). During waiting/ready/
+  // dealing there are no cards yet; `autoReveal` is false but irrelevant.
+  const state = room.game.getState();
+  const phase = state.phase;
+  const seatPlayer = state.players.find((p) => p.id === targetPlayer.id);
+  const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
   const autoReveal =
-    phase !== 'waiting' &&
-    phase !== 'ready' &&
-    phase !== 'dealing' &&
-    phase !== 'bidding';
+    phase === 'playing' ||
+    phase === 'trick-end' ||
+    phase === 'round-end' ||
+    phase === 'game-end' ||
+    (phase === 'bidding' && hasViewedCards);
   socket.emit('game:cards-dealt', { hand, autoReveal });
 
   console.log(
-    `[seat] cards-dealt to replacement phase=${phase} handSize=${hand.length} autoReveal=${autoReveal} room=${room.id}`
+    `[seat] cards-dealt to replacement phase=${phase} handSize=${hand.length} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal} room=${room.id}`
   );
 
   const clientState = getClientState(room);

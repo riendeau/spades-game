@@ -47,7 +47,8 @@ export type GameAction =
       playerId: PlayerId;
       nickname: string;
       pictureUrl?: string | null;
-    };
+    }
+  | { type: 'PLAYER_VIEW_CARDS'; playerId: PlayerId };
 
 export interface ActionResult {
   state: GameState;
@@ -148,6 +149,9 @@ export function processAction(
         action.pictureUrl ?? null
       );
 
+    case 'PLAYER_VIEW_CARDS':
+      return handlePlayerViewCards(newState, action.playerId);
+
     default:
       return { state, valid: false, error: 'Unknown action' };
   }
@@ -186,6 +190,7 @@ function handlePlayerJoin(
     hand: [],
     connected: true,
     ready: false,
+    hasViewedCards: false,
   };
 
   return {
@@ -366,16 +371,48 @@ function handleMakeBid(
     ? (((state.dealerPosition + 1) % 4) as Position)
     : (((state.currentPlayerPosition + 1) % 4) as Position);
 
+  // Any bid (normal, nil, blind nil) commits past the See Cards / Bid Blind
+  // Nil decision point. Mark the bidder so a mid-round Replace knows to
+  // auto-reveal their hand.
+  const newPlayers = state.players.map((p) =>
+    p.id === playerId ? { ...p, hasViewedCards: true } : p
+  );
+
   return {
     state: {
       ...state,
       phase: allBidsDone ? 'playing' : 'bidding',
+      players: newPlayers,
       currentRound: {
         ...state.currentRound,
         bids: newBids,
       },
       currentPlayerPosition: nextPosition,
     },
+    valid: true,
+  };
+}
+
+function handlePlayerViewCards(
+  state: GameState,
+  playerId: PlayerId
+): ActionResult {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex === -1) {
+    return { state, valid: false, error: 'Player not found' };
+  }
+
+  // Idempotent — setting twice is harmless. We don't gate on phase: the
+  // client only fires this from the bidding UI, and recording it during
+  // other phases is at worst a no-op (the round-reset clears it).
+  const newPlayers = [...state.players];
+  newPlayers[playerIndex] = {
+    ...newPlayers[playerIndex],
+    hasViewedCards: true,
+  };
+
+  return {
+    state: { ...state, players: newPlayers },
     valid: true,
   };
 }
@@ -644,8 +681,12 @@ function handleStartNextRound(state: GameState): ActionResult {
     team2: { ...state.scores.team2, roundBid: 0, roundTricks: 0 },
   };
 
-  // Clear player hands
-  const newPlayers = state.players.map((p) => ({ ...p, hand: [] }));
+  // Clear player hands and the per-round See Cards / bid decision flag
+  const newPlayers = state.players.map((p) => ({
+    ...p,
+    hand: [],
+    hasViewedCards: false,
+  }));
 
   return {
     state: {
