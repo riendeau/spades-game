@@ -487,8 +487,22 @@ function handleSeeCards(socket: TypedSocket): void {
 
   // Best-effort flag-set. Idempotent and unconditional: even if the player
   // is mid-bid or somehow past bidding, recording hasViewedCards=true is
-  // harmless and the flag resets each new round.
-  room.game.viewCards(session.playerId);
+  // harmless and the flag resets each new round. We log the outcome because
+  // `hasViewedCards` is the sole input to the bidding-phase `autoReveal`
+  // decision in handleSelectSeat — and it's recorded here at click time,
+  // potentially seconds before a disconnect we later need to debug. The
+  // paired `[seat] cards-dealt … hasViewedCards=…` log shows the decision's
+  // output; this shows whether the input was captured.
+  const result = room.game.viewCards(session.playerId);
+  if (!result.valid) {
+    console.warn(
+      `[seat] see-cards dispatch invalid player=${session.playerId.slice(0, 8)}… room=${session.roomId} error=${result.error ?? 'unknown'}`
+    );
+  } else {
+    console.log(
+      `[seat] see-cards recorded player=${session.playerId.slice(0, 8)}… room=${session.roomId} phase=${room.game.getState().phase}`
+    );
+  }
 }
 
 function handlePlayCard(
@@ -894,6 +908,14 @@ function handleSelectSeat(
   const state = room.game.getState();
   const phase = state.phase;
   const seatPlayer = state.players.find((p) => p.id === targetPlayer.id);
+  if (!seatPlayer) {
+    // Should never happen — replacePlayer just succeeded for this id. If it
+    // does, autoReveal silently defaults to false; flag the inconsistency so
+    // it isn't mistaken for a legitimate "still deciding" state.
+    console.warn(
+      `[seat] state inconsistency: replaced player=${targetPlayer.id.slice(0, 8)}… not found in game state room=${room.id} phase=${phase}`
+    );
+  }
   const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
   const autoReveal =
     phase === 'playing' ||
