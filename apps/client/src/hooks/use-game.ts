@@ -48,17 +48,11 @@ export function useGame() {
 
     socket.on('room:joined', ({ roomId, position, sessionToken }) => {
       const store = useGameStore.getState();
-      const wasSelectingSeat = !!store.availableSeats;
       store.setSession(roomId, sessionToken, position);
       store.clearAvailableSeats();
       saveSession(roomId, sessionToken);
-
-      // Auto-reveal cards for mid-game seat replacement. setTimeout(0)
-      // ensures this runs after the game:cards-dealt handler (which
-      // resets cardsRevealed to false via setHand).
-      if (wasSelectingSeat) {
-        setTimeout(() => useGameStore.getState().revealCards(), 0);
-      }
+      // Mid-game replacement reveal is driven by `autoReveal` on the
+      // following `game:cards-dealt` event — see that handler above.
     });
 
     socket.on('game:started', () => {
@@ -81,8 +75,18 @@ export function useGame() {
       useGameStore.getState().setGameState(state);
     });
 
-    socket.on('game:cards-dealt', ({ hand }) => {
-      useGameStore.getState().setHand(hand);
+    socket.on('game:cards-dealt', ({ hand, autoReveal }) => {
+      const store = useGameStore.getState();
+      console.log(
+        `[game] cards-dealt hand=${hand.length} autoReveal=${autoReveal === true}`
+      );
+      store.setHand(hand);
+      // setHand resets cardsRevealed to false; re-set it atomically in the
+      // same handler when the server has told us to skip the See Cards step
+      // (mid-game seat replacement past the bidding phase).
+      if (autoReveal) {
+        store.revealCards();
+      }
     });
 
     socket.on('game:card-played', ({ playerId, card }) => {
@@ -314,13 +318,16 @@ export function useGame() {
   );
 
   // Actions are stable refs — destructure once for the return value
-  const {
-    clearRoundSummary,
-    clearRoundEffects,
-    clearTeamNameReveal,
-    revealCards,
-    reset,
-  } = useGameStore.getState();
+  const { clearRoundSummary, clearRoundEffects, clearTeamNameReveal, reset } =
+    useGameStore.getState();
+
+  // Reveal locally AND notify the server so it can auto-reveal on a future
+  // Replace into this seat if the player disconnects after clicking See
+  // Cards but before bidding.
+  const revealCards = useCallback(() => {
+    useGameStore.getState().revealCards();
+    socket?.emit('game:see-cards');
+  }, [socket]);
 
   return {
     connected,

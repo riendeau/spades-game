@@ -15,6 +15,10 @@ export interface Player {
   hand: Card[];
   connected: boolean;
   ready: boolean;
+  // Server-side bookkeeping: has this seat passed the See Cards / Bid Blind
+  // Nil decision point this round (by clicking See Cards or by placing any
+  // bid)? Reset to false on new round. Not exposed in ClientGameState.
+  hasViewedCards: boolean;
 }
 
 export interface PlayerBid {

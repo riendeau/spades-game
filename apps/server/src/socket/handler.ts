@@ -130,6 +130,10 @@ export function setupSocketHandlers(io: TypedServer): void {
       handlePlayCard(socket, io, card);
     });
 
+    socket.on('game:see-cards', () => {
+      handleSeeCards(socket);
+    });
+
     socket.on('player:reconnect', ({ sessionToken, roomId }) => {
       handleReconnect(socket, io, sessionToken, roomId);
     });
@@ -460,6 +464,45 @@ function handleBid(
   io.to(room.id).emit('game:state-update', {
     state: getClientState(room),
   });
+}
+
+function handleSeeCards(socket: TypedSocket): void {
+  const session = roomManager.getSessionBySocketId(socket.id);
+  if (!session) {
+    console.error(
+      `[socket] SESSION_NOT_FOUND in handleSeeCards socket=${socket.id}`
+    );
+    socket.emit('error', {
+      code: 'SESSION_NOT_FOUND',
+      message: 'Session not found',
+    });
+    return;
+  }
+
+  const room = roomManager.getRoom(session.roomId);
+  if (!room) {
+    socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+    return;
+  }
+
+  // Best-effort flag-set. Idempotent and unconditional: even if the player
+  // is mid-bid or somehow past bidding, recording hasViewedCards=true is
+  // harmless and the flag resets each new round. We log the outcome because
+  // `hasViewedCards` is the sole input to the bidding-phase `autoReveal`
+  // decision in handleSelectSeat — and it's recorded here at click time,
+  // potentially seconds before a disconnect we later need to debug. The
+  // paired `[seat] cards-dealt … hasViewedCards=…` log shows the decision's
+  // output; this shows whether the input was captured.
+  const result = room.game.viewCards(session.playerId);
+  if (!result.valid) {
+    console.warn(
+      `[seat] see-cards dispatch invalid player=${session.playerId.slice(0, 8)}… room=${session.roomId} error=${result.error ?? 'unknown'}`
+    );
+  } else {
+    console.log(
+      `[seat] see-cards recorded player=${session.playerId.slice(0, 8)}… room=${session.roomId} phase=${room.game.getState().phase}`
+    );
+  }
 }
 
 function handlePlayCard(
@@ -857,13 +900,37 @@ function handleSelectSeat(
   });
 
   const hand = room.game.getPlayerHand(targetPlayer.id);
-  socket.emit('game:cards-dealt', { hand });
+  // Auto-reveal whenever the seat has no See Cards / Bid Blind Nil decision
+  // left to make: past bidding entirely, or still in bidding but the seat
+  // has either placed a bid or clicked See Cards earlier this round (both
+  // are recorded server-side as `hasViewedCards`). During waiting/ready/
+  // dealing there are no cards yet; `autoReveal` is false but irrelevant.
+  const state = room.game.getState();
+  const phase = state.phase;
+  const seatPlayer = state.players.find((p) => p.id === targetPlayer.id);
+  if (!seatPlayer) {
+    // Should never happen — replacePlayer just succeeded for this id. If it
+    // does, autoReveal silently defaults to false; flag the inconsistency so
+    // it isn't mistaken for a legitimate "still deciding" state.
+    console.warn(
+      `[seat] state inconsistency: replaced player=${targetPlayer.id.slice(0, 8)}… not found in game state room=${room.id} phase=${phase}`
+    );
+  }
+  const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
+  const autoReveal =
+    phase === 'playing' ||
+    phase === 'trick-end' ||
+    phase === 'round-end' ||
+    phase === 'game-end' ||
+    (phase === 'bidding' && hasViewedCards);
+  socket.emit('game:cards-dealt', { hand, autoReveal });
+
+  console.log(
+    `[seat] cards-dealt to replacement phase=${phase} handSize=${hand.length} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal} room=${room.id}`
+  );
 
   const clientState = getClientState(room);
   socket.emit('game:state-update', { state: clientState });
-
-  // Auto-reveal cards since they're joining mid-game
-  // (the client will handle this on the room:joined event when cards exist)
 
   // Broadcast to rest of room
   socket.to(room.id).emit('game:state-update', { state: clientState });

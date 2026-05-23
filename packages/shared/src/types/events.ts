@@ -15,6 +15,7 @@ export interface ClientToServerEvents {
     isBlindNil?: boolean;
   }) => void;
   'game:play-card': (data: { card: Card }) => void;
+  'game:see-cards': () => void;
   'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
   'player:change-seat': (data: { newPosition: Position }) => void;
   'player:open-seat': (data: { playerId: PlayerId }) => void;
@@ -45,7 +46,7 @@ export interface ServerToClientEvents {
   'room:player-disconnected': (data: { playerId: PlayerId }) => void;
   'game:started': () => void;
   'game:state-update': (data: { state: ClientGameState }) => void;
-  'game:cards-dealt': (data: { hand: Card[] }) => void;
+  'game:cards-dealt': (data: { hand: Card[]; autoReveal?: boolean }) => void;
   'game:bid-made': (data: {
     playerId: PlayerId;
     bid: number;

@@ -24,6 +24,7 @@ function makePlayer(id: string, position: Position): Player {
     hand: [],
     connected: true,
     ready: true,
+    hasViewedCards: false,
   };
 }
 
