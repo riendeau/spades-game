@@ -197,32 +197,46 @@ export function useGame() {
     };
   }, [socket]);
 
-  // Try to reconnect on mount
+  // Emit player:reconnect on every successful (re)connection.
+  // Bound directly to socket.io's 'connect' event — not gated by the React
+  // `connected` flag — so auto-reconnects after a network blip always trigger
+  // a reconnect attempt. The previous useEffect([connected]) variant could
+  // silently skip the emit if a fast disconnect/connect cycle didn't produce
+  // a clean false→true transition in React state.
   useEffect(() => {
-    if (!socket || !connected) return;
+    if (!socket) return;
 
-    // If this is an auto-join tab, clear any inherited session first
     const params = new URLSearchParams(window.location.search);
     const isAutoJoin = params.get('autoName') !== null;
-
     if (isAutoJoin) {
       clearSession();
       return;
     }
 
-    const session = loadSession();
-    if (session) {
-      console.log(
-        `[game] emitting player:reconnect room=${session.roomId} token=${session.sessionToken.slice(0, 8)}… socket=${socket.id}`
-      );
-      socket.emit('player:reconnect', {
-        sessionToken: session.sessionToken,
-        roomId: session.roomId,
-      });
-    } else {
-      console.log('[game] no saved session, skipping reconnect');
-    }
-  }, [socket, connected]);
+    const emitReconnect = () => {
+      const session = loadSession();
+      if (session) {
+        console.log(
+          `[game] emitting player:reconnect room=${session.roomId} token=${session.sessionToken.slice(0, 8)}… socket=${socket.id}`
+        );
+        socket.emit('player:reconnect', {
+          sessionToken: session.sessionToken,
+          roomId: session.roomId,
+        });
+      } else {
+        console.log('[game] no saved session, skipping reconnect');
+      }
+    };
+
+    socket.on('connect', emitReconnect);
+    // Handle the case where the socket is already connected by the time this
+    // effect runs (the 'connect' event would have already fired).
+    if (socket.connected) emitReconnect();
+
+    return () => {
+      socket.off('connect', emitReconnect);
+    };
+  }, [socket]);
 
   const createRoom = useCallback(
     (nickname: string) => {

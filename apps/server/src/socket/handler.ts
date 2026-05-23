@@ -154,8 +154,8 @@ export function setupSocketHandlers(io: TypedServer): void {
       handleSelectSeat(socket, io, roomId, position, nickname);
     });
 
-    socket.on('disconnect', () => {
-      handleDisconnect(socket, io);
+    socket.on('disconnect', (reason) => {
+      handleDisconnect(socket, io, reason);
     });
   });
 }
@@ -1154,7 +1154,11 @@ function handleKickIdle(
   io.to(room.id).emit('game:state-update', { state: getClientState(room) });
 }
 
-function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
+function handleDisconnect(
+  socket: TypedSocket,
+  io: TypedServer,
+  reason: string
+): void {
   const session = roomManager.markSessionDisconnected(socket.id);
   if (!session) {
     // Normal — socket connected but user never joined a room
@@ -1162,7 +1166,7 @@ function handleDisconnect(socket: TypedSocket, io: TypedServer): void {
   }
 
   console.log(
-    `[socket] disconnected id=${socket.id} token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId}`
+    `[socket] disconnected id=${socket.id} reason=${reason} token=${session.sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${session.roomId}`
   );
 
   const room = roomManager.getRoom(session.roomId);
