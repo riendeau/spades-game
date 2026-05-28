@@ -9,20 +9,48 @@ const TEMPLATE_WIDTH = 1195;
 const TEMPLATE_HEIGHT = 896;
 
 const FONT_FAMILY = 'ChampionsMarker';
-const TEXT_COLOR = '#3b3b8f'; // marker blue-violet, tunable
 
 // Calibrated to the handwritten slots on the template. `y` is the text
-// baseline (default `alphabetic` baseline). Toggle the debug grid with
-// `?champions-debug` to re-tune these.
+// baseline (default `alphabetic` baseline). `color` is tuned to roughly match
+// the marker color of the adjacent printed label. Toggle the debug grid with
+// `?champions-debug` to re-tune positions.
 const FIELDS = {
   // Between "Spades Champions" and "Winners:".
-  date: { x: 700, y: 388, size: 44, align: 'center' as const, maxWidth: 520 },
-  // Right of "Winners:".
-  winner: { x: 665, y: 440, size: 52, align: 'left' as const, maxWidth: 440 },
-  // Right of "Losers:".
-  loser: { x: 620, y: 518, size: 52, align: 'left' as const, maxWidth: 480 },
+  date: {
+    x: 675,
+    y: 378,
+    size: 44,
+    align: 'center' as const,
+    maxWidth: 520,
+    color: '#cc2222',
+  },
+  // Right of "Winners:" (blue, like the "Winners:" label).
+  winner: {
+    x: 655,
+    y: 450,
+    size: 52,
+    align: 'left' as const,
+    maxWidth: 440,
+    color: '#2f5fd0',
+  },
+  // Right of "Losers:" (pink, like the "Losers:" label).
+  loser: {
+    x: 645,
+    y: 513,
+    size: 52,
+    align: 'left' as const,
+    maxWidth: 480,
+    color: '#e0559b',
+  },
   // Below "Losers:".
-  score: { x: 440, y: 592, size: 56, align: 'left' as const, maxWidth: 620 },
+  score: {
+    x: 540,
+    y: 617,
+    size: 56,
+    align: 'left' as const,
+    maxWidth: 620,
+    color: '#7a2fb0',
+  },
 };
 
 interface ChampionsGraphicProps {
@@ -57,7 +85,7 @@ function drawField(
   ctx.font = `${size}px "${FONT_FAMILY}"`;
   ctx.textAlign = field.align;
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = TEXT_COLOR;
+  ctx.fillStyle = field.color;
   ctx.fillText(text, field.x, field.y);
 }
 
