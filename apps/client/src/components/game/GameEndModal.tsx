@@ -95,18 +95,6 @@ export function GameEndModal({
           </div>
         ) : (
           <>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-              {didWin ? '🎉' : '😔'}
-            </div>
-
-            <h2 style={{ margin: '0 0 8px', fontSize: '28px' }}>
-              {didWin ? 'You Won!' : 'You Lost'}
-            </h2>
-
-            <p style={{ color: '#6b7280', marginBottom: '24px' }}>
-              {winnerName} wins the game!
-            </p>
-
             <div style={{ marginBottom: '32px' }}>
               <ChampionsGraphic
                 winnerName={winnerName}
