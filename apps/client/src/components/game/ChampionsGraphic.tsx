@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import championsTemplate from '../../assets/champions.png';
+import championsTemplate from '../../assets/champions.webp';
 import markerFontUrl from '../../assets/fonts/permanent-marker.woff2';
 
-// The template PNG is a paper-plate photo cropped tight to the plate's
-// bounding box (no transparent padding, so it centers cleanly in the modal).
+// The template is a paper-plate photo cropped tight to the plate's bounding
+// box (no transparent padding, so it centers cleanly in the modal) and saved
+// as lossy WebP with alpha to keep the file small.
 // All text coordinates below are expressed in this native pixel space; the
 // canvas is drawn at this resolution and scaled down with CSS (`maxWidth: 100%`).
 const TEMPLATE_WIDTH = 929;
