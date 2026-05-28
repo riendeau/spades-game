@@ -2,11 +2,12 @@ import { useEffect, useRef } from 'react';
 import championsTemplate from '../../assets/champions.png';
 import markerFontUrl from '../../assets/fonts/permanent-marker.woff2';
 
-// The template PNG is a fixed-size paper-plate photo. All text coordinates
-// below are expressed in this native pixel space; the canvas is drawn at this
-// resolution and scaled down with CSS (`maxWidth: 100%`).
-const TEMPLATE_WIDTH = 1195;
-const TEMPLATE_HEIGHT = 896;
+// The template PNG is a paper-plate photo cropped tight to the plate's
+// bounding box (no transparent padding, so it centers cleanly in the modal).
+// All text coordinates below are expressed in this native pixel space; the
+// canvas is drawn at this resolution and scaled down with CSS (`maxWidth: 100%`).
+const TEMPLATE_WIDTH = 929;
+const TEMPLATE_HEIGHT = 895;
 
 const FONT_FAMILY = 'ChampionsMarker';
 
@@ -17,8 +18,8 @@ const FONT_FAMILY = 'ChampionsMarker';
 const FIELDS = {
   // Between "Spades Champions" and "Winners:".
   date: {
-    x: 675,
-    y: 378,
+    x: 480,
+    y: 377,
     size: 44,
     align: 'center' as const,
     maxWidth: 520,
@@ -26,8 +27,8 @@ const FIELDS = {
   },
   // Right of "Winners:" (blue, like the "Winners:" label).
   winner: {
-    x: 655,
-    y: 450,
+    x: 460,
+    y: 449,
     size: 52,
     align: 'left' as const,
     maxWidth: 440,
@@ -35,8 +36,8 @@ const FIELDS = {
   },
   // Right of "Losers:" (pink, like the "Losers:" label).
   loser: {
-    x: 645,
-    y: 513,
+    x: 450,
+    y: 512,
     size: 52,
     align: 'left' as const,
     maxWidth: 480,
@@ -44,8 +45,8 @@ const FIELDS = {
   },
   // Below "Losers:".
   score: {
-    x: 540,
-    y: 617,
+    x: 345,
+    y: 616,
     size: 56,
     align: 'left' as const,
     maxWidth: 620,
