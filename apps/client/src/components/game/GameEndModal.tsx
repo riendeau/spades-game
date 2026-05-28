@@ -2,6 +2,7 @@ import type { ClientGameState, ScoreHistoryEntry } from '@spades/shared';
 import React, { useEffect, useState } from 'react';
 import { TEAM1_COLOR, TEAM2_COLOR } from '../../styles/colors';
 import { Button } from '../ui/Button';
+import { ChampionsGraphic } from './ChampionsGraphic';
 import { ScoreProgressionChart } from './ScoreProgressionChart';
 
 const SUMMARY_TIMEOUT_MS = 10_000;
@@ -40,6 +41,11 @@ export function GameEndModal({
   const team1Name = teamNames?.team1 ?? 'Team 1';
   const team2Name = teamNames?.team2 ?? 'Team 2';
   const winnerName = winner === 'team1' ? team1Name : team2Name;
+  const loserName = winner === 'team1' ? team2Name : team1Name;
+  const winnerScore =
+    winner === 'team1' ? scores.team1.score : scores.team2.score;
+  const loserScore =
+    winner === 'team1' ? scores.team2.score : scores.team1.score;
 
   return (
     <div
@@ -89,17 +95,14 @@ export function GameEndModal({
           </div>
         ) : (
           <>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-              {didWin ? '🎉' : '😔'}
+            <div style={{ marginBottom: '32px' }}>
+              <ChampionsGraphic
+                winnerName={winnerName}
+                loserName={loserName}
+                winnerScore={winnerScore}
+                loserScore={loserScore}
+              />
             </div>
-
-            <h2 style={{ margin: '0 0 8px', fontSize: '28px' }}>
-              {didWin ? 'You Won!' : 'You Lost'}
-            </h2>
-
-            <p style={{ color: '#6b7280', marginBottom: '24px' }}>
-              {winnerName} wins the game!
-            </p>
 
             <div
               style={{

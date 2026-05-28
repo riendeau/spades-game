@@ -165,6 +165,14 @@ All four player positions (three opponents + the local player) use a consistent 
 - **`GameTable`** uses `height: 100vh` + `overflow: hidden`, so it fills the viewport exactly regardless of orientation.
 - **`WaitingRoom`** uses a 2×2 seat grid on mobile and the compass layout (North/W+E/South) on desktop. The header (Room Code + Share Link) is a single compact row on both.
 
+### Champions Graphic (end-of-game)
+
+`ChampionsGraphic` (`apps/client/src/components/game/ChampionsGraphic.tsx`) renders the end-game "Spades Champions" image shown inline in `GameEndModal`. It draws a fixed template photo (`apps/client/src/assets/champions.webp`, 929×895 — a paper-plate photo cropped tight to the plate's bounding box and saved as lossy WebP-with-alpha, ~72KB vs ~1.3MB as PNG) onto a `<canvas>` at native resolution (scaled down with `maxWidth: 100%`), then overlays four dynamic text fields — date, winner name, loser name, score (`winner > loser`) — at coordinates calibrated to the template's handwritten slots (the `FIELDS` constant). Cropping the asset means `FIELDS` coordinates are in the cropped pixel space; if the asset is ever re-cropped, shift every coordinate by the crop offset.
+
+- **Canvas + custom font gotcha**: a `@font-face`/bundled font is **not** usable by `ctx.fillText` until it has actually loaded — canvas silently falls back to a default font with no error. The component loads the marker font (`assets/fonts/permanent-marker.woff2`) via the `FontFace` API and `await`s both `font.load()` and `img.decode()` **before** the first draw. Any redraw on prop change must re-await, not assume the font is ready.
+- **Re-tuning coordinates**: append `?champions-debug` to the URL to overlay a 100px coordinate grid on the canvas, then nudge the `FIELDS` x/y values. `fitFontSize` auto-shrinks long team names to their field's `maxWidth`.
+- **Previewing in dev**: the modal lives behind `LoginGate` inside `App`, so a standalone preview route only renders if the **auth server is also running** — use `pnpm dev` (both client + server), not `pnpm --filter @spades/client dev` alone, or `/auth/me` 404s and `App` never mounts. Screenshots were captured with the Playwright install in `e2e/` (import `chromium` from `@playwright/test`; run the script from inside `e2e/` so its `node_modules` resolves).
+
 ### State Management
 
 - **Zustand store** in `apps/client/src/store/game-store.ts`
