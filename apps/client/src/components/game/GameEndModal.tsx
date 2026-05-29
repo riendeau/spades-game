@@ -154,6 +154,11 @@ export function GameEndModal({
                   lineHeight: 1.6,
                   color: '#4b5563',
                   textAlign: 'left',
+                  // The recap voice is randomized server-side (see
+                  // SUMMARY_STYLES in claude-service.ts). Some styles are
+                  // multi-line — haiku, blank verse, a chat thread — so we
+                  // preserve newlines here. Without pre-wrap they collapse
+                  // into a single run-on line.
                   whiteSpace: 'pre-wrap',
                 }}
               >
