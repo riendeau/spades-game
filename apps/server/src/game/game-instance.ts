@@ -360,13 +360,4 @@ export class GameInstance {
       newPosition,
     });
   }
-
-  isPlayerTurn(playerId: PlayerId): boolean {
-    const player = this.state.players.find((p) => p.id === playerId);
-    return player?.position === this.state.currentPlayerPosition;
-  }
-
-  getPlayerByPosition(position: number): PlayerId | undefined {
-    return this.state.players.find((p) => p.position === position)?.id;
-  }
 }

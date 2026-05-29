@@ -81,10 +81,6 @@ export function hasSuit(hand: Card[], suit: Suit): boolean {
   return hand.some((c) => c.suit === suit);
 }
 
-export function getCardsOfSuit(hand: Card[], suit: Suit): Card[] {
-  return hand.filter((c) => c.suit === suit);
-}
-
 export function hasOnlySpades(hand: Card[]): boolean {
   return hand.every((c) => c.suit === 'spades');
 }

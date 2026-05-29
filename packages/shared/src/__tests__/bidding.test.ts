@@ -4,7 +4,6 @@ import {
   getNextBidder,
   allBidsComplete,
   createBid,
-  getTeamTotalBid,
 } from '../game-logic/bidding';
 import {
   createInitialGameState,
@@ -444,47 +443,6 @@ describe('bidding', () => {
       const bid = createBid('p1', 7, false, true);
       expect(bid.bid).toBe(0);
       expect(bid.isBlindNil).toBe(true);
-    });
-  });
-
-  describe('getTeamTotalBid', () => {
-    it('should sum bids for specified player IDs', () => {
-      const bids: PlayerBid[] = [
-        { playerId: 'p0', bid: 3, isNil: false, isBlindNil: false },
-        { playerId: 'p1', bid: 4, isNil: false, isBlindNil: false },
-        { playerId: 'p2', bid: 5, isNil: false, isBlindNil: false },
-        { playerId: 'p3', bid: 2, isNil: false, isBlindNil: false },
-      ];
-      expect(getTeamTotalBid(bids, ['p0', 'p2'])).toBe(8);
-      expect(getTeamTotalBid(bids, ['p1', 'p3'])).toBe(6);
-    });
-
-    it('should exclude nil bids from team total', () => {
-      const bids: PlayerBid[] = [
-        { playerId: 'p0', bid: 0, isNil: true, isBlindNil: false },
-        { playerId: 'p2', bid: 5, isNil: false, isBlindNil: false },
-      ];
-      expect(getTeamTotalBid(bids, ['p0', 'p2'])).toBe(5);
-    });
-
-    it('should exclude blind nil bids from team total', () => {
-      const bids: PlayerBid[] = [
-        { playerId: 'p0', bid: 0, isNil: false, isBlindNil: true },
-        { playerId: 'p2', bid: 4, isNil: false, isBlindNil: false },
-      ];
-      expect(getTeamTotalBid(bids, ['p0', 'p2'])).toBe(4);
-    });
-
-    it('should return 0 when both teammates bid nil', () => {
-      const bids: PlayerBid[] = [
-        { playerId: 'p0', bid: 0, isNil: true, isBlindNil: false },
-        { playerId: 'p2', bid: 0, isNil: false, isBlindNil: true },
-      ];
-      expect(getTeamTotalBid(bids, ['p0', 'p2'])).toBe(0);
-    });
-
-    it('should return 0 for empty bids array', () => {
-      expect(getTeamTotalBid([], ['p0', 'p2'])).toBe(0);
     });
   });
 });

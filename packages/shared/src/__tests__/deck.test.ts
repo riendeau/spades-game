@@ -7,7 +7,6 @@ import {
   removeCardFromHand,
   hasCard,
   hasSuit,
-  getCardsOfSuit,
   hasOnlySpades,
 } from '../game-logic/deck';
 import type { Card } from '../types/card';
@@ -146,21 +145,6 @@ describe('Deck', () => {
     it('should return false if hand has no cards of the suit', () => {
       const hand: Card[] = [{ suit: 'spades', rank: 'A' }];
       expect(hasSuit(hand, 'hearts')).toBe(false);
-    });
-  });
-
-  describe('getCardsOfSuit', () => {
-    it('should return all cards of the specified suit', () => {
-      const hand: Card[] = [
-        { suit: 'spades', rank: 'A' },
-        { suit: 'spades', rank: 'K' },
-        { suit: 'hearts', rank: 'Q' },
-      ];
-
-      const spades = getCardsOfSuit(hand, 'spades');
-      expect(spades).toHaveLength(2);
-      expect(spades).toContainEqual({ suit: 'spades', rank: 'A' });
-      expect(spades).toContainEqual({ suit: 'spades', rank: 'K' });
     });
   });
 
