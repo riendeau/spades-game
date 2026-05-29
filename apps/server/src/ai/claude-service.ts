@@ -4,6 +4,78 @@ import type { Card, Position } from '@spades/shared';
 const MODEL_HAIKU = 'claude-haiku-4-5';
 const MODEL_SONNET = 'claude-sonnet-4-6';
 
+/**
+ * Voices for the post-game writeup. One is chosen at random per game so the
+ * recap isn't always the same style. Each style supplies a persona/task intro,
+ * a format+length outro, and its own token budget (verse forms need fewer
+ * tokens than prose). The game data block is shared and inserted between them.
+ */
+interface SummaryStyle {
+  name: string;
+  intro: string;
+  outro: string;
+  maxTokens: number;
+}
+
+const SUMMARY_STYLES: SummaryStyle[] = [
+  {
+    name: 'sports-commentator',
+    intro:
+      'You are a witty sports commentator writing a recap of a Spades card game and mildly resentful at having to engage with such low-quality play. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers (and the winners too if they deserve it).',
+    outro:
+      'Write the summary directly — no title, no heading. Keep it under 150 words.',
+    maxTokens: 400,
+  },
+  {
+    name: 'haiku',
+    intro:
+      'You are a haiku poet recapping a Spades card game. Capture the arc of the match — who triumphed, who faltered, and the turns of fortune (comebacks, blowouts, failed nils, bag penalties) — in spare, evocative imagery.',
+    outro:
+      'Write two or three haiku in traditional 5-7-5 form, one stanza each, separated by a blank line. Output only the haiku — no title, no commentary.',
+    maxTokens: 200,
+  },
+  {
+    name: 'noir-detective',
+    intro:
+      'You are a hard-boiled noir detective narrating a Spades card game like a case that went sideways. World-weary, clipped, metaphor-soaked. Note the dramatic turns — comebacks, blowouts, failed nils, the slow rot of bag penalties — and who had it coming. PG-13.',
+    outro:
+      'Write 1-2 short paragraphs in first person. Output the narration directly — no title, no heading. Keep it under 150 words.',
+    maxTokens: 400,
+  },
+  {
+    name: 'shakespearean',
+    intro:
+      'You are a Shakespearean bard recounting a Spades card game as high drama, both tragedy and farce. Use Elizabethan diction and dramatic flourish (the occasional "thou", "forsooth", "alas"). Mark the great reversals — comebacks, routs, fallen nils, the creeping curse of bags. PG-13.',
+    outro:
+      'Write a short dramatic passage; blank verse is welcome. Output it directly — no title, no heading. Keep it under 150 words.',
+    maxTokens: 400,
+  },
+  {
+    name: 'nature-documentary',
+    intro:
+      'You are a hushed nature-documentary narrator (think David Attenborough) observing a Spades card game as though it were wildlife on the savanna. The players are creatures in their habitat, the bids are hunts, the bag penalties a slow affliction. Awe and gentle irony. PG-13.',
+    outro:
+      'Write 1-2 short paragraphs. Output the narration directly — no title, no heading. Keep it under 150 words.',
+    maxTokens: 400,
+  },
+  {
+    name: 'epic-saga',
+    intro:
+      'You are a bard chronicling a Spades card game as an epic fantasy saga — heroes, doomed gambits, and hard-won glory. Render the comebacks, routs, failed nils, and bag-curses as the stuff of legend. PG-13.',
+    outro:
+      'Write a short heroic passage. Output it directly — no title, no heading. Keep it under 150 words.',
+    maxTokens: 400,
+  },
+  {
+    name: 'group-chat',
+    intro:
+      'You are recapping a Spades card game as a passive-aggressive group chat thread between the four players the morning after. Petty grievances, backhanded "congrats", "no worries!" that clearly means worries, someone leaving people on read. Reference the actual turning points — comebacks, blowouts, failed nils, bag penalties — as the things they\'re subtweeting about. PG-13.',
+    outro:
+      'Write 4-7 short chat messages, each prefixed with the sender\'s name and a colon (e.g. "Alice: ..."), one per line. Output only the messages — no title, no commentary.',
+    maxTokens: 350,
+  },
+];
+
 let client: Anthropic | null = null;
 
 function getClient(): Anthropic | null {
@@ -130,14 +202,18 @@ export async function generateGameSummary(data: {
     )
     .join('\n');
 
+  const style =
+    SUMMARY_STYLES[Math.floor(Math.random() * SUMMARY_STYLES.length)];
+  console.log(`[ai] generating game summary in style: ${style.name}`);
+
   try {
     const response = await anthropic.messages.create({
       model: MODEL_HAIKU,
-      max_tokens: 400,
+      max_tokens: style.maxTokens,
       messages: [
         {
           role: 'user',
-          content: `You are a witty sports commentator writing a recap of a Spades card game and mildly resentful at having to engage with such low-quality play. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers (and the winners too if they deserve it).
+          content: `${style.intro}
 
 Winner: ${data.teamNames[data.winningTeam]}
 Final score: ${data.teamNames.team1} ${data.finalScores.team1.score} (${data.finalScores.team1.bags} bags) - ${data.teamNames.team2} ${data.finalScores.team2.score} (${data.finalScores.team2.bags} bags)
@@ -150,7 +226,7 @@ ${scoreProgression}
 Bid details:
 ${bidSummary}
 
-Write the summary directly — no title, no heading. Keep it under 150 words.`,
+${style.outro}`,
         },
       ],
     });

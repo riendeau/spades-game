@@ -154,6 +154,7 @@ export function GameEndModal({
                   lineHeight: 1.6,
                   color: '#4b5563',
                   textAlign: 'left',
+                  whiteSpace: 'pre-wrap',
                 }}
               >
                 {gameSummary}
