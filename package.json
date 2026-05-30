@@ -11,6 +11,7 @@
     "test:all": "pnpm test && pnpm test:e2e",
     "lint": "eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
+    "knip": "knip",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -48,6 +49,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "husky": "^9.1.7",
+    "knip": "^6.14.2",
     "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",

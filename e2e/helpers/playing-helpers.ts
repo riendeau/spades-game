@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
  * Plays the first available (non-disabled) card on the given page.
  * The page must be the current player's turn.
  */
-export async function playFirstCard(page: Page): Promise<void> {
+async function playFirstCard(page: Page): Promise<void> {
   // Wait for it to be this player's turn
   await page.locator('[data-testid="my-turn"]').waitFor({ timeout: 15_000 });
 

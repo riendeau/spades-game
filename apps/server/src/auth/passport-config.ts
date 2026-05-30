@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { pool } from '../db/client.js';
 
-export interface User {
+interface User {
   id: string;
   email: string;
   displayName: string;

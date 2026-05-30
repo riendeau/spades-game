@@ -80,10 +80,10 @@ export function brightenForAccent(hex: string): string {
 }
 
 export const TEAM1_COLOR = '#861F41';
-export const TEAM1_RGB = hexToRgb(TEAM1_COLOR);
+const TEAM1_RGB = hexToRgb(TEAM1_COLOR);
 
 export const TEAM2_COLOR = '#E5751F';
-export const TEAM2_RGB = hexToRgb(TEAM2_COLOR);
+const TEAM2_RGB = hexToRgb(TEAM2_COLOR);
 
 const TEAM1_ACCENT = brightenForAccent(TEAM1_COLOR);
 const TEAM2_ACCENT = brightenForAccent(TEAM2_COLOR);
