@@ -28,7 +28,11 @@ export class RoomManager {
   private sessions = new Map<string, PlayerSession>();
   private socketToSession = new Map<string, string>();
 
-  onSessionAbandoned?: (roomId: string, playerId: string) => void;
+  onSessionAbandoned?: (roomId: string) => void;
+
+  // Fired whenever a room is removed, so external per-room state (e.g. the
+  // idle timer's turn map) can be cleaned up and not leak entries.
+  onRoomDeleted?: (roomId: string) => void;
 
   constructor() {
     // Cleanup expired rooms periodically
@@ -218,6 +222,7 @@ export class RoomManager {
         }
       }
       this.rooms.delete(roomId);
+      this.onRoomDeleted?.(roomId);
     }
   }
 
@@ -329,9 +334,11 @@ export class RoomManager {
         this.sessions.delete(token);
         deletedSessions++;
 
-        // Notify handler so it can broadcast the seat becoming open
+        // Notify handler so it can broadcast the seat becoming open. The
+        // handler re-derives open seats from room state, so only the roomId
+        // is needed here.
         if (isActiveGame && this.onSessionAbandoned) {
-          this.onSessionAbandoned(session.roomId, session.playerId);
+          this.onSessionAbandoned(session.roomId);
         }
       }
     }
@@ -354,7 +361,7 @@ export class RoomManager {
         console.log(
           `[cleanup] deleting orphaned room=${roomId} phase=${phase} — all sessions expired`
         );
-        this.rooms.delete(roomId);
+        this.deleteRoom(roomId);
         deletedRooms++;
       }
     }

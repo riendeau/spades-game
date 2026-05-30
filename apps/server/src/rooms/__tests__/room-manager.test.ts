@@ -145,6 +145,25 @@ describe('RoomManager', () => {
       expect(found?.playerId).toBe('player-3');
       expect(found?.roomId).toBe(room1.id);
     });
+
+    it('should fire onRoomDeleted so per-room state can be cleaned up', () => {
+      const room = rm.createRoom();
+      const callback = vi.fn();
+      rm.onRoomDeleted = callback;
+
+      rm.deleteRoom(room.id);
+
+      expect(callback).toHaveBeenCalledWith(room.id);
+    });
+
+    it('should not fire onRoomDeleted for an unknown room', () => {
+      const callback = vi.fn();
+      rm.onRoomDeleted = callback;
+
+      rm.deleteRoom('NOEXIST');
+
+      expect(callback).not.toHaveBeenCalled();
+    });
   });
 
   describe('touchRoom', () => {
@@ -549,7 +568,7 @@ describe('RoomManager', () => {
       rm.markSessionDisconnected('sock-2');
       vi.advanceTimersByTime(6 * 60 * 1000);
 
-      expect(callback).toHaveBeenCalledWith(room.id, 'p2');
+      expect(callback).toHaveBeenCalledWith(room.id);
     });
 
     it('should not invoke onSessionAbandoned for waiting rooms', () => {
