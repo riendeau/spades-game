@@ -5,7 +5,7 @@ import {
   removeCardFromHand,
 } from '../game-logic/deck.js';
 import {
-  calculateRoundScore,
+  calculateTeamRoundScore,
   updateTeamScore,
   checkGameEnd,
   createRoundSummary,
@@ -554,30 +554,14 @@ function handleEndRound(state: GameState, config: GameConfig): ActionResult {
     }
   }
 
-  // Calculate scores for each team
-  const calculateTeamScore = (teamId: 'team1' | 'team2') => {
-    const teamPlayers = state.players.filter((p) => p.team === teamId);
-    const teamBids = state.currentRound!.bids.filter((b) =>
-      teamPlayers.some((p) => p.id === b.playerId)
-    );
-    const nilBids = teamBids.filter((b) => b.isNil || b.isBlindNil);
-    const regularBid = teamBids
-      .filter((b) => !b.isNil && !b.isBlindNil)
-      .reduce((sum, b) => sum + b.bid, 0);
-    const teamTricks = teamPlayers.reduce(
-      (sum, p) => sum + playerTricks[p.id],
-      0
-    );
-
-    return calculateRoundScore(regularBid, teamTricks, nilBids, playerTricks);
-  };
-
-  const team1Calc = calculateTeamScore('team1');
-  const team2Calc = calculateTeamScore('team2');
+  // Calculate scores for each team. The per-team aggregation lives in
+  // calculateTeamRoundScore so this path and createRoundSummary stay in sync.
+  const team1Calc = calculateTeamRoundScore(state, 'team1', playerTricks);
+  const team2Calc = calculateTeamRoundScore(state, 'team2', playerTricks);
 
   const newScores = {
-    team1: updateTeamScore(state.scores.team1, team1Calc, config),
-    team2: updateTeamScore(state.scores.team2, team2Calc, config),
+    team1: updateTeamScore(state.scores.team1, team1Calc.scoreCalc, config),
+    team2: updateTeamScore(state.scores.team2, team2Calc.scoreCalc, config),
   };
 
   const winner = checkGameEnd(newScores, state.winningScore);

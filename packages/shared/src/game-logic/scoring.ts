@@ -58,16 +58,35 @@ export function calculateRoundScore(
   };
 }
 
+// Bag penalty applied when a team's accumulated bags cross the threshold.
+// Returns both the penalty (to subtract from the score) and the bags left
+// after the threshold rolls over. Shared by updateTeamScore (which applies
+// the penalty) and createRoundSummary (which displays it) so the score shown
+// and the score applied can never disagree.
+function applyBagPenalty(
+  currentBags: number,
+  roundBags: number,
+  config: GameConfig
+): { bagPenalty: number; remainingBags: number } {
+  const newBags = currentBags + roundBags;
+  const penaltyCount = Math.floor(newBags / config.bagPenaltyThreshold);
+  const bagPenalty = penaltyCount * config.bagPenalty;
+  const remainingBags =
+    penaltyCount > 0 ? newBags % config.bagPenaltyThreshold : newBags;
+
+  return { bagPenalty, remainingBags };
+}
+
 export function updateTeamScore(
   currentScore: TeamScore,
   roundCalculation: ScoreCalculation,
   config: GameConfig
 ): TeamScore {
-  const newBags = currentScore.bags + roundCalculation.bags;
-  const penaltyCount = Math.floor(newBags / config.bagPenaltyThreshold);
-  const bagPenalty = penaltyCount * config.bagPenalty;
-  const remainingBags =
-    penaltyCount > 0 ? newBags % config.bagPenaltyThreshold : newBags;
+  const { bagPenalty, remainingBags } = applyBagPenalty(
+    currentScore.bags,
+    roundCalculation.bags,
+    config
+  );
 
   return {
     ...currentScore,
@@ -78,6 +97,45 @@ export function updateTeamScore(
   };
 }
 
+// Aggregates one team's bids and tricks for the current round and computes
+// its score. Shared by createRoundSummary (for the display summary) and the
+// state machine's round-completion handler (to apply the score) so the two
+// paths can never drift apart.
+export function calculateTeamRoundScore(
+  gameState: GameState,
+  teamId: TeamId,
+  playerTricks: Record<PlayerId, number>
+): {
+  regularBid: number;
+  teamTricks: number;
+  nilBids: PlayerBid[];
+  scoreCalc: ScoreCalculation;
+} {
+  const teamPlayers = gameState.players.filter((p) => p.team === teamId);
+  const teamBids = gameState.currentRound!.bids.filter((b) =>
+    teamPlayers.some((p) => p.id === b.playerId)
+  );
+
+  const nilBids = teamBids.filter((b) => b.isNil || b.isBlindNil);
+  const regularBid = teamBids
+    .filter((b) => !b.isNil && !b.isBlindNil)
+    .reduce((sum, b) => sum + b.bid, 0);
+
+  const teamTricks = teamPlayers.reduce(
+    (sum, p) => sum + (playerTricks[p.id] || 0),
+    0
+  );
+
+  const scoreCalc = calculateRoundScore(
+    regularBid,
+    teamTricks,
+    nilBids,
+    playerTricks
+  );
+
+  return { regularBid, teamTricks, nilBids, scoreCalc };
+}
+
 export function createRoundSummary(
   gameState: GameState,
   playerTricks: Record<PlayerId, number>,
@@ -86,27 +144,8 @@ export function createRoundSummary(
   const round = gameState.currentRound!;
 
   const createTeamResult = (teamId: TeamId): TeamRoundResult => {
-    const teamPlayers = gameState.players.filter((p) => p.team === teamId);
-    const teamBids = round.bids.filter((b) =>
-      teamPlayers.some((p) => p.id === b.playerId)
-    );
-
-    const nilBids = teamBids.filter((b) => b.isNil || b.isBlindNil);
-    const regularBid = teamBids
-      .filter((b) => !b.isNil && !b.isBlindNil)
-      .reduce((sum, b) => sum + b.bid, 0);
-
-    const teamTricks = teamPlayers.reduce(
-      (sum, p) => sum + (playerTricks[p.id] || 0),
-      0
-    );
-
-    const scoreCalc = calculateRoundScore(
-      regularBid,
-      teamTricks,
-      nilBids,
-      playerTricks
-    );
+    const { regularBid, teamTricks, nilBids, scoreCalc } =
+      calculateTeamRoundScore(gameState, teamId, playerTricks);
 
     const nilResults = nilBids.map((nb) => ({
       playerId: nb.playerId,
@@ -120,10 +159,11 @@ export function createRoundSummary(
           : -(nb.isBlindNil ? 200 : 100),
     }));
 
-    const currentTeamScore = gameState.scores[teamId];
-    const newBags = currentTeamScore.bags + scoreCalc.bags;
-    const penaltyCount = Math.floor(newBags / config.bagPenaltyThreshold);
-    const bagPenalty = penaltyCount * config.bagPenalty;
+    const { bagPenalty } = applyBagPenalty(
+      gameState.scores[teamId].bags,
+      scoreCalc.bags,
+      config
+    );
 
     return {
       bid: regularBid,
