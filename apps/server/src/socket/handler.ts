@@ -101,6 +101,12 @@ export function setupSocketHandlers(io: TypedServer): void {
     }
   };
 
+  // When a room is deleted, drop its idle-timer entry so the turn map doesn't
+  // leak entries for rooms that no longer exist.
+  roomManager.onRoomDeleted = (roomId: string) => {
+    idleTimer.removeRoom(roomId);
+  };
+
   io.on('connection', (socket: TypedSocket) => {
     console.log(
       `[socket] connected id=${socket.id} transport=${socket.conn.transport.name}`

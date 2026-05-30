@@ -138,6 +138,10 @@ export function useGame() {
       setHand(hand);
       setScoreHistory(scoreHistory);
       revealCards();
+      // A reconnect resyncs full state from the server; any play that was
+      // in flight when we dropped is now moot. Clear the guard so the
+      // resynced hand is playable.
+      playPendingRef.current = false;
     });
 
     socket.on('room:seat-changed', ({ newPosition }) => {
@@ -167,9 +171,12 @@ export function useGame() {
 
     socket.on('error', ({ code, message }) => {
       console.error(`[game] error code=${code} message=${message}`);
-      if (code === 'INVALID_PLAY' || code === 'PLAY_FAILED') {
-        playPendingRef.current = false;
-      }
+      // Any server error means an in-flight play (if there was one) did not
+      // complete. INVALID_PLAY / PLAY_FAILED are the expected play-rejection
+      // codes, but clearing the guard unconditionally prevents an unrelated
+      // error from leaving it stuck `true` and silently locking the player
+      // out of playing for the rest of the game.
+      playPendingRef.current = false;
       const { setError } = useGameStore.getState();
       setError(message);
       setTimeout(() => setError(null), 5000);
