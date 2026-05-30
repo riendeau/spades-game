@@ -1,6 +1,5 @@
 const buffers = new Map<string, AudioBuffer>();
 let ctx: AudioContext | null = null;
-const activeSources = new Map<string, AudioBufferSourceNode>();
 
 function getContext(): AudioContext {
   ctx ??= new AudioContext();
@@ -33,14 +32,4 @@ export function play(id: string): void {
   source.buffer = buffer;
   source.connect(audioCtx.destination);
   source.start();
-  activeSources.set(id, source);
-  source.onended = () => activeSources.delete(id);
-}
-
-export function stop(id: string): void {
-  const source = activeSources.get(id);
-  if (source) {
-    source.stop();
-    activeSources.delete(id);
-  }
 }

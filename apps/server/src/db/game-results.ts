@@ -1,6 +1,6 @@
 import { pool } from './client.js';
 
-export interface RoundBidInsertData {
+interface RoundBidInsertData {
   roundNumber: number;
   playerId: string | null;
   playerPosition: number;
@@ -77,14 +77,14 @@ export async function insertGameResult(data: GameResultData): Promise<void> {
   }
 }
 
-export interface PartnerStats {
+interface PartnerStats {
   displayName: string;
   gamesPlayed: number;
   wins: number;
   losses: number;
 }
 
-export interface RecentGame {
+interface RecentGame {
   completedAt: string;
   won: boolean;
   myScore: number;

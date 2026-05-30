@@ -9,6 +9,7 @@ pnpm install          # Install dependencies
 pnpm build            # Build all packages (required before first run)
 pnpm dev              # Start server (port 3001) and client (port 5173) in parallel
 pnpm test             # Run all tests
+pnpm knip             # Report unused files, exports, and dependencies (monorepo-wide)
 
 # Package-specific commands
 pnpm --filter @spades/shared build    # Build shared package only
@@ -18,6 +19,15 @@ pnpm --filter @spades/client dev      # Run client only
 # Run specific test file
 pnpm --filter @spades/shared test src/__tests__/deck.test.ts
 ```
+
+### Dead-Code Detection (knip)
+
+`pnpm knip` finds unused files, exports, and dependencies across the whole module graph. This catches a class of dead code that **neither ESLint nor `tsc` can**: `@typescript-eslint/no-unused-vars` is file-scoped (an `export`ed symbol or a public class method is "used" by definition, since something _could_ import it), and TypeScript's `noUnusedLocals`/`noUnusedParameters` are likewise file-local and never flag exports. Knip walks importers across packages, so a never-imported export is reported.
+
+- **Config**: `knip.json` at the root, intentionally just `{ "$schema": ... }`. Workspaces, entry points (app `main.tsx`/`index.ts`, test files, `playwright.config.ts`), and plugins (vite, vitest, playwright, eslint) are all **auto-detected** — keep the config minimal; knip emits "Remove redundant entry pattern" hints if you over-specify.
+- **`ignoreExportsUsedInFile` is deliberately left off.** Knip therefore flags any `export` that no _other_ module imports, even one used within its own file — the correct fix is to drop the `export` keyword (the symbol stays, now module-private). This is the right policy for a single-consumer repo: there's no external API to preserve, so "exported" should mean "actually imported elsewhere." TypeScript permits this even for a type referenced by an exported signature (e.g. `PartnerStats` inside the exported `PlayerStats`): without `isolatedDeclarations`, `tsc` inlines the private type into the emitted `.d.ts`, so the build stays clean.
+- **Caveat unrelated to the above:** an export imported _only_ by its own unit test is a cross-file import, so knip counts it as used and will **not** flag it. That blind spot is inherent to knip treating test files as consumers — it must still be caught by review, regardless of config.
+- The baseline is green; a non-zero `pnpm knip` in CI means genuinely unreachable code (or a newly-redundant `export`) was added.
 
 ## Architecture
 

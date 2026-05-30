@@ -28,6 +28,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm lint
+      - run: pnpm knip
 
   unit-tests:
     runs-on: ubuntu-latest
