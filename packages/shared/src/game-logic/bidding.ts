@@ -103,12 +103,3 @@ export function createBid(
     isBlindNil,
   };
 }
-
-export function getTeamTotalBid(
-  bids: PlayerBid[],
-  playerIds: PlayerId[]
-): number {
-  return bids
-    .filter((b) => playerIds.includes(b.playerId) && !b.isNil && !b.isBlindNil)
-    .reduce((sum, b) => sum + b.bid, 0);
-}

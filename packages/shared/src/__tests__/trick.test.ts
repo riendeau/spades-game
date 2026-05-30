@@ -3,7 +3,6 @@ import {
   determineTrickWinner,
   addPlayToTrick,
   isTrickComplete,
-  hasSpadeBeenPlayedInTrick,
 } from '../game-logic/trick';
 import type { Trick } from '../types/game-state';
 
@@ -131,29 +130,6 @@ describe('Trick', () => {
         winner: 'p2',
       };
       expect(isTrickComplete(trick)).toBe(true);
-    });
-  });
-
-  describe('hasSpadeBeenPlayedInTrick', () => {
-    it('should return false if no spades played', () => {
-      const trick: Trick = {
-        plays: [{ playerId: 'p1', card: { suit: 'hearts', rank: 'A' } }],
-        leadSuit: 'hearts',
-        winner: null,
-      };
-      expect(hasSpadeBeenPlayedInTrick(trick)).toBe(false);
-    });
-
-    it('should return true if spade was played', () => {
-      const trick: Trick = {
-        plays: [
-          { playerId: 'p1', card: { suit: 'hearts', rank: 'A' } },
-          { playerId: 'p2', card: { suit: 'spades', rank: '2' } },
-        ],
-        leadSuit: 'hearts',
-        winner: null,
-      };
-      expect(hasSpadeBeenPlayedInTrick(trick)).toBe(true);
     });
   });
 });

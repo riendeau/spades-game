@@ -52,42 +52,6 @@ export const RANK_VALUES: Record<Rank, number> = {
   A: 14,
 };
 
-export function cardToString(card: Card): string {
-  return `${card.rank}${card.suit[0].toUpperCase()}`;
-}
-
-export function parseCard(str: string): Card | null {
-  const match = /^(10|[2-9JQKA])([SHDC])$/i.exec(str);
-  if (!match) return null;
-
-  const rankMap: Record<string, Rank> = {
-    '2': '2',
-    '3': '3',
-    '4': '4',
-    '5': '5',
-    '6': '6',
-    '7': '7',
-    '8': '8',
-    '9': '9',
-    '10': '10',
-    J: 'J',
-    Q: 'Q',
-    K: 'K',
-    A: 'A',
-  };
-  const suitMap: Record<string, Suit> = {
-    S: 'spades',
-    H: 'hearts',
-    D: 'diamonds',
-    C: 'clubs',
-  };
-
-  return {
-    rank: rankMap[match[1].toUpperCase()],
-    suit: suitMap[match[2].toUpperCase()],
-  };
-}
-
 export function compareCards(a: Card, b: Card, leadSuit: Suit): number {
   const aIsSpade = a.suit === 'spades';
   const bIsSpade = b.suit === 'spades';
