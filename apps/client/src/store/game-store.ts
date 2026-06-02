@@ -211,3 +211,36 @@ export function loadSession(): { roomId: string; sessionToken: string } | null {
 export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
+
+// Debug-relay breadcrumb buffer. Breadcrumbs that occur while the socket is
+// disconnected (e.g. 'disconnect', 'reconnect_failed') can't be emitted live,
+// so they're buffered here and flushed on the next 'connect'. Bounded so a long
+// offline streak can't grow it unbounded.
+const DEBUG_BUFFER_KEY = 'spades_debug_buffer';
+
+export interface DebugBreadcrumb {
+  event: string;
+  reason?: string;
+  t: number;
+}
+
+export function bufferDebug(entry: DebugBreadcrumb) {
+  try {
+    const raw = sessionStorage.getItem(DEBUG_BUFFER_KEY);
+    const buf: DebugBreadcrumb[] = raw ? JSON.parse(raw) : [];
+    buf.push(entry);
+    sessionStorage.setItem(DEBUG_BUFFER_KEY, JSON.stringify(buf.slice(-50)));
+  } catch {
+    // sessionStorage unavailable or full — debug telemetry is best-effort.
+  }
+}
+
+export function drainDebugBuffer(): DebugBreadcrumb[] {
+  try {
+    const raw = sessionStorage.getItem(DEBUG_BUFFER_KEY);
+    sessionStorage.removeItem(DEBUG_BUFFER_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}

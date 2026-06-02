@@ -17,6 +17,15 @@ export interface ClientToServerEvents {
   'game:play-card': (data: { card: Card }) => void;
   'game:see-cards': () => void;
   'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
+  // Log-only debug relay for reconnect/replace observability. The server logs
+  // these verbatim (no state mutation), correlated by sessionToken with the
+  // existing [reconnect]/[session] lines. See handleClientDebug.
+  'client:debug': (data: {
+    event: string;
+    sessionToken?: string;
+    roomId?: string;
+    reason?: string;
+  }) => void;
   'player:change-seat': (data: { newPosition: Position }) => void;
   'player:open-seat': (data: { playerId: PlayerId }) => void;
   'player:kick-idle': (data: { playerId: PlayerId }) => void;
