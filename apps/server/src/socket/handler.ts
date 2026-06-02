@@ -25,6 +25,14 @@ import { roomManager, type Room } from '../rooms/room-manager.js';
 
 const idleTimer = new IdleTimerManager();
 
+// client:debug relay — log-only telemetry for the reconnect/replace flow.
+// Default on; set DEBUG_CLIENT_RELAY='false' to silence in production.
+const DEBUG_RELAY = process.env.DEBUG_CLIENT_RELAY !== 'false';
+const DEBUG_MAX_PER_SEC = 20;
+// Per-socket token bucket. WeakMap so entries are GC'd with the socket — no
+// disconnect cleanup needed.
+const debugRate = new WeakMap<object, { count: number; windowStart: number }>();
+
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
@@ -142,6 +150,10 @@ export function setupSocketHandlers(io: TypedServer): void {
 
     socket.on('player:reconnect', ({ sessionToken, roomId }) => {
       handleReconnect(socket, io, sessionToken, roomId);
+    });
+
+    socket.on('client:debug', (data) => {
+      handleClientDebug(socket, data);
     });
 
     socket.on('player:change-seat', ({ newPosition }) => {
@@ -660,6 +672,38 @@ function handlePlayCard(
       });
     }, 1500);
   }
+}
+
+// Log-only relay for client-side reconnect/replace breadcrumbs. Deliberately
+// inert: no state mutation, no broadcast, no validation beyond shape coercion,
+// and it can never throw out of the socket callback. Rate-capped per socket so
+// a misbehaving or malicious client can't flood the logs.
+export function handleClientDebug(socket: TypedSocket, data: unknown): void {
+  const now = Date.now();
+  const bucket = debugRate.get(socket) ?? { count: 0, windowStart: now };
+  if (now - bucket.windowStart >= 1000) {
+    bucket.count = 0;
+    bucket.windowStart = now;
+  }
+  bucket.count += 1;
+  debugRate.set(socket, bucket);
+  if (bucket.count > DEBUG_MAX_PER_SEC) return;
+
+  if (!DEBUG_RELAY) return;
+  if (typeof data !== 'object' || data === null) return;
+
+  const d = data as Record<string, unknown>;
+  const event = typeof d.event === 'string' ? d.event.slice(0, 40) : 'unknown';
+  const token =
+    typeof d.sessionToken === 'string'
+      ? d.sessionToken.slice(0, 8)
+      : '????????';
+  const room = typeof d.roomId === 'string' ? d.roomId : '-';
+  const reason = typeof d.reason === 'string' ? d.reason.slice(0, 120) : '-';
+
+  console.log(
+    `[client ${token}…] ${event} room=${room} reason=${reason} socket=${socket.id}`
+  );
 }
 
 function handleReconnect(

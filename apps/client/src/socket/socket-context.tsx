@@ -4,6 +4,7 @@ import type {
 } from '@spades/shared';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { emitDebug, flushDebugBuffer } from './debug';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -35,30 +36,38 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     newSocket.on('connect', () => {
       console.log(`[socket] connected id=${newSocket.id}`);
       setConnected(true);
+      emitDebug(newSocket, 'connect');
+      // Deliver any breadcrumbs buffered while we were disconnected.
+      flushDebugBuffer(newSocket);
     });
 
     newSocket.on('disconnect', (reason) => {
       console.log(`[socket] disconnected id=${newSocket.id} reason=${reason}`);
       setConnected(false);
+      emitDebug(newSocket, 'disconnect', reason);
     });
 
     // Manager-level reconnection events
     newSocket.io.on('reconnect_attempt', (attempt) => {
       console.log(`[socket] reconnect_attempt #${attempt}`);
+      emitDebug(newSocket, 'reconnect-attempt', `#${attempt}`);
     });
 
     newSocket.io.on('reconnect', (attempt) => {
       console.log(
         `[socket] reconnected after ${attempt} attempt(s) id=${newSocket.id}`
       );
+      emitDebug(newSocket, 'reconnect-success', `attempts=${attempt}`);
     });
 
     newSocket.io.on('reconnect_error', (err) => {
       console.log(`[socket] reconnect_error: ${err.message}`);
+      emitDebug(newSocket, 'reconnect-error', err.message);
     });
 
     newSocket.io.on('reconnect_failed', () => {
       console.log('[socket] reconnect_failed: all attempts exhausted');
+      emitDebug(newSocket, 'reconnect-failed', 'attempts-exhausted');
     });
 
     setSocket(newSocket);

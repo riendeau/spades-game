@@ -1,5 +1,6 @@
 import type { Card, PlayerId, Position } from '@spades/shared';
 import { useEffect, useCallback, useRef } from 'react';
+import { emitDebug } from '../socket/debug';
 import { useSocket } from '../socket/socket-context';
 import {
   useGameStore,
@@ -217,6 +218,7 @@ export function useGame() {
     const isAutoJoin = params.get('autoName') !== null;
     if (isAutoJoin) {
       clearSession();
+      emitDebug(socket, 'reconnect-skip', 'auto-join');
       return;
     }
 
@@ -226,12 +228,14 @@ export function useGame() {
         console.log(
           `[game] emitting player:reconnect room=${session.roomId} token=${session.sessionToken.slice(0, 8)}… socket=${socket.id}`
         );
+        emitDebug(socket, 'reconnect-emit');
         socket.emit('player:reconnect', {
           sessionToken: session.sessionToken,
           roomId: session.roomId,
         });
       } else {
         console.log('[game] no saved session, skipping reconnect');
+        emitDebug(socket, 'reconnect-skip', 'no-saved-session');
       }
     };
 
