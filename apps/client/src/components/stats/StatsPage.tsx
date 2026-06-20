@@ -476,22 +476,27 @@ function BiddingSection({ bidStats }: { bidStats: BidStats }) {
           backgroundColor: '#e5e7eb',
         }}
       >
-        <BidStatCell label="Avg Bid" value={bidStats.averageBid.toFixed(1)} />
         <BidStatCell
-          label="Avg Tricks"
-          value={bidStats.averageTricks.toFixed(1)}
+          label="Avg Bid (you / team)"
+          value={`${bidStats.individualAvgBid.toFixed(1)} / ${bidStats.teamAvgBid.toFixed(1)}`}
+          tooltip="Your average bid per round (left) and your team's combined bid — you plus your partner (right). Nil and blind-nil hands count as a bid of 0."
         />
         <BidStatCell
-          label="Bid Accuracy"
-          value={`${bidStats.bidAccuracy}%`}
-          color="#16a34a"
-          tooltip="Percent of rounds where you personally took at least as many tricks as you bid. This is an individual stat — it doesn't account for your partner, so it may differ from whether your team actually made its combined bid (Set Rate, in contrast, is a team-level stat). Overbids still count as accurate here (though the extra tricks become bags). Nil bids are excluded; see Nil Bids below."
+          label="Avg Tricks (you / team)"
+          value={`${bidStats.individualAvgTricks.toFixed(1)} / ${bidStats.teamAvgTricks.toFixed(1)}`}
+          tooltip="Your average tricks taken per round (left) and your team's combined tricks (right). Nil hands are included — the tricks a nil bidder takes still count toward the team total."
+        />
+        <BidStatCell
+          label="Avg Bags"
+          value={bidStats.avgBags.toFixed(1)}
+          color="#d97706"
+          tooltip="Your team's average bags per round — tricks taken beyond your combined contract, counted only when the team makes its bid (a set or a double-nil round produces no bags). Bags are a team quantity — 10 accumulated bags cost 100 points — so this is measured per team-round. Nil hands are included."
         />
         <BidStatCell
           label="Set Rate"
           value={`${bidStats.setBidRate}%`}
           color="#dc2626"
-          tooltip="Percent of rounds where your team was set — you and your partner's combined tricks fell short of your combined bid. Only rounds where you bid a number (not nil) count toward the denominator. If your partner bid nil, only your bid counts toward the team bid. See Nil Bids below for how nil outcomes are tracked."
+          tooltip="Percent of rounds where your team was set — you and your partner's combined tricks fell short of your combined bid. Every round you played counts, including ones where you or your partner bid nil (a nil counts as 0 toward the combined bid). See Nil Bids below for how nil outcomes are tracked."
         />
       </div>
       <div

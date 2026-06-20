@@ -27,10 +27,11 @@ export interface PlayerStats {
 
 export interface BidStats {
   totalRounds: number;
-  averageBid: number;
-  averageTricks: number;
-  bidAccuracy: number;
-  underbidRate: number;
+  individualAvgBid: number;
+  teamAvgBid: number;
+  individualAvgTricks: number;
+  teamAvgTricks: number;
+  avgBags: number;
   setBidRate: number;
 }
 

@@ -413,10 +413,11 @@ describe('game-results', () => {
         rows: [
           {
             total_rounds: '0',
-            avg_bid: '0',
-            avg_tricks: '0',
-            met_bid: '0',
-            over_bid: '0',
+            individual_avg_bid: '0',
+            team_avg_bid: '0',
+            individual_avg_tricks: '0',
+            team_avg_tricks: '0',
+            avg_bags: '0',
             team_set: '0',
           },
         ],
@@ -426,15 +427,16 @@ describe('game-results', () => {
       expect(stats.totalRounds).toBe(0);
     });
 
-    it('should compute bid accuracy and team set rate', async () => {
+    it('should compute individual/team averages, bags, and team set rate', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [
           {
             total_rounds: '10',
-            avg_bid: '3.5',
-            avg_tricks: '3.8',
-            met_bid: '7',
-            over_bid: '5',
+            individual_avg_bid: '3.5',
+            team_avg_bid: '6.9',
+            individual_avg_tricks: '3.8',
+            team_avg_tricks: '7.2',
+            avg_bags: '1.4',
             team_set: '2',
           },
         ],
@@ -442,11 +444,12 @@ describe('game-results', () => {
 
       const stats = await getBidStats('user-a');
       expect(stats.totalRounds).toBe(10);
-      expect(stats.averageBid).toBe(3.5);
-      expect(stats.averageTricks).toBe(3.8);
-      expect(stats.bidAccuracy).toBe(70); // 7/10 — individual met-or-exceeded-bid
-      expect(stats.underbidRate).toBe(50); // 5/10 (over_bid = underbid in UI terminology)
-      expect(stats.setBidRate).toBe(20); // 2/10 — team set (fewer than the 3 individual sets because partner covered)
+      expect(stats.individualAvgBid).toBe(3.5);
+      expect(stats.teamAvgBid).toBe(6.9);
+      expect(stats.individualAvgTricks).toBe(3.8);
+      expect(stats.teamAvgTricks).toBe(7.2);
+      expect(stats.avgBags).toBe(1.4);
+      expect(stats.setBidRate).toBe(20); // 2/10 team-rounds set
     });
   });
 });
