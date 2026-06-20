@@ -430,28 +430,31 @@ export async function getNilStats(userId: string): Promise<NilStats> {
 
 export interface BidStats {
   totalRounds: number;
-  averageBid: number;
-  averageTricks: number;
-  bidAccuracy: number;
-  underbidRate: number;
+  individualAvgBid: number;
+  teamAvgBid: number;
+  individualAvgTricks: number;
+  teamAvgTricks: number;
+  avgBags: number;
   setBidRate: number;
 }
 
 const EMPTY_BID_STATS: BidStats = {
   totalRounds: 0,
-  averageBid: 0,
-  averageTricks: 0,
-  bidAccuracy: 0,
-  underbidRate: 0,
+  individualAvgBid: 0,
+  teamAvgBid: 0,
+  individualAvgTricks: 0,
+  teamAvgTricks: 0,
+  avgBags: 0,
   setBidRate: 0,
 };
 
 const DEV_SAMPLE_BID_STATS: BidStats = {
   totalRounds: 47,
-  averageBid: 3.4,
-  averageTricks: 3.6,
-  bidAccuracy: 72,
-  underbidRate: 19,
+  individualAvgBid: 3.4,
+  teamAvgBid: 6.9,
+  individualAvgTricks: 3.6,
+  teamAvgTricks: 7.2,
+  avgBags: 1.3,
   setBidRate: 9,
 };
 
@@ -462,32 +465,46 @@ export async function getBidStats(userId: string): Promise<BidStats> {
       : DEV_SAMPLE_BID_STATS;
   }
 
+  // One row per round the player participated in (anchored on their own bid
+  // row, joined to their partner). Nil/blind-nil hands are included — they are
+  // stored as bid 0 (CHECK constraint), so they count as a 0 bid and their
+  // tricks still count toward the team total. Per the team-focus analytics
+  // philosophy, bids/tricks are shown both individually and as a team total,
+  // and bags are reported as a team quantity (the bag penalty is per team).
   const result = await pool.query<{
     total_rounds: string;
-    avg_bid: string;
-    avg_tricks: string;
-    met_bid: string;
-    over_bid: string;
+    individual_avg_bid: string;
+    team_avg_bid: string;
+    individual_avg_tricks: string;
+    team_avg_tricks: string;
+    avg_bags: string;
     team_set: string;
   }>(
     `SELECT
        COUNT(*)::text AS total_rounds,
-       COALESCE(AVG(rb.bid)::numeric(4,1)::text, '0') AS avg_bid,
-       COALESCE(AVG(rb.tricks_won)::numeric(4,1)::text, '0') AS avg_tricks,
-       COUNT(*) FILTER (WHERE rb.tricks_won >= rb.bid)::text AS met_bid,
-       COUNT(*) FILTER (WHERE rb.tricks_won > rb.bid)::text AS over_bid,
+       COALESCE(AVG(rb.bid)::numeric(4,1)::text, '0') AS individual_avg_bid,
+       COALESCE(AVG(rb.bid + partner.bid)::numeric(4,1)::text, '0') AS team_avg_bid,
+       COALESCE(AVG(rb.tricks_won)::numeric(4,1)::text, '0') AS individual_avg_tricks,
+       COALESCE(AVG(rb.tricks_won + partner.tricks_won)::numeric(4,1)::text, '0') AS team_avg_tricks,
+       COALESCE(AVG(
+         CASE
+           -- Double-nil rounds have a 0 contract and never bag (matches scoring.ts)
+           WHEN (rb.bid + partner.bid) = 0 THEN 0
+           -- Bags only accrue when the team makes its combined bid; a set is 0 bags
+           WHEN (rb.tricks_won + partner.tricks_won) >= (rb.bid + partner.bid)
+             THEN (rb.tricks_won + partner.tricks_won) - (rb.bid + partner.bid)
+           ELSE 0
+         END
+       )::numeric(4,1)::text, '0') AS avg_bags,
        COUNT(*) FILTER (
-         WHERE (rb.tricks_won + partner.tricks_won) <
-               (rb.bid + CASE WHEN partner.is_nil OR partner.is_blind_nil THEN 0 ELSE partner.bid END)
+         WHERE (rb.tricks_won + partner.tricks_won) < (rb.bid + partner.bid)
        )::text AS team_set
      FROM round_bids rb
      JOIN round_bids partner
        ON partner.game_result_id = rb.game_result_id
       AND partner.round_number = rb.round_number
       AND partner.player_position = (rb.player_position + 2) % 4
-     WHERE rb.player_id = $1
-       AND NOT rb.is_nil
-       AND NOT rb.is_blind_nil`,
+     WHERE rb.player_id = $1`,
     [userId]
   );
 
@@ -495,16 +512,15 @@ export async function getBidStats(userId: string): Promise<BidStats> {
   const totalRounds = parseInt(row.total_rounds, 10);
   if (totalRounds === 0) return EMPTY_BID_STATS;
 
-  const metBid = parseInt(row.met_bid, 10);
-  const overBid = parseInt(row.over_bid, 10);
   const teamSet = parseInt(row.team_set, 10);
 
   return {
     totalRounds,
-    averageBid: parseFloat(row.avg_bid),
-    averageTricks: parseFloat(row.avg_tricks),
-    bidAccuracy: Math.round((metBid / totalRounds) * 100),
-    underbidRate: Math.round((overBid / totalRounds) * 100),
+    individualAvgBid: parseFloat(row.individual_avg_bid),
+    teamAvgBid: parseFloat(row.team_avg_bid),
+    individualAvgTricks: parseFloat(row.individual_avg_tricks),
+    teamAvgTricks: parseFloat(row.team_avg_tricks),
+    avgBags: parseFloat(row.avg_bags),
     setBidRate: Math.round((teamSet / totalRounds) * 100),
   };
 }
