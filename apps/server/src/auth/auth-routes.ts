@@ -60,6 +60,11 @@ authRouter.get('/google/callback', (req, res, _next) => {
     res.status(503).send('OAuth not configured on this server.');
     return;
   }
+  // Capture returnTo from the *pre-login* session. passport's req.login()
+  // (in passport >= 0.6) regenerates the session to guard against session
+  // fixation, which discards everything we stored before the OAuth redirect.
+  // Reading it here, before passport.authenticate runs, preserves it.
+  const returnTo = req.session.returnTo;
   passport.authenticate('google', { failureMessage: true, session: true })(
     req,
     res,
@@ -71,8 +76,6 @@ authRouter.get('/google/callback', (req, res, _next) => {
         res.redirect('/?error=not_allowed');
         return;
       }
-      const returnTo = req.session.returnTo;
-      delete req.session.returnTo;
       res.redirect(returnTo ?? '/');
     }
   );
