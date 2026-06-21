@@ -441,6 +441,7 @@ function RecentGameRow({ game }: { game: RecentGame }) {
 }
 
 function BiddingSection({ bidStats }: { bidStats: BidStats }) {
+  const o = bidStats.others;
   return (
     <div
       style={{
@@ -479,24 +480,36 @@ function BiddingSection({ bidStats }: { bidStats: BidStats }) {
         <BidStatCell
           label="Avg Bid (you / team)"
           value={`${bidStats.individualAvgBid.toFixed(1)} / ${bidStats.teamAvgBid.toFixed(1)}`}
-          tooltip="Your average bid per round (left) and your team's combined bid — you plus your partner (right). Nil and blind-nil hands count as a bid of 0."
+          sub={
+            o
+              ? `vs others ${o.individualAvgBid.toFixed(1)} / ${o.teamAvgBid.toFixed(1)}`
+              : undefined
+          }
+          tooltip="Your average bid per round (left) and your team's combined bid — you plus your partner (right). Nil and blind-nil hands count as a bid of 0. The comparison line is the same figures for every other player and for every team that didn't include you."
         />
         <BidStatCell
           label="Avg Tricks (you / team)"
           value={`${bidStats.individualAvgTricks.toFixed(1)} / ${bidStats.teamAvgTricks.toFixed(1)}`}
-          tooltip="Your average tricks taken per round (left) and your team's combined tricks (right). Nil hands are included — the tricks a nil bidder takes still count toward the team total."
+          sub={
+            o
+              ? `vs others ${o.individualAvgTricks.toFixed(1)} / ${o.teamAvgTricks.toFixed(1)}`
+              : undefined
+          }
+          tooltip="Your average tricks taken per round (left) and your team's combined tricks (right). Nil hands are included — the tricks a nil bidder takes still count toward the team total. The comparison line is every other player and every team that didn't include you."
         />
         <BidStatCell
           label="Avg Bags"
           value={bidStats.avgBags.toFixed(1)}
           color="#d97706"
-          tooltip="Your team's average bags per round — tricks taken beyond your combined contract, counted only when the team makes its bid (a set or a double-nil round produces no bags). Bags are a team quantity — 10 accumulated bags cost 100 points — so this is measured per team-round. Nil hands are included."
+          sub={o ? `vs other teams ${o.avgBags.toFixed(1)}` : undefined}
+          tooltip="Your team's average bags per round — tricks taken beyond your combined contract, counted only when the team makes its bid (a set or a double-nil round produces no bags). Bags are a team quantity — 10 accumulated bags cost 100 points — so this is measured per team-round. Nil hands are included. The comparison line is the average for every team that didn't include you."
         />
         <BidStatCell
           label="Set Rate"
           value={`${bidStats.setBidRate}%`}
           color="#dc2626"
-          tooltip="Percent of rounds where your team was set — you and your partner's combined tricks fell short of your combined bid. Every round you played counts, including ones where you or your partner bid nil (a nil counts as 0 toward the combined bid). See Nil Bids below for how nil outcomes are tracked."
+          sub={o ? `vs other teams ${o.setBidRate}%` : undefined}
+          tooltip="Percent of rounds where your team was set — you and your partner's combined tricks fell short of your combined bid. Every round you played counts, including ones where you or your partner bid nil (a nil counts as 0 toward the combined bid). The comparison line is the set rate for every team that didn't include you. See Nil Bids below for how nil outcomes are tracked."
         />
       </div>
       <div
@@ -517,11 +530,13 @@ function BidStatCell({
   label,
   value,
   color = '#374151',
+  sub,
   tooltip,
 }: {
   label: string;
   value: string;
   color?: string;
+  sub?: string;
   tooltip?: string;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -539,6 +554,18 @@ function BidStatCell({
       }}
     >
       <div style={{ fontSize: '20px', fontWeight: 700, color }}>{value}</div>
+      {sub && (
+        <div
+          style={{
+            fontSize: '11px',
+            color: '#9ca3af',
+            marginTop: '2px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {sub}
+        </div>
+      )}
       <div
         style={{
           fontSize: '12px',

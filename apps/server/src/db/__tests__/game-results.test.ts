@@ -419,6 +419,14 @@ describe('game-results', () => {
             team_avg_tricks: '0',
             avg_bags: '0',
             team_set: '0',
+            others_ind_rounds: '0',
+            others_individual_avg_bid: '0',
+            others_individual_avg_tricks: '0',
+            others_team_rounds: '0',
+            others_team_avg_bid: '0',
+            others_team_avg_tricks: '0',
+            others_avg_bags: '0',
+            others_team_set: '0',
           },
         ],
       });
@@ -438,6 +446,14 @@ describe('game-results', () => {
             team_avg_tricks: '7.2',
             avg_bags: '1.4',
             team_set: '2',
+            others_ind_rounds: '90',
+            others_individual_avg_bid: '3.1',
+            others_individual_avg_tricks: '3.2',
+            others_team_rounds: '30',
+            others_team_avg_bid: '6.4',
+            others_team_avg_tricks: '6.6',
+            others_avg_bags: '1.9',
+            others_team_set: '6',
           },
         ],
       });
@@ -450,6 +466,41 @@ describe('game-results', () => {
       expect(stats.teamAvgTricks).toBe(7.2);
       expect(stats.avgBags).toBe(1.4);
       expect(stats.setBidRate).toBe(20); // 2/10 team-rounds set
+      expect(stats.others).toEqual({
+        individualAvgBid: 3.1,
+        teamAvgBid: 6.4,
+        individualAvgTricks: 3.2,
+        teamAvgTricks: 6.6,
+        avgBags: 1.9,
+        setBidRate: 20, // 6/30 other team-rounds set
+      });
+    });
+
+    it('should null out the comparison when there is no other-player data', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            total_rounds: '10',
+            individual_avg_bid: '3.5',
+            team_avg_bid: '6.9',
+            individual_avg_tricks: '3.8',
+            team_avg_tricks: '7.2',
+            avg_bags: '1.4',
+            team_set: '2',
+            others_ind_rounds: '0',
+            others_individual_avg_bid: '0',
+            others_individual_avg_tricks: '0',
+            others_team_rounds: '0',
+            others_team_avg_bid: '0',
+            others_team_avg_tricks: '0',
+            others_avg_bags: '0',
+            others_team_set: '0',
+          },
+        ],
+      });
+
+      const stats = await getBidStats('user-a');
+      expect(stats.others).toBeNull();
     });
   });
 });
