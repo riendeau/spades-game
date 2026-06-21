@@ -25,6 +25,15 @@ export interface PlayerStats {
   partners: PartnerStats[];
 }
 
+interface BidComparison {
+  individualAvgBid: number;
+  teamAvgBid: number;
+  individualAvgTricks: number;
+  teamAvgTricks: number;
+  avgBags: number;
+  setBidRate: number;
+}
+
 export interface BidStats {
   totalRounds: number;
   individualAvgBid: number;
@@ -33,6 +42,7 @@ export interface BidStats {
   teamAvgTricks: number;
   avgBags: number;
   setBidRate: number;
+  others: BidComparison | null;
 }
 
 export interface NilStats {

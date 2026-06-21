@@ -428,6 +428,20 @@ export async function getNilStats(userId: string): Promise<NilStats> {
   };
 }
 
+// Baseline values to compare a player against: the same six metrics computed
+// over everyone but this player. `individual*` aggregates every round_bids row
+// belonging to another player; `team*`/`avgBags`/`setBidRate` aggregate every
+// team-round whose pair does not include this player. Null when there is no
+// comparison data (e.g. the player is the only one in the DB).
+interface BidComparison {
+  individualAvgBid: number;
+  teamAvgBid: number;
+  individualAvgTricks: number;
+  teamAvgTricks: number;
+  avgBags: number;
+  setBidRate: number;
+}
+
 export interface BidStats {
   totalRounds: number;
   individualAvgBid: number;
@@ -436,6 +450,7 @@ export interface BidStats {
   teamAvgTricks: number;
   avgBags: number;
   setBidRate: number;
+  others: BidComparison | null;
 }
 
 const EMPTY_BID_STATS: BidStats = {
@@ -446,6 +461,7 @@ const EMPTY_BID_STATS: BidStats = {
   teamAvgTricks: 0,
   avgBags: 0,
   setBidRate: 0,
+  others: null,
 };
 
 const DEV_SAMPLE_BID_STATS: BidStats = {
@@ -456,6 +472,14 @@ const DEV_SAMPLE_BID_STATS: BidStats = {
   teamAvgTricks: 7.2,
   avgBags: 1.3,
   setBidRate: 9,
+  others: {
+    individualAvgBid: 3.2,
+    teamAvgBid: 6.6,
+    individualAvgTricks: 3.3,
+    teamAvgTricks: 6.7,
+    avgBags: 1.7,
+    setBidRate: 14,
+  },
 };
 
 export async function getBidStats(userId: string): Promise<BidStats> {
@@ -465,12 +489,21 @@ export async function getBidStats(userId: string): Promise<BidStats> {
       : DEV_SAMPLE_BID_STATS;
   }
 
-  // One row per round the player participated in (anchored on their own bid
-  // row, joined to their partner). Nil/blind-nil hands are included — they are
-  // stored as bid 0 (CHECK constraint), so they count as a 0 bid and their
-  // tricks still count toward the team total. Per the team-focus analytics
-  // philosophy, bids/tricks are shown both individually and as a team total,
-  // and bags are reported as a team quantity (the bag penalty is per team).
+  // Three aggregates in one round trip:
+  //  - `mine`: one row per round the player participated in (anchored on their
+  //    own bid row, joined to their partner).
+  //  - `others_ind`: every round_bids row belonging to another player — the
+  //    individual baseline.
+  //  - `others_team`: every team-round whose pair does not include the player —
+  //    the team baseline. `rb.player_position < 2` keeps one row per team-round
+  //    (positions 0/1 anchor team1/team2; 2/3 are their partners), and
+  //    `IS DISTINCT FROM` keeps rows with a NULL (deleted) player_id.
+  // Nil/blind-nil hands are included throughout — they are stored as bid 0
+  // (CHECK constraint), so they count as a 0 bid and their tricks still count
+  // toward the team total. Per the team-focus analytics philosophy, bids/tricks
+  // are shown both individually and as a team total, and bags are reported as a
+  // team quantity (the bag penalty is per team). The bags CASE matches
+  // scoring.ts: a set or a double-nil round (0 contract) produces no bags.
   const result = await pool.query<{
     total_rounds: string;
     individual_avg_bid: string;
@@ -479,32 +512,90 @@ export async function getBidStats(userId: string): Promise<BidStats> {
     team_avg_tricks: string;
     avg_bags: string;
     team_set: string;
+    others_ind_rounds: string;
+    others_individual_avg_bid: string;
+    others_individual_avg_tricks: string;
+    others_team_rounds: string;
+    others_team_avg_bid: string;
+    others_team_avg_tricks: string;
+    others_avg_bags: string;
+    others_team_set: string;
   }>(
-    `SELECT
-       COUNT(*)::text AS total_rounds,
-       COALESCE(AVG(rb.bid)::numeric(4,1)::text, '0') AS individual_avg_bid,
-       COALESCE(AVG(rb.bid + partner.bid)::numeric(4,1)::text, '0') AS team_avg_bid,
-       COALESCE(AVG(rb.tricks_won)::numeric(4,1)::text, '0') AS individual_avg_tricks,
-       COALESCE(AVG(rb.tricks_won + partner.tricks_won)::numeric(4,1)::text, '0') AS team_avg_tricks,
-       COALESCE(AVG(
-         CASE
-           -- Double-nil rounds have a 0 contract and never bag (matches scoring.ts)
-           WHEN (rb.bid + partner.bid) = 0 THEN 0
-           -- Bags only accrue when the team makes its combined bid; a set is 0 bags
-           WHEN (rb.tricks_won + partner.tricks_won) >= (rb.bid + partner.bid)
-             THEN (rb.tricks_won + partner.tricks_won) - (rb.bid + partner.bid)
-           ELSE 0
-         END
-       )::numeric(4,1)::text, '0') AS avg_bags,
-       COUNT(*) FILTER (
-         WHERE (rb.tricks_won + partner.tricks_won) < (rb.bid + partner.bid)
-       )::text AS team_set
-     FROM round_bids rb
-     JOIN round_bids partner
-       ON partner.game_result_id = rb.game_result_id
-      AND partner.round_number = rb.round_number
-      AND partner.player_position = (rb.player_position + 2) % 4
-     WHERE rb.player_id = $1`,
+    `WITH mine AS (
+       SELECT
+         COUNT(*) AS total_rounds,
+         AVG(rb.bid) AS individual_avg_bid,
+         AVG(rb.bid + partner.bid) AS team_avg_bid,
+         AVG(rb.tricks_won) AS individual_avg_tricks,
+         AVG(rb.tricks_won + partner.tricks_won) AS team_avg_tricks,
+         AVG(
+           CASE
+             WHEN (rb.bid + partner.bid) = 0 THEN 0
+             WHEN (rb.tricks_won + partner.tricks_won) >= (rb.bid + partner.bid)
+               THEN (rb.tricks_won + partner.tricks_won) - (rb.bid + partner.bid)
+             ELSE 0
+           END
+         ) AS avg_bags,
+         COUNT(*) FILTER (
+           WHERE (rb.tricks_won + partner.tricks_won) < (rb.bid + partner.bid)
+         ) AS team_set
+       FROM round_bids rb
+       JOIN round_bids partner
+         ON partner.game_result_id = rb.game_result_id
+        AND partner.round_number = rb.round_number
+        AND partner.player_position = (rb.player_position + 2) % 4
+       WHERE rb.player_id = $1
+     ),
+     others_ind AS (
+       SELECT
+         COUNT(*) AS rounds,
+         AVG(bid) AS individual_avg_bid,
+         AVG(tricks_won) AS individual_avg_tricks
+       FROM round_bids
+       WHERE player_id IS DISTINCT FROM $1
+     ),
+     others_team AS (
+       SELECT
+         COUNT(*) AS rounds,
+         AVG(rb.bid + partner.bid) AS team_avg_bid,
+         AVG(rb.tricks_won + partner.tricks_won) AS team_avg_tricks,
+         AVG(
+           CASE
+             WHEN (rb.bid + partner.bid) = 0 THEN 0
+             WHEN (rb.tricks_won + partner.tricks_won) >= (rb.bid + partner.bid)
+               THEN (rb.tricks_won + partner.tricks_won) - (rb.bid + partner.bid)
+             ELSE 0
+           END
+         ) AS avg_bags,
+         COUNT(*) FILTER (
+           WHERE (rb.tricks_won + partner.tricks_won) < (rb.bid + partner.bid)
+         ) AS team_set
+       FROM round_bids rb
+       JOIN round_bids partner
+         ON partner.game_result_id = rb.game_result_id
+        AND partner.round_number = rb.round_number
+        AND partner.player_position = (rb.player_position + 2) % 4
+       WHERE rb.player_position < 2
+         AND rb.player_id IS DISTINCT FROM $1
+         AND partner.player_id IS DISTINCT FROM $1
+     )
+     SELECT
+       mine.total_rounds::text AS total_rounds,
+       COALESCE(mine.individual_avg_bid::numeric(4,1)::text, '0') AS individual_avg_bid,
+       COALESCE(mine.team_avg_bid::numeric(4,1)::text, '0') AS team_avg_bid,
+       COALESCE(mine.individual_avg_tricks::numeric(4,1)::text, '0') AS individual_avg_tricks,
+       COALESCE(mine.team_avg_tricks::numeric(4,1)::text, '0') AS team_avg_tricks,
+       COALESCE(mine.avg_bags::numeric(4,1)::text, '0') AS avg_bags,
+       mine.team_set::text AS team_set,
+       others_ind.rounds::text AS others_ind_rounds,
+       COALESCE(others_ind.individual_avg_bid::numeric(4,1)::text, '0') AS others_individual_avg_bid,
+       COALESCE(others_ind.individual_avg_tricks::numeric(4,1)::text, '0') AS others_individual_avg_tricks,
+       others_team.rounds::text AS others_team_rounds,
+       COALESCE(others_team.team_avg_bid::numeric(4,1)::text, '0') AS others_team_avg_bid,
+       COALESCE(others_team.team_avg_tricks::numeric(4,1)::text, '0') AS others_team_avg_tricks,
+       COALESCE(others_team.avg_bags::numeric(4,1)::text, '0') AS others_avg_bags,
+       others_team.team_set::text AS others_team_set
+     FROM mine, others_ind, others_team`,
     [userId]
   );
 
@@ -514,6 +605,23 @@ export async function getBidStats(userId: string): Promise<BidStats> {
 
   const teamSet = parseInt(row.team_set, 10);
 
+  const othersIndRounds = parseInt(row.others_ind_rounds, 10);
+  const othersTeamRounds = parseInt(row.others_team_rounds, 10);
+  const othersTeamSet = parseInt(row.others_team_set, 10);
+
+  // Only surface the comparison when there is data on both sides.
+  const others: BidComparison | null =
+    othersIndRounds > 0 && othersTeamRounds > 0
+      ? {
+          individualAvgBid: parseFloat(row.others_individual_avg_bid),
+          teamAvgBid: parseFloat(row.others_team_avg_bid),
+          individualAvgTricks: parseFloat(row.others_individual_avg_tricks),
+          teamAvgTricks: parseFloat(row.others_team_avg_tricks),
+          avgBags: parseFloat(row.others_avg_bags),
+          setBidRate: Math.round((othersTeamSet / othersTeamRounds) * 100),
+        }
+      : null;
+
   return {
     totalRounds,
     individualAvgBid: parseFloat(row.individual_avg_bid),
@@ -522,5 +630,6 @@ export async function getBidStats(userId: string): Promise<BidStats> {
     teamAvgTricks: parseFloat(row.team_avg_tricks),
     avgBags: parseFloat(row.avg_bags),
     setBidRate: Math.round((teamSet / totalRounds) * 100),
+    others,
   };
 }
