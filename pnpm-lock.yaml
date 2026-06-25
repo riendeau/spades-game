@@ -94,8 +94,8 @@ importers:
   apps/server:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.104.2
-        version: 0.104.2(zod@4.4.3)
+        specifier: ^0.106.0
+        version: 0.106.0(zod@4.4.3)
       '@spades/mods':
         specifier: workspace:*
         version: link:../../packages/mods
@@ -194,8 +194,8 @@ importers:
 
 packages:
 
-  '@anthropic-ai/sdk@0.104.2':
-    resolution: {integrity: sha512-s1wEVDAtEwkS7Ajgep6PZKJLFqybRkmD3Byz+iVVsSpbDY0gjROXE9aOft6V3PMqynn3NTcycV5whga9tCzmKA==}
+  '@anthropic-ai/sdk@0.106.0':
+    resolution: {integrity: sha512-ufwVvYNDBj2dzOGupBCTaNzBLxqcTnGOzI4z8Wouxlt+mT3J3HuOmatgCy1VmwCHOUueqZ41ERhm0O99OUcbWA==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -2894,7 +2894,7 @@ packages:
 
 snapshots:
 
-  '@anthropic-ai/sdk@0.104.2(zod@4.4.3)':
+  '@anthropic-ai/sdk@0.106.0(zod@4.4.3)':
     dependencies:
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.0.0
