@@ -41,6 +41,13 @@ export interface TeamScore {
   roundTricks: number;
 }
 
+// Runtime guard for untrusted input (socket payloads). The Position type is
+// erased at runtime, so anything crossing the wire must be checked with this
+// before being used as a seat index.
+export function isValidPosition(value: unknown): value is Position {
+  return value === 0 || value === 1 || value === 2 || value === 3;
+}
+
 export function getPartnerPosition(position: Position): Position {
   return ((position + 2) % 4) as Position;
 }

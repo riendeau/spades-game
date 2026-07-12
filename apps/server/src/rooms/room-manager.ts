@@ -35,8 +35,9 @@ export class RoomManager {
   onRoomDeleted?: (roomId: string) => void;
 
   constructor() {
-    // Cleanup expired rooms periodically
-    setInterval(() => this.cleanup(), 60000);
+    // Cleanup expired rooms periodically. unref() so this timer never keeps
+    // the process alive on its own (graceful shutdown, unit tests).
+    setInterval(() => this.cleanup(), 60000).unref();
   }
 
   generateRoomId(): string {
