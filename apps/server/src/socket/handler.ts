@@ -36,6 +36,36 @@ const debugRate = new WeakMap<object, { count: number; windowStart: number }>();
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
+// Socket.io does not catch exceptions thrown by event handlers — an uncaught
+// throw (e.g. destructuring a missing payload) propagates out of the emitter
+// and kills the whole Node process. Every client-originated event must be
+// registered through this wrapper so a malformed payload costs the sender an
+// error message instead of costing everyone the server.
+function safeOn<E extends keyof ClientToServerEvents>(
+  socket: TypedSocket,
+  event: E,
+  handler: ClientToServerEvents[E]
+): void {
+  const wrapped = (...args: Parameters<ClientToServerEvents[E]>) => {
+    try {
+      (handler as (...handlerArgs: unknown[]) => void)(...args);
+    } catch (err) {
+      console.error(
+        `[socket] handler crashed event=${event} socket=${socket.id}:`,
+        err
+      );
+      socket.emit('error', {
+        code: 'INVALID_INPUT',
+        message: 'Malformed request',
+      });
+    }
+  };
+  // socket.io types listeners via a conditional (FallbackToUntypedListener)
+  // that never unifies with a generic E, so a cast is unavoidable here. The
+  // public safeOn signature above keeps the call sites fully type-checked.
+  socket.on(event, wrapped as never);
+}
+
 function getUserId(socket: TypedSocket): string | null {
   return (socket.request as Request).user?.id ?? null;
 }
@@ -120,55 +150,57 @@ export function setupSocketHandlers(io: TypedServer): void {
       `[socket] connected id=${socket.id} transport=${socket.conn.transport.name}`
     );
 
-    socket.on('room:create', ({ nickname }) => {
+    safeOn(socket, 'room:create', ({ nickname }) => {
       handleCreateRoom(socket, nickname);
     });
 
-    socket.on('room:join', ({ roomId, nickname }) => {
+    safeOn(socket, 'room:join', ({ roomId, nickname }) => {
       handleJoinRoom(socket, roomId, nickname);
     });
 
-    socket.on('room:ready', () => {
+    safeOn(socket, 'room:ready', () => {
       handlePlayerReady(socket, io);
     });
 
-    socket.on('room:leave', () => {
+    safeOn(socket, 'room:leave', () => {
       handlePlayerLeave(socket, io);
     });
 
-    socket.on('game:bid', ({ bid, isNil, isBlindNil }) => {
-      handleBid(socket, io, bid, isNil || false, isBlindNil || false);
+    // `=== true` (not `|| false`) so truthy junk like the string 'yes' can't
+    // sneak a non-boolean into the game state.
+    safeOn(socket, 'game:bid', ({ bid, isNil, isBlindNil }) => {
+      handleBid(socket, io, bid, isNil === true, isBlindNil === true);
     });
 
-    socket.on('game:play-card', ({ card }) => {
+    safeOn(socket, 'game:play-card', ({ card }) => {
       handlePlayCard(socket, io, card);
     });
 
-    socket.on('game:see-cards', () => {
+    safeOn(socket, 'game:see-cards', () => {
       handleSeeCards(socket);
     });
 
-    socket.on('player:reconnect', ({ sessionToken, roomId }) => {
+    safeOn(socket, 'player:reconnect', ({ sessionToken, roomId }) => {
       handleReconnect(socket, io, sessionToken, roomId);
     });
 
-    socket.on('client:debug', (data) => {
+    safeOn(socket, 'client:debug', (data) => {
       handleClientDebug(socket, data);
     });
 
-    socket.on('player:change-seat', ({ newPosition }) => {
+    safeOn(socket, 'player:change-seat', ({ newPosition }) => {
       handleChangeSeat(socket, io, newPosition);
     });
 
-    socket.on('player:open-seat', ({ playerId }) => {
+    safeOn(socket, 'player:open-seat', ({ playerId }) => {
       handleOpenSeat(socket, io, playerId);
     });
 
-    socket.on('player:kick-idle', ({ playerId }) => {
+    safeOn(socket, 'player:kick-idle', ({ playerId }) => {
       handleKickIdle(socket, io, playerId);
     });
 
-    socket.on('room:select-seat', ({ roomId, position, nickname }) => {
+    safeOn(socket, 'room:select-seat', ({ roomId, position, nickname }) => {
       handleSelectSeat(socket, io, roomId, position, nickname);
     });
 
@@ -712,6 +744,16 @@ function handleReconnect(
   sessionToken: string,
   roomId: string
 ): void {
+  // The declared types are wire-level fiction — check before the .slice()
+  // below dereferences a non-string.
+  if (typeof sessionToken !== 'string' || typeof roomId !== 'string') {
+    console.warn(
+      `[reconnect] FAILED: malformed payload socket=${socket.id} tokenType=${typeof sessionToken} roomType=${typeof roomId}`
+    );
+    socket.emit('reconnect:failed', { reason: 'Invalid session' });
+    return;
+  }
+
   console.log(
     `[reconnect] attempt token=${sessionToken.slice(0, 8)}… room=${roomId} socket=${socket.id}`
   );

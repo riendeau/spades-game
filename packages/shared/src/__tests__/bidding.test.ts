@@ -62,6 +62,28 @@ describe('bidding', () => {
       expect(result.valid).toBe(true);
     });
 
+    it('should reject non-integer and non-numeric bids', () => {
+      const state = makeBiddingState({ currentPlayerPosition: 1 });
+
+      // NaN passes plain range comparisons (NaN < 1 and NaN > 13 are both
+      // false) and would poison team scores forever; strings and fractions
+      // arrive from untyped socket payloads.
+      for (const bad of [NaN, 5.5, '5', Infinity, null, undefined]) {
+        const result = validateBid(
+          state,
+          'p1',
+          bad as unknown as number,
+          false,
+          false,
+          DEFAULT_GAME_CONFIG
+        );
+        expect(result.valid).toBe(false);
+        expect(result.errorMessage).toBe(
+          'Bid must be a whole number between 1 and 13'
+        );
+      }
+    });
+
     it('should reject bid when not in bidding phase', () => {
       const state = makeBiddingState();
       state.phase = 'playing';
@@ -206,7 +228,9 @@ describe('bidding', () => {
         DEFAULT_GAME_CONFIG
       );
       expect(result.valid).toBe(false);
-      expect(result.errorMessage).toBe('Bid must be between 1 and 13');
+      expect(result.errorMessage).toBe(
+        'Bid must be a whole number between 1 and 13'
+      );
     });
 
     it('should reject numeric bid above 13', () => {
@@ -220,7 +244,9 @@ describe('bidding', () => {
         DEFAULT_GAME_CONFIG
       );
       expect(result.valid).toBe(false);
-      expect(result.errorMessage).toBe('Bid must be between 1 and 13');
+      expect(result.errorMessage).toBe(
+        'Bid must be a whole number between 1 and 13'
+      );
     });
 
     it('should accept bid of exactly 1', () => {

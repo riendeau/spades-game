@@ -15,7 +15,7 @@ import type { Card } from '../types/card.js';
 import type { GameState, GamePhase, GameConfig } from '../types/game-state.js';
 import { DEFAULT_GAME_CONFIG } from '../types/game-state.js';
 import type { Player, PlayerId, Position } from '../types/player.js';
-import { getTeamForPosition } from '../types/player.js';
+import { getTeamForPosition, isValidPosition } from '../types/player.js';
 
 export type GameAction =
   | {
@@ -595,6 +595,14 @@ function handlePlayerChangeSeat(
       valid: false,
       error: 'Cannot change seat after game started',
     };
+  }
+
+  // The Position type is erased at runtime and this action originates from an
+  // untrusted socket payload. An out-of-range position would be accepted by
+  // the occupancy check below, seat the player outside the 0-3 turn rotation,
+  // and deadlock the game once bidding starts.
+  if (!isValidPosition(newPosition)) {
+    return { state, valid: false, error: 'Invalid seat position' };
   }
 
   const playerIndex = state.players.findIndex((p) => p.id === playerId);

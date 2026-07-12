@@ -53,8 +53,14 @@ export function validateBid(
       return { valid: false, errorMessage: 'Nil bid must be 0' };
     }
   } else {
-    if (bid < 1 || bid > 13) {
-      return { valid: false, errorMessage: 'Bid must be between 1 and 13' };
+    // Number.isInteger also rejects non-numbers and NaN, which sail through
+    // plain range comparisons (NaN < 1 and NaN > 13 are both false). The bid
+    // arrives from an untyped socket payload, so this is the integrity check.
+    if (!Number.isInteger(bid) || bid < 1 || bid > 13) {
+      return {
+        valid: false,
+        errorMessage: 'Bid must be a whole number between 1 and 13',
+      };
     }
 
     // Enforce team bid cap: combined team bids cannot exceed 13

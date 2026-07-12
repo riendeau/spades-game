@@ -299,6 +299,29 @@ describe('Game State Machine', () => {
     });
   });
 
+  describe('PLAYER_CHANGE_SEAT', () => {
+    it('should reject out-of-range positions from untrusted payloads', () => {
+      let state = createInitialGameState('test-room');
+      state = processAction(state, {
+        type: 'PLAYER_JOIN',
+        playerId: 'p0',
+        nickname: 'Player 0',
+      }).state;
+
+      // The Position type is erased at runtime — a crafted socket payload can
+      // carry any value. Seating a player outside 0-3 would deadlock bidding.
+      for (const bad of [99, -1, 1.5, NaN, '2', null, undefined]) {
+        const result = processAction(state, {
+          type: 'PLAYER_CHANGE_SEAT',
+          playerId: 'p0',
+          newPosition: bad as never,
+        });
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('Invalid seat position');
+      }
+    });
+  });
+
   describe('PLAYER_LEAVE', () => {
     it('should remove player in waiting phase', () => {
       let state = createInitialGameState('test-room');
