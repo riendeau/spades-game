@@ -94,6 +94,36 @@ export class GameInstance {
     return result;
   }
 
+  // Mod-computed disabled bids for the current bidder. Returns [] outside the
+  // bidding phase or when playerId isn't the current bidder. Runs the
+  // onCalculateDisabledBids hook chain and persists any modState it produces,
+  // so the first call for a turn makes the (possibly random) decision and
+  // every later call — including the makeBid() enforcement check — reads the
+  // same cached decision.
+  getDisabledBids(playerId: PlayerId): number[] {
+    if (this.state.phase !== 'bidding') return [];
+
+    const player = this.state.players.find((p) => p.id === playerId);
+    if (player?.position !== this.state.currentPlayerPosition) {
+      return [];
+    }
+
+    const context = hookExecutor.executeCalculateDisabledBids({
+      gameState: this.state,
+      config: this.config,
+      playerId,
+      currentBids: this.state.currentRound?.bids ?? [],
+      modState: this.getModState('anti-eleven'),
+      disabledBids: [],
+    });
+
+    if (context.modState !== undefined) {
+      this.setModState('anti-eleven', context.modState);
+    }
+
+    return context.disabledBids;
+  }
+
   toClientState(): ClientGameState {
     const tricksWon: Record<PlayerId, number> = {};
     this.state.players.forEach((p) => {
@@ -143,28 +173,14 @@ export class GameInstance {
 
     // Calculate disabled bids for current bidder
     if (this.state.phase === 'bidding') {
-      const currentBids = this.state.currentRound?.bids ?? [];
       const currentPlayer = this.state.players.find(
         (p) => p.position === this.state.currentPlayerPosition
       );
 
       if (currentPlayer) {
-        const disabledBidsContext = hookExecutor.executeCalculateDisabledBids({
-          gameState: this.state,
-          config: this.config,
-          playerId: currentPlayer.id,
-          currentBids,
-          modState: this.getModState('anti-eleven'),
-          disabledBids: [],
-        });
-
-        if (disabledBidsContext.disabledBids.length > 0) {
-          result.disabledBids = disabledBidsContext.disabledBids;
-        }
-
-        // Update mod state if changed
-        if (disabledBidsContext.modState !== undefined) {
-          this.setModState('anti-eleven', disabledBidsContext.modState);
+        const disabledBids = this.getDisabledBids(currentPlayer.id);
+        if (disabledBids.length > 0) {
+          result.disabledBids = disabledBids;
         }
       }
     }
@@ -226,6 +242,17 @@ export class GameInstance {
     isNil = false,
     isBlindNil = false
   ): ActionResult {
+    // Server-side enforcement of mod-disabled bids. The client disables the
+    // matching buttons, but that's cosmetic — a crafted or stale client can
+    // still emit the bid, so it must be rejected here.
+    if (!isNil && !isBlindNil && this.getDisabledBids(playerId).includes(bid)) {
+      return {
+        state: this.state,
+        valid: false,
+        error: 'That bid is currently disabled by a game mod',
+      };
+    }
+
     return this.dispatch({
       type: 'MAKE_BID',
       playerId,
