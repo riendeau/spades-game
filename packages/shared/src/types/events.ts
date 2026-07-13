@@ -85,6 +85,7 @@ export interface ServerToClientEvents {
   'reconnect:success': (data: {
     state: ClientGameState;
     hand: Card[];
+    autoReveal?: boolean;
     scoreHistory: ScoreHistoryEntry[];
   }) => void;
   'reconnect:failed': (data: { reason: string }) => void;

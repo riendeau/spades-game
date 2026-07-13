@@ -129,21 +129,31 @@ export function useGame() {
       useGameStore.getState().setGameSummary(summary);
     });
 
-    socket.on('reconnect:success', ({ state, hand, scoreHistory }) => {
-      console.log(
-        `[game] reconnect:success phase=${state.phase} hand=${hand.length} cards`
-      );
-      const { setGameState, setHand, revealCards, setScoreHistory } =
-        useGameStore.getState();
-      setGameState(state);
-      setHand(hand);
-      setScoreHistory(scoreHistory);
-      revealCards();
-      // A reconnect resyncs full state from the server; any play that was
-      // in flight when we dropped is now moot. Clear the guard so the
-      // resynced hand is playable.
-      playPendingRef.current = false;
-    });
+    socket.on(
+      'reconnect:success',
+      ({ state, hand, autoReveal, scoreHistory }) => {
+        console.log(
+          `[game] reconnect:success phase=${state.phase} hand=${hand.length} cards autoReveal=${autoReveal === true}`
+        );
+        const { setGameState, setHand, revealCards, setScoreHistory } =
+          useGameStore.getState();
+        setGameState(state);
+        setHand(hand);
+        setScoreHistory(scoreHistory);
+        // setHand resets cardsRevealed to false; only re-set it here when the
+        // server says this seat has no See Cards / Bid Blind Nil decision left
+        // (see computeAutoReveal in handler.ts). A mid-bidding reconnect before
+        // that decision must leave cards face-down so Bid Blind Nil stays
+        // available.
+        if (autoReveal) {
+          revealCards();
+        }
+        // A reconnect resyncs full state from the server; any play that was
+        // in flight when we dropped is now moot. Clear the guard so the
+        // resynced hand is playable.
+        playPendingRef.current = false;
+      }
+    );
 
     socket.on('room:seat-changed', ({ newPosition }) => {
       useGameStore.getState().setMyPosition(newPosition);

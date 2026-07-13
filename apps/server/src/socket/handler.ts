@@ -3,6 +3,7 @@ import type {
   ServerToClientEvents,
   ClientGameState,
   Card,
+  GamePhase,
   Position,
 } from '@spades/shared';
 import {
@@ -127,6 +128,24 @@ function getClientState(room: Room): ClientGameState {
   }
 
   return withTimer;
+}
+
+// Shared by the seat-replacement (`handleSelectSeat`) and reconnect
+// (`handleReconnect`) paths so the "does this seat still have a See Cards /
+// Bid Blind Nil decision to make" rule can't drift between them. A seat has
+// no decision left once bidding is fully over, or if it's still bidding but
+// has already placed a bid or clicked See Cards this round (`hasViewedCards`).
+export function computeAutoReveal(
+  phase: GamePhase,
+  hasViewedCards: boolean
+): boolean {
+  return (
+    phase === 'playing' ||
+    phase === 'trick-end' ||
+    phase === 'round-end' ||
+    phase === 'game-end' ||
+    (phase === 'bidding' && hasViewedCards)
+  );
 }
 
 export function setupSocketHandlers(io: TypedServer): void {
@@ -793,13 +812,24 @@ function handleReconnect(
   // Get player's hand
   const hand = room.game.getPlayerHand(session.playerId);
 
+  // Same "does this seat still have a See Cards / Bid Blind Nil decision to
+  // make" rule as the seat-replacement path — see computeAutoReveal.
+  const state = room.game.getState();
+  const phase = state.phase;
+  const reconnectingPlayer = state.players.find(
+    (p) => p.id === session.playerId
+  );
+  const hasViewedCards = reconnectingPlayer?.hasViewedCards ?? false;
+  const autoReveal = computeAutoReveal(phase, hasViewedCards);
+
   console.log(
-    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} hand=${hand.length} cards`
+    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} hand=${hand.length} cards phase=${phase} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal}`
   );
 
   socket.emit('reconnect:success', {
     state: getClientState(room),
     hand,
+    autoReveal,
     scoreHistory: room.game.getScoreHistory(),
   });
 
@@ -1009,12 +1039,7 @@ function handleSelectSeat(
     );
   }
   const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
-  const autoReveal =
-    phase === 'playing' ||
-    phase === 'trick-end' ||
-    phase === 'round-end' ||
-    phase === 'game-end' ||
-    (phase === 'bidding' && hasViewedCards);
+  const autoReveal = computeAutoReveal(phase, hasViewedCards);
   socket.emit('game:cards-dealt', { hand, autoReveal });
 
   console.log(
