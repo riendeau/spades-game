@@ -61,7 +61,7 @@ export async function completeAllBids(
 /**
  * Finds which page currently has bidding controls visible.
  */
-async function findCurrentBidder(pages: Page[]): Promise<Page> {
+export async function findCurrentBidder(pages: Page[]): Promise<Page> {
   // Poll until one page shows "It's your turn to bid!" (only shown for the active bidder, pre-reveal)
   for (let attempt = 0; attempt < 30; attempt++) {
     for (const page of pages) {

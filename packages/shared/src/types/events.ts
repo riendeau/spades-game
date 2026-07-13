@@ -85,6 +85,9 @@ export interface ServerToClientEvents {
   'reconnect:success': (data: {
     state: ClientGameState;
     hand: Card[];
+    // Same semantics as on game:cards-dealt: true when the seat has no
+    // See Cards / Bid Blind Nil decision left to make this round.
+    autoReveal?: boolean;
     scoreHistory: ScoreHistoryEntry[];
   }) => void;
   'reconnect:failed': (data: { reason: string }) => void;

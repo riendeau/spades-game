@@ -3,6 +3,7 @@ import type {
   ServerToClientEvents,
   ClientGameState,
   Card,
+  GamePhase,
   Position,
 } from '@spades/shared';
 import {
@@ -86,6 +87,22 @@ function validateRoomId(roomId: unknown): string | null {
   const trimmed = roomId.trim().toUpperCase();
   if (!/^[A-Z0-9]{6}$/.test(trimmed)) return null;
   return trimmed;
+}
+
+// Auto-reveal whenever the seat has no See Cards / Bid Blind Nil decision
+// left to make: past bidding entirely, or still in bidding but the seat has
+// either placed a bid or clicked See Cards earlier this round (both are
+// recorded server-side as `hasViewedCards`). During waiting/ready/dealing
+// there are no cards yet; `autoReveal` is false but irrelevant. Shared by the
+// seat-replacement and reconnect paths so their decisions cannot drift.
+function computeAutoReveal(phase: GamePhase, hasViewedCards: boolean): boolean {
+  return (
+    phase === 'playing' ||
+    phase === 'trick-end' ||
+    phase === 'round-end' ||
+    phase === 'game-end' ||
+    (phase === 'bidding' && hasViewedCards)
+  );
 }
 
 function isValidCard(card: unknown): card is Card {
@@ -793,13 +810,21 @@ function handleReconnect(
   // Get player's hand
   const hand = room.game.getPlayerHand(session.playerId);
 
+  // Same decision as the seat-replacement path: only auto-reveal when the
+  // seat has no See Cards / Bid Blind Nil decision left to make this round.
+  const gameState = room.game.getState();
+  const seatPlayer = gameState.players.find((p) => p.id === session.playerId);
+  const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
+  const autoReveal = computeAutoReveal(gameState.phase, hasViewedCards);
+
   console.log(
-    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} hand=${hand.length} cards`
+    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} hand=${hand.length} cards phase=${gameState.phase} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal}`
   );
 
   socket.emit('reconnect:success', {
     state: getClientState(room),
     hand,
+    autoReveal,
     scoreHistory: room.game.getScoreHistory(),
   });
 
@@ -992,11 +1017,6 @@ function handleSelectSeat(
   });
 
   const hand = room.game.getPlayerHand(targetPlayer.id);
-  // Auto-reveal whenever the seat has no See Cards / Bid Blind Nil decision
-  // left to make: past bidding entirely, or still in bidding but the seat
-  // has either placed a bid or clicked See Cards earlier this round (both
-  // are recorded server-side as `hasViewedCards`). During waiting/ready/
-  // dealing there are no cards yet; `autoReveal` is false but irrelevant.
   const state = room.game.getState();
   const phase = state.phase;
   const seatPlayer = state.players.find((p) => p.id === targetPlayer.id);
@@ -1009,12 +1029,7 @@ function handleSelectSeat(
     );
   }
   const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
-  const autoReveal =
-    phase === 'playing' ||
-    phase === 'trick-end' ||
-    phase === 'round-end' ||
-    phase === 'game-end' ||
-    (phase === 'bidding' && hasViewedCards);
+  const autoReveal = computeAutoReveal(phase, hasViewedCards);
   socket.emit('game:cards-dealt', { hand, autoReveal });
 
   console.log(

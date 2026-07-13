@@ -72,7 +72,21 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     setSocket(newSocket);
 
+    // Dev/E2E helper: force a transport close to exercise the auto-reconnect
+    // path (socket.io reconnects on its own, unlike a manual .disconnect()).
+    // Same pattern as __triggerEffect in App.tsx.
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__blipSocket = () => {
+        newSocket.io.engine.close();
+      };
+    }
+
     return () => {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        delete (window as any).__blipSocket;
+      }
       newSocket.disconnect();
     };
   }, []);
