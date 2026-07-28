@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/game-fixtures';
-import { createRoom, joinRoom } from '../helpers/room-helpers';
+import { createRoom, expectSeated, joinRoom } from '../helpers/room-helpers';
 
 test.describe('Room Creation', () => {
   test('creating a room and joining with room code', async ({
@@ -17,8 +17,8 @@ test.describe('Room Creation', () => {
     await joinRoom(p2, roomCode, 'Bob');
 
     // Both players should see each other
-    await expect(p1.getByText('Bob')).toBeVisible();
-    await expect(p2.getByText('Alice')).toBeVisible();
+    await expectSeated(p1, 'Bob');
+    await expectSeated(p2, 'Alice');
   });
 
   test('invalid room code shows error', async ({ createPlayerPage }) => {
@@ -50,9 +50,9 @@ test.describe('Room Creation', () => {
     await joinRoom(p4, roomCode, 'Diana');
 
     // Player 1 should see all four players
-    await expect(p1.getByText('Alice')).toBeVisible();
-    await expect(p1.getByText('Bob')).toBeVisible();
-    await expect(p1.getByText('Charlie')).toBeVisible();
-    await expect(p1.getByText('Diana')).toBeVisible();
+    await expectSeated(p1, 'Alice');
+    await expectSeated(p1, 'Bob');
+    await expectSeated(p1, 'Charlie');
+    await expectSeated(p1, 'Diana');
   });
 });

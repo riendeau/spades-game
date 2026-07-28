@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/game-fixtures';
-import { createRoom } from '../helpers/room-helpers';
+import { createRoom, expectSeated } from '../helpers/room-helpers';
 
 test.describe('Shareable URL', () => {
   test('waiting room displays shareable URL after room creation', async ({
@@ -78,8 +78,8 @@ test.describe('Shareable URL', () => {
     await expect(p2.getByText('Waiting Room')).toBeVisible();
 
     // Both players should see each other
-    await expect(p1.getByText('Bob')).toBeVisible();
-    await expect(p2.getByText('Alice')).toBeVisible();
+    await expectSeated(p1, 'Bob');
+    await expectSeated(p2, 'Alice');
 
     await context2.close();
   });
@@ -130,7 +130,7 @@ test.describe('Shareable URL', () => {
     await p2.getByRole('button', { name: 'Join Room' }).click();
 
     await expect(p2.getByText('Waiting Room')).toBeVisible();
-    await expect(p1.getByText('Bob')).toBeVisible();
+    await expectSeated(p1, 'Bob');
 
     await context2.close();
   });

@@ -67,6 +67,31 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * Fetches only `/api/stats` and returns at most `limit` of the caller's most
+ * recent games. Used by the waiting room, which wants the Recent Games table
+ * without paying for the bid/nil endpoints `useStats` also hits.
+ */
+export function useRecentGames(limit: number): RecentGame[] {
+  const [games, setGames] = useState<RecentGame[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchJson<PlayerStats>('/api/stats')
+      .then((s) => {
+        if (!cancelled) setGames(s.recentGames.slice(0, limit));
+      })
+      .catch((err) => {
+        console.error('Failed to fetch recent games:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [limit]);
+
+  return games;
+}
+
 export function useStats() {
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [bidStats, setBidStats] = useState<BidStats | null>(null);
