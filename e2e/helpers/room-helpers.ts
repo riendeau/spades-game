@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /**
  * Creates a new room and returns the room code.
@@ -32,4 +32,17 @@ export async function joinRoom(
   await page.getByPlaceholder('e.g. ABC123').fill(roomCode);
   await page.getByRole('button', { name: 'Join Room' }).click();
   await page.getByText('Waiting Room').waitFor();
+}
+
+/**
+ * Asserts that a nickname occupies one of the waiting room's four seats.
+ *
+ * Scoped to the seat tiles on purpose: the Recent Games table below the seats
+ * also renders player names, so a bare `getByText(nickname)` matches multiple
+ * elements and trips Playwright's strict mode.
+ */
+export async function expectSeated(page: Page, nickname: string) {
+  await expect(
+    page.locator('[data-testid^="seat-"]').filter({ hasText: nickname })
+  ).toBeVisible();
 }

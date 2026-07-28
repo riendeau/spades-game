@@ -1,8 +1,10 @@
 import type { ClientGameState, Position } from '@spades/shared';
 import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../../hooks/use-is-mobile';
+import { useRecentGames } from '../../hooks/use-stats';
 import { TEAM_COLORS } from '../../styles/colors';
 import { AdUnit } from '../ads/AdUnit';
+import { RecentGamesTable } from '../stats/RecentGamesTable';
 import { Button } from '../ui/Button';
 
 interface WaitingRoomProps {
@@ -40,6 +42,9 @@ const ANIMALS = [
   'Owl',
   'Panda',
 ];
+
+// How many of the player's most recent games to show under the seat selection
+const RECENT_GAMES_SHOWN = 3;
 
 function generateRandomName(): string {
   const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
@@ -149,6 +154,7 @@ export function WaitingRoom({
   onChangeSeat,
 }: WaitingRoomProps) {
   const isMobile = useIsMobile();
+  const recentGames = useRecentGames(RECENT_GAMES_SHOWN);
   const [copyError, setCopyError] = useState<string | null>(null);
   const myPlayer = gameState.players.find((p) => p.position === myPosition);
   const isReady = myPlayer?.ready ?? false;
@@ -428,6 +434,12 @@ export function WaitingRoom({
           </Button>
         </div>
       </div>
+
+      <RecentGamesTable
+        games={recentGames}
+        compact={isMobile}
+        style={{ marginTop: isMobile ? '16px' : '24px' }}
+      />
 
       <AdUnit
         slot="8660188529"
