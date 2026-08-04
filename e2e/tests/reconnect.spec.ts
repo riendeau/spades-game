@@ -1,3 +1,4 @@
+import { LOBBY_TITLE } from '../../apps/client/src/lobby-branding';
 import { test, expect, type Page } from '../fixtures/game-fixtures';
 import { findCurrentBidder, placeBid } from '../helpers/bidding-helpers';
 
@@ -8,11 +9,12 @@ import { findCurrentBidder, placeBid } from '../helpers/bidding-helpers';
 // face-up — an unconditional reveal robs the player of Bid Blind Nil.
 //
 // Note: these tests blip the socket transport via the dev-only __blipSocket
-// helper, not page.reload() or context.setOffline(). A reload loses the
-// Zustand store (reconnect:success does not restore roomId/myPosition, so a
-// reloaded page lands in the lobby — a separate pre-existing issue outside
-// #230's scope), and setOffline leaves the websocket up until the ~45s ping
-// timeout notices it.
+// helper, not page.reload() or context.setOffline(). A blip is the narrower
+// signal — it keeps the Zustand store, so only the reveal decision is under
+// test. (setOffline is never usable: it leaves the websocket up until the ~45s
+// ping timeout notices it.) The reload path — where the store is lost and
+// reconnect:success has to rebuild roomId/myPosition — is covered separately
+// in the 'Reconnect after page reload' describe below (issue #299).
 
 async function blipConnection(page: Page): Promise<void> {
   // Wait for the use-game reconnect:success log — the deterministic signal
@@ -25,6 +27,19 @@ async function blipConnection(page: Page): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__blipSocket();
   });
+  await reconnected;
+}
+
+async function reloadAndReconnect(page: Page): Promise<void> {
+  // Same deterministic signal as blipConnection. Armed before the reload
+  // (console listeners survive navigation) so a fast reconnect can't land in
+  // the gap — no reconnect has happened on this page yet, so there's no stale
+  // message for it to match.
+  const reconnected = page.waitForEvent('console', {
+    predicate: (msg) => msg.text().includes('[game] reconnect:success'),
+    timeout: 15000,
+  });
+  await page.reload();
   await reconnected;
 }
 
@@ -87,5 +102,53 @@ test.describe('Reconnect card reveal', () => {
     await expect(
       bidder.getByRole('button', { name: 'Bid Blind Nil' })
     ).not.toBeVisible();
+  });
+});
+
+// Regression tests for issue #299: a full page reload wipes the Zustand store,
+// so reconnect:success is the only chance to restore roomId/myPosition. Before
+// the fix the server reattached the seat but the client kept rendering the
+// lobby, stranding the player mid-game.
+test.describe('Reconnect after page reload', () => {
+  test('reload during bidding returns to the game table, not the lobby', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+    const bidder = await findCurrentBidder(players);
+
+    await reloadAndReconnect(bidder);
+
+    await expect(
+      bidder.getByRole('heading', { name: LOBBY_TITLE })
+    ).not.toBeVisible();
+    // The seat had made no See Cards / Bid Blind Nil decision, so both are
+    // still on offer — the reload must not have committed one implicitly.
+    await expect(
+      bidder.getByRole('button', { name: 'Bid Blind Nil' })
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      bidder.getByRole('button', { name: 'See Cards' })
+    ).toBeVisible();
+  });
+
+  test('reload after placing a bid restores the revealed hand', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+    const bidder = await findCurrentBidder(players);
+
+    await placeBid(bidder, 3);
+    await expect(bidder.getByText('Your bid:')).toBeVisible();
+
+    await reloadAndReconnect(bidder);
+
+    await expect(
+      bidder.getByRole('heading', { name: LOBBY_TITLE })
+    ).not.toBeVisible();
+    await expect(bidder.getByText('Your bid:')).toBeVisible({ timeout: 15000 });
+    // myPosition was restored too, so the seat's own hand renders face-up.
+    await expect(
+      bidder.locator('[data-testid="hand-card"]').first()
+    ).toBeVisible();
   });
 });

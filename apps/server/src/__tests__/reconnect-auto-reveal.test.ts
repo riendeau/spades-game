@@ -20,6 +20,8 @@ import { setupSocketHandlers } from '../socket/handler.js';
 // that decision point must (`autoReveal=true`).
 
 interface ReconnectSuccess {
+  roomId: string;
+  position: number;
   state: ClientGameState;
   hand: Card[];
   autoReveal?: boolean;
@@ -176,6 +178,21 @@ describe('reconnect autoReveal decision', { timeout: 30000 }, () => {
     expect(result.state.phase).toBe('bidding');
     expect(result.hand).toHaveLength(13);
     expect(result.autoReveal).toBe(false);
+  });
+
+  // Issue #299: a page reload starts the client store empty, so reconnect:success
+  // is the only chance to restore roomId/myPosition — without them App.tsx keeps
+  // rendering the lobby even though the server reattached the seat.
+  it('returns the room and seat position so a reloaded client can rebuild its session', async () => {
+    const { roomId, players, biddingState } = await setupBiddingRoom();
+    const idle = players.find(
+      (p) => p.position !== biddingState.currentPlayerPosition
+    )!;
+    idle.client.disconnect();
+
+    const result = await reconnectFresh(roomId, idle.sessionToken);
+    expect(result.roomId).toBe(roomId);
+    expect(result.position).toBe(idle.position);
   });
 
   it('auto-reveals on reconnect during bidding after the seat clicked See Cards', async () => {

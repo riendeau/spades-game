@@ -12,6 +12,36 @@ import { useGame } from './hooks/use-game';
 import { preload } from './services/audio';
 import { useGameStore } from './store/game-store';
 
+function StatusScreen({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background:
+          'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
+      }}
+    >
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{ fontSize: '24px', marginBottom: '8px', color: '#ffffff' }}
+        >
+          {title}
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.5)' }}>{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
 function AppInner() {
   const user = useUser();
   const {
@@ -40,6 +70,7 @@ function AppInner() {
     selectSeat,
     kickIdle,
     kickedForIdle,
+    restoringSession,
     availableSeats,
     seatSelectRoomId,
     clearRoundSummary,
@@ -130,26 +161,15 @@ function AppInner() {
   }
 
   if (!connected) {
+    return <StatusScreen title="Connecting..." subtitle="Please wait" />;
+  }
+
+  // A saved session from a previous page load is being reattached. Without this
+  // the lobby would flash between `connected` flipping true and the server's
+  // reconnect:success landing — see the reconnect:success handler in use-game.
+  if (restoringSession) {
     return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background:
-            'radial-gradient(ellipse at center top, #1e5635 0%, #1a472a 60%, #133a21 100%)',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <div
-            style={{ fontSize: '24px', marginBottom: '8px', color: '#ffffff' }}
-          >
-            Connecting...
-          </div>
-          <div style={{ color: 'rgba(255,255,255,0.5)' }}>Please wait</div>
-        </div>
-      </div>
+      <StatusScreen title="Rejoining game..." subtitle="Restoring your seat" />
     );
   }
 

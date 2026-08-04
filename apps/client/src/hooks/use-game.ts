@@ -29,6 +29,7 @@ export function useGame() {
   const availableSeats = useGameStore((s) => s.availableSeats);
   const seatSelectRoomId = useGameStore((s) => s.seatSelectRoomId);
   const kickedForIdle = useGameStore((s) => s.kickedForIdle);
+  const restoringSession = useGameStore((s) => s.restoringSession);
 
   // Guard against duplicate game:play-card emissions during server round-trip.
   // Between emitting and receiving the server's response, the React component
@@ -131,12 +132,31 @@ export function useGame() {
 
     socket.on(
       'reconnect:success',
-      ({ state, hand, autoReveal, scoreHistory }) => {
+      ({ roomId, position, state, hand, autoReveal, scoreHistory }) => {
         console.log(
-          `[game] reconnect:success phase=${state.phase} hand=${hand.length} cards autoReveal=${autoReveal === true}`
+          `[game] reconnect:success room=${roomId} position=${position} phase=${state.phase} hand=${hand.length} cards autoReveal=${autoReveal === true}`
         );
-        const { setGameState, setHand, revealCards, setScoreHistory } =
-          useGameStore.getState();
+        const store = useGameStore.getState();
+        const {
+          setSession,
+          setGameState,
+          setHand,
+          revealCards,
+          setScoreHistory,
+          clearRestoringSession,
+        } = store;
+        // A full page reload wipes the in-memory store, and `room:joined` never
+        // fires again — without this the app would sit on the lobby screen
+        // (App.tsx gates the game render on roomId) despite the server having
+        // reattached the seat. The token is whatever we just reconnected with:
+        // the saved session on a reload, the store's copy on a socket blip.
+        const sessionToken =
+          loadSession()?.sessionToken ?? store.sessionToken ?? '';
+        setSession(roomId, sessionToken, position);
+        // Refresh the saved session's timestamp — it has just been proven valid
+        // by the server, so restart its 30-minute client-side expiry.
+        saveSession(roomId, sessionToken);
+        clearRestoringSession();
         setGameState(state);
         setHand(hand);
         setScoreHistory(scoreHistory);
@@ -175,7 +195,9 @@ export function useGame() {
 
     socket.on('reconnect:failed', ({ reason }) => {
       console.warn(`[game] reconnect:failed reason=${reason}`);
-      useGameStore.getState().setError(`Reconnection failed: ${reason}`);
+      const store = useGameStore.getState();
+      store.setError(`Reconnection failed: ${reason}`);
+      store.clearRestoringSession();
       clearSession();
     });
 
@@ -227,9 +249,17 @@ export function useGame() {
     const isAutoJoin = params.get('autoName') !== null;
     if (isAutoJoin) {
       clearSession();
+      useGameStore.getState().clearRestoringSession();
       emitDebug(socket, 'reconnect-skip', 'auto-join');
       return;
     }
+
+    // Safety net for the "Rejoining…" screen: every handleReconnect path answers
+    // with reconnect:success or reconnect:failed, but a malformed payload would
+    // come back as a generic `error` instead. Don't strand the player there.
+    const restoreTimeout = setTimeout(() => {
+      useGameStore.getState().clearRestoringSession();
+    }, 10_000);
 
     const emitReconnect = () => {
       const session = loadSession();
@@ -244,6 +274,8 @@ export function useGame() {
         });
       } else {
         console.log('[game] no saved session, skipping reconnect');
+        // Nothing to reattach — release the "Rejoining…" screen immediately.
+        useGameStore.getState().clearRestoringSession();
         emitDebug(socket, 'reconnect-skip', 'no-saved-session');
       }
     };
@@ -254,6 +286,7 @@ export function useGame() {
     if (socket.connected) emitReconnect();
 
     return () => {
+      clearTimeout(restoreTimeout);
       socket.off('connect', emitReconnect);
     };
   }, [socket]);
@@ -381,5 +414,6 @@ export function useGame() {
     selectSeat,
     kickIdle,
     kickedForIdle,
+    restoringSession,
   };
 }

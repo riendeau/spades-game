@@ -799,6 +799,21 @@ function handleReconnect(
     return;
   }
 
+  // The client needs the seat's position to restore `myPosition` after a page
+  // reload, so resolve the player before mutating anything — a session that
+  // outlived its seat (shouldn't happen; opening a seat deletes the player's
+  // sessions) can't be reconnected into a renderable state.
+  const seatPlayer = room.game
+    .getState()
+    .players.find((p) => p.id === session.playerId);
+  if (!seatPlayer) {
+    console.warn(
+      `[reconnect] FAILED: player not in room token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId}`
+    );
+    socket.emit('reconnect:failed', { reason: 'Seat no longer exists' });
+    return;
+  }
+
   // Update session with new socket
   roomManager.updateSessionSocket(sessionToken, socket.id);
   void socket.join(roomId);
@@ -813,15 +828,20 @@ function handleReconnect(
   // Same decision as the seat-replacement path: only auto-reveal when the
   // seat has no See Cards / Bid Blind Nil decision left to make this round.
   const gameState = room.game.getState();
-  const seatPlayer = gameState.players.find((p) => p.id === session.playerId);
-  const hasViewedCards = seatPlayer?.hasViewedCards ?? false;
+  const hasViewedCards =
+    gameState.players.find((p) => p.id === session.playerId)?.hasViewedCards ??
+    false;
   const autoReveal = computeAutoReveal(gameState.phase, hasViewedCards);
 
   console.log(
-    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} hand=${hand.length} cards phase=${gameState.phase} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal}`
+    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} position=${seatPlayer.position} hand=${hand.length} cards phase=${gameState.phase} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal}`
   );
 
   socket.emit('reconnect:success', {
+    // Sent so a client that lost its store to a page reload can restore its
+    // session identity — see the reconnect:success handler in use-game.ts.
+    roomId,
+    position: seatPlayer.position,
     state: getClientState(room),
     hand,
     autoReveal,
