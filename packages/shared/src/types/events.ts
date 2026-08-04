@@ -83,6 +83,12 @@ export interface ServerToClientEvents {
   'game:summary': (data: { summary: string }) => void;
   error: (data: { code: string; message: string }) => void;
   'reconnect:success': (data: {
+    // roomId/position let the client rebuild its session identity after a full
+    // page reload, where the in-memory store starts empty and `room:joined`
+    // never fires again. On a socket-level blip they're simply re-set to the
+    // values already in the store.
+    roomId: string;
+    position: Position;
     state: ClientGameState;
     hand: Card[];
     // Same semantics as on game:cards-dealt: true when the seat has no

@@ -46,6 +46,10 @@ interface GameStore {
   availableSeats: AvailableSeat[] | null;
   seatSelectRoomId: string | null;
   kickedForIdle: boolean;
+  // True while a saved session from a previous page load is being reattached.
+  // Seeded synchronously at store creation (before the first render) so a
+  // mid-game reload never flashes the lobby on its way back to the table.
+  restoringSession: boolean;
 
   // Actions
   setSession: (
@@ -91,7 +95,42 @@ interface GameStore {
   setAvailableSeats: (roomId: string, seats: AvailableSeat[]) => void;
   clearAvailableSeats: () => void;
   setKickedForIdle: () => void;
+  clearRestoringSession: () => void;
   reset: () => void;
+}
+
+// Session persistence - use sessionStorage so each tab has its own session.
+// Declared above the store because the store's initial `restoringSession` value
+// calls loadSession() at creation time.
+const SESSION_KEY = 'spades_session';
+
+export function saveSession(roomId: string, sessionToken: string) {
+  sessionStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({ roomId, sessionToken, timestamp: Date.now() })
+  );
+}
+
+export function loadSession(): { roomId: string; sessionToken: string } | null {
+  try {
+    const data = sessionStorage.getItem(SESSION_KEY);
+    if (!data) return null;
+
+    const session = JSON.parse(data);
+    // Session expires after 30 minutes
+    if (Date.now() - session.timestamp > 30 * 60 * 1000) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 const initialState = {
@@ -113,10 +152,14 @@ const initialState = {
   availableSeats: null,
   seatSelectRoomId: null,
   kickedForIdle: false,
+  restoringSession: false,
 };
 
 export const useGameStore = create<GameStore>((set) => ({
   ...initialState,
+  // Not part of `initialState` on purpose: reset() means "leave the room", and
+  // the callers that reset also clearSession(), so there is nothing to restore.
+  restoringSession: loadSession() !== null,
 
   setSession: (roomId, sessionToken, position) =>
     set({ roomId, sessionToken, myPosition: position }),
@@ -177,40 +220,10 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setKickedForIdle: () => set({ kickedForIdle: true }),
 
+  clearRestoringSession: () => set({ restoringSession: false }),
+
   reset: () => set(initialState),
 }));
-
-// Session persistence - use sessionStorage so each tab has its own session
-const SESSION_KEY = 'spades_session';
-
-export function saveSession(roomId: string, sessionToken: string) {
-  sessionStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify({ roomId, sessionToken, timestamp: Date.now() })
-  );
-}
-
-export function loadSession(): { roomId: string; sessionToken: string } | null {
-  try {
-    const data = sessionStorage.getItem(SESSION_KEY);
-    if (!data) return null;
-
-    const session = JSON.parse(data);
-    // Session expires after 30 minutes
-    if (Date.now() - session.timestamp > 30 * 60 * 1000) {
-      sessionStorage.removeItem(SESSION_KEY);
-      return null;
-    }
-
-    return session;
-  } catch {
-    return null;
-  }
-}
-
-export function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-}
 
 // Debug-relay breadcrumb buffer. Breadcrumbs that occur while the socket is
 // disconnected (e.g. 'disconnect', 'reconnect_failed') can't be emitted live,
