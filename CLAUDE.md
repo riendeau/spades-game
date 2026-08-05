@@ -345,8 +345,14 @@ After every bug fix or feature implementation:
 2. Commit the changes using the [Conventional Commits](https://www.conventionalcommits.org/) standard. Format: `<type>(<optional scope>): <description>`. Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `ci`, `build`. Use `!` after the type/scope for breaking changes (e.g., `feat!: ...`). Include a body for additional context when needed.
 3. **Run all tests locally** to ensure they pass before pushing:
    ```bash
-   pnpm test                    # Run all tests (unit + E2E)
-   pnpm --filter @spades/e2e test  # Run E2E tests only if needed
+   pnpm test                       # Unit tests only — the root script is
+                                   # `pnpm -r --filter '!@spades/e2e' test`,
+                                   # so this does NOT run E2E
+   pnpm --filter @spades/e2e test  # E2E — a separate, required run
    ```
+   Both commands are needed before pushing. `pnpm test` passing is **not**
+   evidence that E2E passed, which matters most for changes to the socket
+   layer, state machine, or reconnect paths — precisely the areas unit tests
+   cover least.
 4. Push the branch and open a PR to merge into `main` using `gh pr create`. Do **not** push directly to `main`.
 5. **Update Documentation**: After successful implementation (all tests pass, PR ready), reflect on what you had to discover or learn during implementation. Update this `CLAUDE.md` file with any patterns, gotchas, or architectural details that would have saved time. This keeps the documentation current and helps future work go faster. Add a `docs(claude): <description>` commit to the same branch before merging.
