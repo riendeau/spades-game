@@ -197,9 +197,13 @@ export function setupSocketHandlers(io: TypedServer): void {
       handleSeeCards(socket);
     });
 
-    safeOn(socket, 'player:reconnect', ({ sessionToken, roomId }) => {
-      handleReconnect(socket, io, sessionToken, roomId);
-    });
+    safeOn(
+      socket,
+      'player:reconnect',
+      ({ sessionToken, roomId, viewedRound }) => {
+        handleReconnect(socket, io, sessionToken, roomId, viewedRound);
+      }
+    );
 
     safeOn(socket, 'client:debug', (data) => {
       handleClientDebug(socket, data);
@@ -536,13 +540,16 @@ function handleBid(
 function handleSeeCards(socket: TypedSocket): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
-    console.error(
-      `[socket] SESSION_NOT_FOUND in handleSeeCards socket=${socket.id}`
+    // Expected during a reconnect: socket.io flushes packets buffered while
+    // offline before the 'connect' listener emits player:reconnect, so a
+    // See Cards click made around the disconnect lands here with no session
+    // attached yet. The player's own client already revealed the hand, and
+    // player:reconnect re-asserts the decision via `viewedRound`, so this
+    // recovers on its own — no client-facing error, which would surface as a
+    // "Session not found" toast in the middle of an otherwise clean reconnect.
+    console.warn(
+      `[seat] see-cards with no session (pre-reconnect flush?) socket=${socket.id}`
     );
-    socket.emit('error', {
-      code: 'SESSION_NOT_FOUND',
-      message: 'Session not found',
-    });
     return;
   }
 
@@ -759,7 +766,8 @@ function handleReconnect(
   socket: TypedSocket,
   io: TypedServer,
   sessionToken: string,
-  roomId: string
+  roomId: string,
+  viewedRound?: number
 ): void {
   // The declared types are wire-level fiction — check before the .slice()
   // below dereferences a non-string.
@@ -825,6 +833,25 @@ function handleReconnect(
   // Get player's hand
   const hand = room.game.getPlayerHand(session.playerId);
 
+  // Recover a See Cards decision the server never recorded. `game:see-cards`
+  // is fire-and-forget, so it is lost when the socket is already half-open at
+  // click time, and it is rejected with SESSION_NOT_FOUND when socket.io
+  // flushes it as a buffered packet on the new socket — which happens *before*
+  // the 'connect' listener emits this player:reconnect. Either way the seat
+  // would be handed back a face-down hand and a Bid Blind Nil it had already
+  // forfeited. The client's claim is only honored for the round actually in
+  // progress, and only ever sets the flag: a client can't clear a decision the
+  // server has already recorded, so the worst a bad payload can do is forfeit
+  // the claimant's own Blind Nil.
+  const roundNumber = room.game.getState().currentRound?.roundNumber;
+  const viewedRoundApplied =
+    Number.isInteger(viewedRound) &&
+    roundNumber !== undefined &&
+    viewedRound === roundNumber;
+  if (viewedRoundApplied) {
+    room.game.viewCards(session.playerId);
+  }
+
   // Same decision as the seat-replacement path: only auto-reveal when the
   // seat has no See Cards / Bid Blind Nil decision left to make this round.
   const gameState = room.game.getState();
@@ -834,7 +861,7 @@ function handleReconnect(
   const autoReveal = computeAutoReveal(gameState.phase, hasViewedCards);
 
   console.log(
-    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} position=${seatPlayer.position} hand=${hand.length} cards phase=${gameState.phase} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal}`
+    `[reconnect] SUCCESS token=${sessionToken.slice(0, 8)}… player=${session.playerId.slice(0, 8)}… room=${roomId} position=${seatPlayer.position} hand=${hand.length} cards phase=${gameState.phase} round=${roundNumber ?? '-'} viewedRound=${typeof viewedRound === 'number' ? viewedRound : '-'}${viewedRoundApplied ? '(applied)' : ''} hasViewedCards=${hasViewedCards} autoReveal=${autoReveal}`
   );
 
   socket.emit('reconnect:success', {

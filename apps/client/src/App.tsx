@@ -10,7 +10,16 @@ import { SeatSelection } from './components/lobby/SeatSelection';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
 import { useGame } from './hooks/use-game';
 import { preload } from './services/audio';
-import { useGameStore } from './store/game-store';
+import { leaveGameSession, useGameStore } from './store/game-store';
+
+// Back to a clean lobby. `leaveGameSession` drops the saved session so the
+// fresh page doesn't reconnect straight back into the game we just left, and
+// navigating to '/' (rather than reloading in place) avoids re-prefilling the
+// old room code from a /room/:id URL.
+function returnToLobby() {
+  leaveGameSession();
+  window.location.replace('/');
+}
 
 function StatusScreen({
   title,
@@ -76,7 +85,6 @@ function AppInner() {
     clearRoundSummary,
     clearRoundEffects,
     revealCards,
-    reset,
   } = useGame();
 
   useEffect(() => {
@@ -138,10 +146,7 @@ function AppInner() {
             time limit. Your seat has been opened for another player.
           </div>
           <button
-            onClick={() => {
-              reset();
-              window.location.reload();
-            }}
+            onClick={returnToLobby}
             style={{
               padding: '10px 24px',
               fontSize: '16px',
@@ -304,10 +309,7 @@ function AppInner() {
             myTeam={myTeam}
             teamNames={gameEnded.teamNames}
             gameSummary={gameSummary}
-            onNewGame={() => {
-              reset();
-              window.location.reload();
-            }}
+            onNewGame={returnToLobby}
           />
         )}
       </>

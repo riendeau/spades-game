@@ -16,7 +16,19 @@ export interface ClientToServerEvents {
   }) => void;
   'game:play-card': (data: { card: Card }) => void;
   'game:see-cards': () => void;
-  'player:reconnect': (data: { sessionToken: string; roomId: string }) => void;
+  'player:reconnect': (data: {
+    sessionToken: string;
+    roomId: string;
+    // The round number in which this seat clicked See Cards, as remembered by
+    // the client. `game:see-cards` is fire-and-forget, so it can be lost
+    // outright on a half-open socket, or arrive on the reconnected socket
+    // *before* player:reconnect has attached a session to it (socket.io
+    // flushes buffered packets ahead of the 'connect' listener). Re-asserting
+    // it here lets the server recover the seat's `hasViewedCards` flag instead
+    // of offering back a Bid Blind Nil the player already forfeited. The
+    // server only ever uses it to set the flag, never to clear it.
+    viewedRound?: number;
+  }) => void;
   // Log-only debug relay for reconnect/replace observability. The server logs
   // these verbatim (no state mutation), correlated by sessionToken with the
   // existing [reconnect]/[session] lines. See handleClientDebug.

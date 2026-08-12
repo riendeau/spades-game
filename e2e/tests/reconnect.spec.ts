@@ -84,6 +84,41 @@ test.describe('Reconnect card reveal', () => {
     ).not.toBeVisible();
   });
 
+  // The client re-asserts its See Cards decision as `viewedRound` on every
+  // player:reconnect, so the server can recover a `game:see-cards` that never
+  // arrived (lost on a half-open socket, or flushed as a buffered packet
+  // before player:reconnect attached a session — socket.io emits buffered
+  // packets ahead of the 'connect' listener). Without it the seat comes back
+  // face-down with a Bid Blind Nil it had already forfeited.
+  //
+  // This asserts the client half: the decision is persisted, survives a full
+  // reload, and goes out on the wire. The server half — actually applying it,
+  // and refusing a stale or malformed claim — is covered deterministically in
+  // apps/server/src/__tests__/reconnect-auto-reveal.test.ts, since forcing the
+  // event to be lost from a real browser is inherently racy.
+  test('reload after See Cards re-asserts the reveal decision to the server', async ({
+    fourPlayerBidding,
+  }) => {
+    const { players } = fourPlayerBidding;
+    const bidder = await findCurrentBidder(players);
+
+    await bidder.getByRole('button', { name: 'See Cards' }).click();
+    await expect(bidder.getByText('Select your bid:')).toBeVisible();
+
+    const emitted = bidder.waitForEvent('console', {
+      predicate: (msg) =>
+        msg.text().includes('[game] emitting player:reconnect') &&
+        /viewedRound=\d+/.test(msg.text()),
+      timeout: 15000,
+    });
+    await bidder.reload();
+    await emitted;
+
+    await expect(bidder.getByText('Select your bid:')).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
   test('reconnect during bidding after placing a bid keeps cards revealed', async ({
     fourPlayerBidding,
   }) => {

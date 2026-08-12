@@ -104,6 +104,13 @@ interface GameStore {
 // calls loadSession() at creation time.
 const SESSION_KEY = 'spades_session';
 
+// The round in which this tab clicked See Cards. Persisted (rather than kept
+// only in the store) so it survives a full page reload, which is exactly the
+// case where the server may never have received the `game:see-cards` event —
+// see the viewedRound comment on 'player:reconnect' in shared/types/events.ts.
+// Keyed by room so a stale entry can't follow the player into a different game.
+const VIEWED_ROUND_KEY = 'spades_viewed_round';
+
 export function saveSession(roomId: string, sessionToken: string) {
   sessionStorage.setItem(
     SESSION_KEY,
@@ -131,6 +138,48 @@ export function loadSession(): { roomId: string; sessionToken: string } | null {
 
 export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(VIEWED_ROUND_KEY);
+}
+
+export function saveViewedRound(roomId: string, roundNumber: number) {
+  try {
+    sessionStorage.setItem(
+      VIEWED_ROUND_KEY,
+      JSON.stringify({ roomId, roundNumber })
+    );
+  } catch {
+    // sessionStorage unavailable or full — the server's own hasViewedCards
+    // record is the primary source; this is only the recovery path.
+  }
+}
+
+export function loadViewedRound(roomId: string): number | null {
+  try {
+    const data = sessionStorage.getItem(VIEWED_ROUND_KEY);
+    if (!data) return null;
+
+    const parsed = JSON.parse(data);
+    if (parsed?.roomId !== roomId) return null;
+    return typeof parsed.roundNumber === 'number' ? parsed.roundNumber : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Leave the current game: drop the saved session and wipe the store. Callers
+ * navigate afterwards.
+ *
+ * Clearing the session is the load-bearing part. sessionStorage survives a
+ * reload, so a page that leaves it in place reconnects straight back into the
+ * game it just left — since #332 `reconnect:success` restores roomId/position,
+ * which lands the player back at the table of an already-finished game instead
+ * of the lobby. Before #332 the same code only reached the lobby by accident,
+ * because a reconnect couldn't rebuild enough state to render the table.
+ */
+export function leaveGameSession() {
+  clearSession();
+  useGameStore.getState().reset();
 }
 
 const initialState = {
