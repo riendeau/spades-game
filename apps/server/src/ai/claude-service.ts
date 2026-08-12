@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { Card, Position } from '@spades/shared';
 
 const MODEL_HAIKU = 'claude-haiku-4-5';
-const MODEL_SONNET = 'claude-sonnet-4-6';
+const MODEL_SONNET = 'claude-sonnet-5';
 
 /**
  * Voices for the post-game writeup. One is chosen at random per game so the
@@ -314,7 +314,16 @@ export async function generateBidAdvice(data: {
   try {
     const response = await anthropic.messages.create({
       model: MODEL_SONNET,
-      max_tokens: 1024,
+      // Sonnet 5 turns adaptive thinking ON when `thinking` is omitted (4.6 ran
+      // thinking-off by omission), and thinking tokens count against max_tokens.
+      // Left implicit, thinking could crowd out the forced tool_use block, which
+      // fails *silently*: the `toolUse` lookup below returns undefined and bid
+      // advice disappears with only a console.warn. Disabled here to preserve
+      // 4.6 latency and semantics exactly — see PR for the adaptive alternative.
+      thinking: { type: 'disabled' as const },
+      // 1024 -> 2048: Sonnet 5's tokenizer yields ~30% more tokens for the same
+      // text, so the old ceiling is effectively tighter than it was on 4.6.
+      max_tokens: 2048,
       system: `You are a Spades bidding advisor. You will be given a hand of exactly 13 cards. Your job is to recommend a bid and provide a brief explanation. Do not reference any card not in the hand you are given.
 
 ## Bidding Rules
