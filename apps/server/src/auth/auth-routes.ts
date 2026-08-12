@@ -18,7 +18,7 @@ export const authRouter: express.Router = express.Router();
 authRouter.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    limit: 300,
     standardHeaders: true,
     legacyHeaders: false,
   })

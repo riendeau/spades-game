@@ -46,7 +46,7 @@ app.set('trust proxy', 1);
 // Auth routes have their own limiter inside auth-routes.ts.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // per IP
+  limit: 300, // per IP
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -57,7 +57,7 @@ app.use('/api', apiLimiter);
 // This satisfies CodeQL js/missing-rate-limiting without penalizing normal browsing.
 const pageLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000, // page navigations only — static assets don't count
+  limit: 1000, // page navigations only — static assets don't count
   standardHeaders: true,
   legacyHeaders: false,
 });
