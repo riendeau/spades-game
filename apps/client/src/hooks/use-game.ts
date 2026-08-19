@@ -7,6 +7,8 @@ import {
   saveSession,
   loadSession,
   clearSession,
+  leaveGameSession,
+  loadViewedRound,
 } from '../store/game-store';
 
 export function useGame() {
@@ -264,13 +266,19 @@ export function useGame() {
     const emitReconnect = () => {
       const session = loadSession();
       if (session) {
+        // Re-assert the See Cards decision. The server ignores it unless it
+        // names the round actually in progress, and only ever uses it to set
+        // hasViewedCards — never to clear it — so a stale or absent value
+        // degrades to the server's own record.
+        const viewedRound = loadViewedRound(session.roomId);
         console.log(
-          `[game] emitting player:reconnect room=${session.roomId} token=${session.sessionToken.slice(0, 8)}… socket=${socket.id}`
+          `[game] emitting player:reconnect room=${session.roomId} token=${session.sessionToken.slice(0, 8)}… viewedRound=${viewedRound ?? '-'} socket=${socket.id}`
         );
         emitDebug(socket, 'reconnect-emit');
         socket.emit('player:reconnect', {
           sessionToken: session.sessionToken,
           roomId: session.roomId,
+          ...(viewedRound !== null && { viewedRound }),
         });
       } else {
         console.log('[game] no saved session, skipping reconnect');
@@ -334,8 +342,7 @@ export function useGame() {
   const leaveRoom = useCallback(() => {
     if (!socket) return;
     socket.emit('room:leave');
-    clearSession();
-    useGameStore.getState().reset();
+    leaveGameSession();
   }, [socket]);
 
   const changeSeat = useCallback(
@@ -371,12 +378,13 @@ export function useGame() {
   );
 
   // Actions are stable refs — destructure once for the return value
-  const { clearRoundSummary, clearRoundEffects, clearTeamNameReveal, reset } =
+  const { clearRoundSummary, clearRoundEffects, clearTeamNameReveal } =
     useGameStore.getState();
 
   // Reveal locally AND notify the server so it can auto-reveal on a future
   // Replace into this seat if the player disconnects after clicking See
-  // Cards but before bidding.
+  // Cards but before bidding. The store action persists the round for the
+  // reconnect re-assertion; the emit is the only piece that belongs up here.
   const revealCards = useCallback(() => {
     useGameStore.getState().revealCards();
     socket?.emit('game:see-cards');
@@ -402,7 +410,6 @@ export function useGame() {
     clearRoundSummary,
     clearRoundEffects,
     revealCards,
-    reset,
     createRoom,
     joinRoom,
     setReady,

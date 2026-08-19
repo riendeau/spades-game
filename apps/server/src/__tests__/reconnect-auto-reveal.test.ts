@@ -9,7 +9,15 @@ import type {
 } from '@spades/shared';
 import { Server } from 'socket.io';
 import { io as ioClient, type Socket as ClientSocket } from 'socket.io-client';
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  afterEach,
+  vi,
+} from 'vitest';
 import { setupSocketHandlers } from '../socket/handler.js';
 
 // Regression tests for issue #230: the reconnect path (`player:reconnect` →
@@ -142,11 +150,16 @@ describe('reconnect autoReveal decision', { timeout: 30000 }, () => {
   /** Open a fresh socket and reconnect with the given session. */
   async function reconnectFresh(
     roomId: string,
-    sessionToken: string
+    sessionToken: string,
+    viewedRound?: unknown
   ): Promise<ReconnectSuccess> {
     const client = await connect();
     const success = waitFor<ReconnectSuccess>(client, 'reconnect:success');
-    client.emit('player:reconnect', { sessionToken, roomId });
+    client.emit('player:reconnect', {
+      sessionToken,
+      roomId,
+      ...(viewedRound !== undefined && { viewedRound }),
+    });
     return success;
   }
 
@@ -261,5 +274,146 @@ describe('reconnect autoReveal decision', { timeout: 30000 }, () => {
     const result = await reconnectFresh(roomId, idle.sessionToken);
     expect(result.state.phase).toBe('playing');
     expect(result.autoReveal).toBe(true);
+  });
+
+  // A `game:see-cards` that never reached the server used to strand the seat
+  // face-down with Bid Blind Nil back on offer after a reconnect — the player
+  // had already seen the hand, so the offer was a lie. The client re-asserts
+  // the decision as `viewedRound` on player:reconnect to recover it.
+  describe('viewedRound recovery for a lost game:see-cards', () => {
+    it('recovers the See Cards decision the server never received', async () => {
+      const { roomId, players, biddingState } = await setupBiddingRoom();
+      const idle = players.find(
+        (p) => p.position !== biddingState.currentPlayerPosition
+      )!;
+      // Deliberately never emit game:see-cards: this models the click whose
+      // packet died on a half-open socket.
+      idle.client.disconnect();
+
+      const result = await reconnectFresh(
+        roomId,
+        idle.sessionToken,
+        biddingState.currentRound!.roundNumber
+      );
+      expect(result.state.phase).toBe('bidding');
+      expect(result.autoReveal).toBe(true);
+    });
+
+    it('recovers when see-cards arrives ahead of the session, as a buffered packet', async () => {
+      const { roomId, players, biddingState } = await setupBiddingRoom();
+      const idle = players.find(
+        (p) => p.position !== biddingState.currentPlayerPosition
+      )!;
+      idle.client.disconnect();
+
+      // socket.io flushes packets buffered while offline before running the
+      // 'connect' listener, so a see-cards click made around the disconnect
+      // reaches the server on a socket that has no session attached yet.
+      const client = await connect();
+      const success = waitFor<ReconnectSuccess>(client, 'reconnect:success');
+      client.emit('game:see-cards');
+      client.emit('player:reconnect', {
+        sessionToken: idle.sessionToken,
+        roomId,
+        viewedRound: biddingState.currentRound!.roundNumber,
+      });
+
+      const result = await success;
+      expect(result.autoReveal).toBe(true);
+      // The recovery is recorded server-side, not just answered once: a later
+      // reconnect (or a Replace into this seat) sees the decision too.
+      client.disconnect();
+      const again = await reconnectFresh(roomId, idle.sessionToken);
+      expect(again.autoReveal).toBe(true);
+    });
+
+    // handleSeeCards answers a sessionless caller differently depending on how
+    // long the socket has been up. Right after the handshake it's the buffered
+    // flush above, which player:reconnect heals moments later — an error there
+    // is a bogus toast mid-reconnect. Later, the session is genuinely dead and
+    // nothing recovers it, so the player has to be told.
+    it('stays silent for a sessionless see-cards right after connecting', async () => {
+      const client = await connect();
+      const errored = waitFor<{ code: string }>(client, 'error').then(
+        () => 'error' as const
+      );
+      client.emit('game:see-cards');
+      const outcome = await Promise.race([
+        errored,
+        new Promise<'silent'>((resolve) =>
+          setTimeout(() => resolve('silent'), 300)
+        ),
+      ]);
+      expect(outcome).toBe('silent');
+    });
+
+    it('reports a sessionless see-cards on a long-lived socket', async () => {
+      const client = await connect();
+      const errored = waitFor<{ code: string }>(client, 'error');
+      // Push the apparent socket age past the buffered-flush window. Scoped as
+      // tightly as possible around the emit so socket.io's own timers are
+      // unaffected.
+      const realNow = Date.now.bind(Date);
+      const spy = vi
+        .spyOn(Date, 'now')
+        .mockImplementation(() => realNow() + 60_000);
+      try {
+        client.emit('game:see-cards');
+        const err = await errored;
+        expect(err.code).toBe('SESSION_NOT_FOUND');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('ignores a viewedRound naming a different round', async () => {
+      const { roomId, players, biddingState } = await setupBiddingRoom();
+      const idle = players.find(
+        (p) => p.position !== biddingState.currentPlayerPosition
+      )!;
+      idle.client.disconnect();
+
+      const result = await reconnectFresh(
+        roomId,
+        idle.sessionToken,
+        biddingState.currentRound!.roundNumber + 1
+      );
+      expect(result.autoReveal).toBe(false);
+    });
+
+    it('ignores a malformed viewedRound', async () => {
+      const { roomId, players, biddingState } = await setupBiddingRoom();
+      const idle = players.find(
+        (p) => p.position !== biddingState.currentPlayerPosition
+      )!;
+      idle.client.disconnect();
+
+      // Wire-level fiction: the declared number type guarantees nothing.
+      const result = await reconnectFresh(roomId, idle.sessionToken, 'yes');
+      expect(result.autoReveal).toBe(false);
+    });
+
+    it('does not let a client clear a decision the server already recorded', async () => {
+      const { roomId, players, biddingState } = await setupBiddingRoom();
+      const idle = players.find(
+        (p) => p.position !== biddingState.currentPlayerPosition
+      )!;
+      idle.client.emit('game:see-cards');
+      const barrier = waitFor<ReconnectSuccess>(
+        idle.client,
+        'reconnect:success'
+      );
+      idle.client.emit('player:reconnect', {
+        sessionToken: idle.sessionToken,
+        roomId,
+      });
+      await barrier;
+      idle.client.disconnect();
+
+      // No viewedRound at all — the server's own record still stands, so
+      // Bid Blind Nil can't be won back by omitting the claim.
+      const result = await reconnectFresh(roomId, idle.sessionToken);
+      expect(result.autoReveal).toBe(true);
+    });
   });
 });

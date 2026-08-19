@@ -37,6 +37,7 @@ export function TeamNameRevealModal({
 
   return (
     <div
+      data-testid="team-reveal-modal"
       style={{
         backgroundColor: '#1a1a2e',
         borderRadius: '16px',

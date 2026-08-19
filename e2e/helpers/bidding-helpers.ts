@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { dismissTeamNameReveal } from './modal-helpers';
+import { dismissTeamNameRevealIfPresent } from './modal-helpers';
 
 /**
  * Places a numeric bid (1-13) on a page that is the current bidder.
@@ -7,7 +7,7 @@ import { dismissTeamNameReveal } from './modal-helpers';
  */
 export async function placeBid(page: Page, value: number): Promise<void> {
   // Dismiss team name reveal modal if still showing
-  await dismissTeamNameReveal(page, 1000);
+  await dismissTeamNameRevealIfPresent(page);
 
   // If we see the "See Cards" button, click it first
   const seeCards = page.getByRole('button', { name: 'See Cards' });
@@ -24,7 +24,7 @@ export async function placeBid(page: Page, value: number): Promise<void> {
  * Places a nil bid on a page that is the current bidder.
  */
 export async function placeNilBid(page: Page): Promise<void> {
-  await dismissTeamNameReveal(page, 1000);
+  await dismissTeamNameRevealIfPresent(page);
 
   // If we see the "See Cards" button, click it first
   const seeCards = page.getByRole('button', { name: 'See Cards' });
@@ -40,7 +40,7 @@ export async function placeNilBid(page: Page): Promise<void> {
  * Places a blind nil bid on a page that is the current bidder.
  */
 export async function placeBlindNilBid(page: Page): Promise<void> {
-  await dismissTeamNameReveal(page, 1000);
+  await dismissTeamNameRevealIfPresent(page);
   await page.getByRole('button', { name: 'Bid Blind Nil' }).click();
 }
 

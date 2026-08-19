@@ -10,7 +10,21 @@ import { SeatSelection } from './components/lobby/SeatSelection';
 import { WaitingRoom } from './components/lobby/WaitingRoom';
 import { useGame } from './hooks/use-game';
 import { preload } from './services/audio';
-import { useGameStore } from './store/game-store';
+import { leaveGameSession, useGameStore } from './store/game-store';
+
+// Leave the current game and land on the join screen. `leaveGameSession` drops
+// the saved session so the fresh page doesn't reconnect straight back into the
+// game we just left (sessionStorage survives the navigation).
+//
+// `to` exists because the two callers want opposite things from the join form.
+// "Play Again" leaves a *finished* game, so '/' avoids re-prefilling a dead room
+// code from a /room/:id URL. A kicked-for-idle player leaves a game that is
+// still running — their seat is open and waiting, and the prefilled code is
+// their fast path back in through the Replace flow, so that caller keeps it.
+function leaveToLobby(to = '/') {
+  leaveGameSession();
+  window.location.replace(to);
+}
 
 function StatusScreen({
   title,
@@ -76,7 +90,6 @@ function AppInner() {
     clearRoundSummary,
     clearRoundEffects,
     revealCards,
-    reset,
   } = useGame();
 
   useEffect(() => {
@@ -138,10 +151,7 @@ function AppInner() {
             time limit. Your seat has been opened for another player.
           </div>
           <button
-            onClick={() => {
-              reset();
-              window.location.reload();
-            }}
+            onClick={() => leaveToLobby(roomId ? `/room/${roomId}` : '/')}
             style={{
               padding: '10px 24px',
               fontSize: '16px',
@@ -304,10 +314,7 @@ function AppInner() {
             myTeam={myTeam}
             teamNames={gameEnded.teamNames}
             gameSummary={gameSummary}
-            onNewGame={() => {
-              reset();
-              window.location.reload();
-            }}
+            onNewGame={() => leaveToLobby()}
           />
         )}
       </>
