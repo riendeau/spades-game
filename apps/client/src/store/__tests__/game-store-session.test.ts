@@ -8,11 +8,15 @@ import { beforeEach, describe, expect, it } from 'vitest';
 class MemoryStorage {
   private data = new Map<string, string>();
 
+  /** Simulate a full store / private-mode Safari, which throws on write. */
+  failWrites = false;
+
   getItem(key: string): string | null {
     return this.data.get(key) ?? null;
   }
 
   setItem(key: string, value: string): void {
+    if (this.failWrites) throw new DOMException('quota', 'QuotaExceededError');
     this.data.set(key, value);
   }
 
@@ -38,6 +42,7 @@ const {
 
 beforeEach(() => {
   storage.clear();
+  storage.failWrites = false;
   useGameStore.getState().reset();
 });
 
@@ -76,6 +81,43 @@ describe('leaveGameSession', () => {
     leaveGameSession();
 
     expect(loadViewedRound('ABC123')).toBeNull();
+  });
+});
+
+// Every persisted value goes through the shared read/write policy in
+// session-storage.ts, so a corrupt entry reads back as null and an unwritable
+// store is a silent no-op. Before #352 each block rolled its own: saveSession
+// threw on a full store while saveViewedRound swallowed it, and loadSession
+// returned whatever JSON.parse produced while loadViewedRound shape-checked it.
+describe('session persistence is failure-tolerant', () => {
+  it('returns null for a session entry with the wrong shape', () => {
+    storage.setItem('spades_session', JSON.stringify({ roomId: 'ABC123' }));
+    expect(loadSession()).toBeNull();
+  });
+
+  it('returns null for a malformed session entry rather than throwing', () => {
+    storage.setItem('spades_session', 'not json');
+    expect(loadSession()).toBeNull();
+  });
+
+  it('expires a session older than 30 minutes', () => {
+    storage.setItem(
+      'spades_session',
+      JSON.stringify({
+        roomId: 'ABC123',
+        sessionToken: 'token-abc',
+        timestamp: Date.now() - 31 * 60 * 1000,
+      })
+    );
+    expect(loadSession()).toBeNull();
+  });
+
+  it('does not throw when the store rejects the write', () => {
+    storage.failWrites = true;
+    expect(() => {
+      saveSession('ABC123', 'token-abc');
+    }).not.toThrow();
+    expect(loadSession()).toBeNull();
   });
 });
 
