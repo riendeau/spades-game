@@ -128,17 +128,17 @@ Only required while the OAuth app's publishing status is **Testing**. Go to
 service → **Environment** → edit `ALLOWED_EMAILS`, append `,new@example.com`
 to the existing comma-separated list → **Save**.
 
-Two non-obvious constraints, both from `configurePassport()` in
+One non-obvious constraint, from `configurePassport()` in
 `apps/server/src/auth/passport-config.ts`:
 
-- **Entries must be lowercase.** The verify callback lowercases the address
-  Google returns (`profile.emails[0].value.toLowerCase()`) but does _not_
-  lowercase the allowlist it compares against, so `Bob@Gmail.com` in the env var
-  will never match. Whitespace around commas is fine — entries are trimmed.
 - **A restart is required.** `allowedEmails` is parsed once, when
   `configurePassport()` runs at boot, not per login request. Saving an
   environment variable in Render triggers a redeploy, which satisfies this —
   but the change is not live until that redeploy finishes.
+
+Casing and surrounding whitespace do not matter: entries are trimmed and
+lowercased at parse time, and the address from Google is lowercased too, so
+` Bob@Gmail.com` and `bob@gmail.com` are equivalent.
 
 Note also that an **empty** `ALLOWED_EMAILS` disables the allowlist entirely
 (`allowedEmails.length > 0 &&` short-circuits), letting any Google account in.
@@ -149,11 +149,11 @@ Clearing the variable is not a way to lock the app down.
 Once the redeploy is green, have the new player sign in. Where it breaks tells
 you which half is wrong:
 
-| Symptom                                                                           | Cause                                                             |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Google's own "app hasn't completed verification" / "you don't have access" screen | Step 1 — not on the test-user list                                |
-| Google sign-in succeeds, then bounces back to the login gate                      | Step 2 — missing from `ALLOWED_EMAILS`, or a casing/typo mismatch |
-| Everyone is locked out after an edit                                              | Malformed list, or the redeploy hasn't finished                   |
+| Symptom                                                                           | Cause                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Google's own "app hasn't completed verification" / "you don't have access" screen | Step 1 — not on the test-user list                |
+| Google sign-in succeeds, then bounces back to the login gate                      | Step 2 — missing from `ALLOWED_EMAILS`, or a typo |
+| Everyone is locked out after an edit                                              | Malformed list, or the redeploy hasn't finished   |
 
 Server-side, a rejected address fails the strategy with `{ message: 'not_allowed' }`
 before any database write, so a blocked user never gets a `users` row.
