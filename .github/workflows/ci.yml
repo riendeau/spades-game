@@ -32,6 +32,26 @@ jobs:
 
   unit-tests:
     runs-on: ubuntu-latest
+    # Postgres backs the db/ integration tests. Without DATABASE_URL those
+    # specs self-skip, so the whole db/ layer (schema DDL, the insert
+    # transaction, and the stats SQL) is otherwise only ever exercised in
+    # production. See apps/server/src/db/__tests__/game-results.integration.test.ts
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: spades
+          POSTGRES_PASSWORD: spades
+          POSTGRES_DB: spades_test
+        ports:
+          - 5432:5432
+        # The container reports ready before the server accepts connections;
+        # without this the first test can race the startup and fail ECONNREFUSED.
+        options: >-
+          --health-cmd "pg_isready -U spades -d spades_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -44,6 +64,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+        env:
+          # Enables the db/ integration specs. NODE_ENV is left unset (i.e. not
+          # 'production'), so db/client.ts takes its ssl:false branch — the
+          # service container speaks plaintext.
+          DATABASE_URL: postgres://spades:spades@localhost:5432/spades_test
 
   e2e-tests:
     runs-on: ubuntu-latest
