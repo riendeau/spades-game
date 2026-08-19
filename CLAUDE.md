@@ -214,6 +214,24 @@ All four player positions (three opponents + the local player) use a consistent 
 - Server is authoritative - client state is derived from socket events
 - No optimistic updates - all state changes are server-confirmed
 
+## Database Integration Tests
+
+`apps/server/src/db/__tests__/game-results.integration.test.ts` runs the db/ layer against a **real Postgres**. It exists because the sibling `game-results.test.ts` mocks `../client.js` wholesale — that spec verifies the JS around the SQL (column order, aggregation math, rollback bookkeeping) but proves nothing about the SQL itself. Before this, no CI job set `DATABASE_URL`, so the pool, `createTables()`, the insert transaction, and every stats query were dead code in CI and first executed in production.
+
+- **CI**: the `unit-tests` job runs a `postgres:17` service container and sets `DATABASE_URL` on the `pnpm test` step. The `--health-cmd pg_isready` option is required, not decorative — the container reports ready before the server accepts connections, and without it the first query races startup and fails `ECONNREFUSED`. `NODE_ENV` is deliberately left unset so `db/client.ts` takes its `ssl: false` branch (the container speaks plaintext).
+- **Locally** the spec **self-skips** via `describe.skipIf(!DATABASE_URL)`, so `pnpm test` is unchanged when you have no database. To actually run it:
+  ```bash
+  docker run --rm -e POSTGRES_USER=spades -e POSTGRES_PASSWORD=spades \
+    -e POSTGRES_DB=spades_test -p 5432:5432 postgres:17
+  DATABASE_URL=postgres://spades:spades@localhost:5432/spades_test \
+    pnpm --filter @spades/server test
+  ```
+- **Setting `DATABASE_URL` for the whole `pnpm test` run is safe, but only by accident of how the other specs are written** — verify this still holds before adding a spec that branches on it. `game-results.test.ts` stubs the variable itself (`vi.stubEnv`) in `beforeEach` and `delete`s it in the tests that cover the unset path, so the ambient value never reaches it; `auth-routes.test.ts` assigns its own; and `index.ts` (which calls `createTables()` on boot when the variable is set) is imported by no test. A new spec that reads `process.env.DATABASE_URL` without stubbing would silently change behavior between local and CI runs.
+- **Don't mock `../client.js` in this file** — the real pool is the point. It calls `pool.end()` in `afterAll`; vitest gives each test file its own module registry, so this doesn't disturb the mocked spec running in parallel.
+- **`completed_at` ties**: `completed_at` defaults to `NOW()`, which is _transaction-start_ time. Several `insertGameResult()` calls in a row can land close enough that `ORDER BY completed_at DESC` has no stable tiebreak, making any recent-games ordering assertion a coin flip. The seed explicitly `UPDATE`s the timestamps to distinct values instead of trusting insert order.
+- **Isolation** is by `TRUNCATE game_results, users CASCADE` in `beforeEach` (`round_bids` and `user_preferences` cascade from their parents), not by transaction rollback — `insertGameResult()` manages its own transaction, so wrapping tests in one would nest.
+- **The container's Postgres version is not pinned to production's.** `render.yaml` doesn't declare a version, so `postgres:17` in CI is a reasonable guess rather than a verified match. If Render's instance is on a different major, check it before relying on CI to catch a version-specific SQL issue.
+
 ## E2E Testing
 
 ### Test Structure
