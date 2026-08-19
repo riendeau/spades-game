@@ -141,7 +141,10 @@ export function clearSession() {
   sessionStorage.removeItem(VIEWED_ROUND_KEY);
 }
 
-export function saveViewedRound(roomId: string, roundNumber: number) {
+// Not exported: the store's `revealCards` action is the only writer, which is
+// what keeps every reveal path committing the decision. Tests exercise it
+// through `revealCards` + `loadViewedRound` rather than reaching in here.
+function saveViewedRound(roomId: string, roundNumber: number) {
   try {
     sessionStorage.setItem(
       VIEWED_ROUND_KEY,

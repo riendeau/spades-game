@@ -33,7 +33,6 @@ const {
   saveSession,
   loadSession,
   leaveGameSession,
-  saveViewedRound,
   loadViewedRound,
 } = await import('../game-store');
 
@@ -41,6 +40,16 @@ beforeEach(() => {
   storage.clear();
   useGameStore.getState().reset();
 });
+
+/** Seat into `roomId` mid-round and commit the See Cards decision. */
+function revealInRound(roomId: string, roundNumber: number) {
+  const store = useGameStore.getState();
+  store.setSession(roomId, 'token-abc', 0);
+  store.setGameState({
+    currentRound: { roundNumber },
+  } as unknown as ClientGameState);
+  useGameStore.getState().revealCards();
+}
 
 // Regression test for the "Play Again" bug: the end-of-game button reset the
 // store and reloaded the page but left the saved session in sessionStorage,
@@ -62,7 +71,7 @@ describe('leaveGameSession', () => {
 
   it('clears the persisted See Cards decision too', () => {
     saveSession('ABC123', 'token-abc');
-    saveViewedRound('ABC123', 3);
+    revealInRound('ABC123', 3);
 
     leaveGameSession();
 
@@ -71,15 +80,16 @@ describe('leaveGameSession', () => {
 });
 
 // The round the seat clicked See Cards in, re-asserted on player:reconnect to
-// recover a `game:see-cards` event the server never received.
+// recover a `game:see-cards` event the server never received. Written only by
+// the store's `revealCards` action, so these drive it the same way the app does.
 describe('viewed round persistence', () => {
   it('round-trips the round number for the room it was saved for', () => {
-    saveViewedRound('ABC123', 4);
+    revealInRound('ABC123', 4);
     expect(loadViewedRound('ABC123')).toBe(4);
   });
 
   it('does not leak into a different room', () => {
-    saveViewedRound('ABC123', 4);
+    revealInRound('ABC123', 4);
     expect(loadViewedRound('XYZ789')).toBeNull();
   });
 
@@ -100,13 +110,7 @@ describe('viewed round persistence', () => {
 // suite's sibling server tests cover.
 describe('revealCards', () => {
   it('persists the round it revealed in', () => {
-    const store = useGameStore.getState();
-    store.setSession('ABC123', 'token-abc', 0);
-    store.setGameState({
-      currentRound: { roundNumber: 5 },
-    } as unknown as ClientGameState);
-
-    useGameStore.getState().revealCards();
+    revealInRound('ABC123', 5);
 
     expect(useGameStore.getState().cardsRevealed).toBe(true);
     expect(loadViewedRound('ABC123')).toBe(5);

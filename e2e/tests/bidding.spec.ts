@@ -5,7 +5,7 @@ import {
   placeBlindNilBid,
   completeAllBids,
 } from '../helpers/bidding-helpers';
-import { dismissTeamNameReveal } from '../helpers/modal-helpers';
+import { dismissTeamNameRevealIfPresent } from '../helpers/modal-helpers';
 
 test.describe('Bidding', () => {
   test('only the current bidder sees bidding controls', async ({
@@ -115,7 +115,7 @@ test.describe('Bidding', () => {
     bidder = await findCurrentBidder(players);
 
     // Dismiss team name modal if still showing, then reveal cards
-    await dismissTeamNameReveal(bidder, 1000);
+    await dismissTeamNameRevealIfPresent(bidder);
     const seeCards = bidder.getByRole('button', { name: 'See Cards' });
     if (await seeCards.isVisible({ timeout: 1000 }).catch(() => false)) {
       await seeCards.click();
@@ -163,7 +163,7 @@ test.describe('Bidding', () => {
     bidder = await findCurrentBidder(players);
 
     // Dismiss team name modal if still showing, then reveal cards
-    await dismissTeamNameReveal(bidder, 1000);
+    await dismissTeamNameRevealIfPresent(bidder);
     const seeCards = bidder.getByRole('button', { name: 'See Cards' });
     if (await seeCards.isVisible({ timeout: 1000 }).catch(() => false)) {
       await seeCards.click();
@@ -207,7 +207,7 @@ test.describe('Bidding', () => {
     bidder = await findCurrentBidder(players);
 
     // Dismiss team name modal if still showing, then reveal cards
-    await dismissTeamNameReveal(bidder, 1000);
+    await dismissTeamNameRevealIfPresent(bidder);
     const seeCards = bidder.getByRole('button', { name: 'See Cards' });
     if (await seeCards.isVisible({ timeout: 1000 }).catch(() => false)) {
       await seeCards.click();
@@ -232,7 +232,7 @@ test.describe('Bidding', () => {
     let bidder = await findCurrentBidder(players);
 
     // Dismiss team name modal if still showing, then reveal cards
-    await dismissTeamNameReveal(bidder, 1000);
+    await dismissTeamNameRevealIfPresent(bidder);
     const seeCards = bidder.getByRole('button', { name: 'See Cards' });
     if (await seeCards.isVisible({ timeout: 1000 }).catch(() => false)) {
       await seeCards.click();
