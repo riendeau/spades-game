@@ -314,17 +314,19 @@ pnpm --filter @spades/e2e test filename.spec.ts   # Single file
 
 **Render.yaml DB wiring:** The `DATABASE_URL` env var is populated from `fromDatabase.property: connectionString` (Render's built-in linking). All OAuth secrets (`GOOGLE_CLIENT_ID`, etc.) are `sync: false` — set them manually in the Render dashboard to avoid committing secrets.
 
+**`ALLOWED_EMAILS` is case-sensitive and read once at boot:** `configurePassport()` parses the variable into `allowedEmails` at startup (split/trim/filter), so a changed value needs a process restart — editing it in the Render dashboard triggers a redeploy, which covers that. The comparison is `allowedEmails.includes(email)` where `email` has been lowercased from the Google profile but the allowlist entries have **not**, so any uppercase in the env var silently never matches. An **empty** value disables the allowlist entirely (`allowedEmails.length > 0 &&` short-circuits) rather than locking everyone out. Adding a player also requires a second, separate step in Google Cloud Console while the OAuth app is in Testing status — the full runbook is [Managing Authorized Users](DEPLOYMENT.md#managing-authorized-users) in `DEPLOYMENT.md`.
+
 **Callback URL / trust proxy:** The passport strategy uses `callbackURL: '/auth/google/callback'` (a relative path). Passport constructs the full URL from the request's `Host` and `X-Forwarded-Proto` headers, so the same code works for any deployment — main app, preview apps, etc. — without a `GOOGLE_CALLBACK_URL` env var. `app.set('trust proxy', 1)` is required so Render's load balancer's `X-Forwarded-Proto: https` header is trusted and passport builds `https://` URLs. Each deployment's callback URL must still be registered as an authorized redirect URI in Google Console.
 
 ### Required Env Vars (production only)
 
-| Variable               | Purpose                                                            |
-| ---------------------- | ------------------------------------------------------------------ |
-| `GOOGLE_CLIENT_ID`     | Google OAuth app client ID                                         |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth app secret                                            |
-| `SESSION_SECRET`       | Signs the session cookie (32+ random chars)                        |
-| `ALLOWED_EMAILS`       | Comma-separated allowlist (e.g. `alice@gmail.com,bob@gmail.com`)   |
-| `DATABASE_URL`         | PostgreSQL connection string (auto-set by Render from DB resource) |
+| Variable               | Purpose                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`     | Google OAuth app client ID                                                       |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth app secret                                                          |
+| `SESSION_SECRET`       | Signs the session cookie (32+ random chars)                                      |
+| `ALLOWED_EMAILS`       | Comma-separated allowlist, lowercase only (e.g. `alice@gmail.com,bob@gmail.com`) |
+| `DATABASE_URL`         | PostgreSQL connection string (auto-set by Render from DB resource)               |
 
 ## Game Result Tracking
 
