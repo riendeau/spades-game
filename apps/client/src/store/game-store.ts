@@ -7,6 +7,11 @@ import type {
   ScoreHistoryEntry,
 } from '@spades/shared';
 import { create } from 'zustand';
+import {
+  readStorageJson,
+  removeStorageItem,
+  writeStorageJson,
+} from './session-storage';
 
 export interface AvailableSeat {
   position: Position;
@@ -111,62 +116,75 @@ const SESSION_KEY = 'spades_session';
 // Keyed by room so a stale entry can't follow the player into a different game.
 const VIEWED_ROUND_KEY = 'spades_viewed_round';
 
+interface StoredSession {
+  roomId: string;
+  sessionToken: string;
+  timestamp: number;
+}
+
+// Sessions older than this are treated as gone; the server's own grace period
+// is much shorter, so a stale token would only fail a reconnect.
+const SESSION_TTL_MS = 30 * 60 * 1000;
+
+function parseStoredSession(value: unknown): StoredSession | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const { roomId, sessionToken, timestamp } = value as Record<string, unknown>;
+  if (
+    typeof roomId !== 'string' ||
+    typeof sessionToken !== 'string' ||
+    typeof timestamp !== 'number'
+  ) {
+    return null;
+  }
+  return { roomId, sessionToken, timestamp };
+}
+
 export function saveSession(roomId: string, sessionToken: string) {
-  sessionStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify({ roomId, sessionToken, timestamp: Date.now() })
-  );
+  writeStorageJson(SESSION_KEY, {
+    roomId,
+    sessionToken,
+    timestamp: Date.now(),
+  });
 }
 
 export function loadSession(): { roomId: string; sessionToken: string } | null {
-  try {
-    const data = sessionStorage.getItem(SESSION_KEY);
-    if (!data) return null;
+  const session = readStorageJson(SESSION_KEY, parseStoredSession);
+  if (!session) return null;
 
-    const session = JSON.parse(data);
-    // Session expires after 30 minutes
-    if (Date.now() - session.timestamp > 30 * 60 * 1000) {
-      sessionStorage.removeItem(SESSION_KEY);
-      return null;
-    }
-
-    return session;
-  } catch {
+  if (Date.now() - session.timestamp > SESSION_TTL_MS) {
+    removeStorageItem(SESSION_KEY);
     return null;
   }
+
+  return { roomId: session.roomId, sessionToken: session.sessionToken };
 }
 
 export function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem(VIEWED_ROUND_KEY);
+  removeStorageItem(SESSION_KEY);
+  removeStorageItem(VIEWED_ROUND_KEY);
+}
+
+function parseViewedRound(
+  value: unknown
+): { roomId: string; roundNumber: number } | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const { roomId, roundNumber } = value as Record<string, unknown>;
+  if (typeof roomId !== 'string' || typeof roundNumber !== 'number') {
+    return null;
+  }
+  return { roomId, roundNumber };
 }
 
 // Not exported: the store's `revealCards` action is the only writer, which is
 // what keeps every reveal path committing the decision. Tests exercise it
 // through `revealCards` + `loadViewedRound` rather than reaching in here.
 function saveViewedRound(roomId: string, roundNumber: number) {
-  try {
-    sessionStorage.setItem(
-      VIEWED_ROUND_KEY,
-      JSON.stringify({ roomId, roundNumber })
-    );
-  } catch {
-    // sessionStorage unavailable or full — the server's own hasViewedCards
-    // record is the primary source; this is only the recovery path.
-  }
+  writeStorageJson(VIEWED_ROUND_KEY, { roomId, roundNumber });
 }
 
 export function loadViewedRound(roomId: string): number | null {
-  try {
-    const data = sessionStorage.getItem(VIEWED_ROUND_KEY);
-    if (!data) return null;
-
-    const parsed = JSON.parse(data);
-    if (parsed?.roomId !== roomId) return null;
-    return typeof parsed.roundNumber === 'number' ? parsed.roundNumber : null;
-  } catch {
-    return null;
-  }
+  const viewed = readStorageJson(VIEWED_ROUND_KEY, parseViewedRound);
+  return viewed?.roomId === roomId ? viewed.roundNumber : null;
 }
 
 /**
@@ -303,23 +321,27 @@ export interface DebugBreadcrumb {
   t: number;
 }
 
+const DEBUG_BUFFER_MAX = 50;
+
+function parseBreadcrumbs(value: unknown): DebugBreadcrumb[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.filter(
+    (entry: unknown): entry is DebugBreadcrumb =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      typeof (entry as DebugBreadcrumb).event === 'string' &&
+      typeof (entry as DebugBreadcrumb).t === 'number'
+  );
+}
+
 export function bufferDebug(entry: DebugBreadcrumb) {
-  try {
-    const raw = sessionStorage.getItem(DEBUG_BUFFER_KEY);
-    const buf: DebugBreadcrumb[] = raw ? JSON.parse(raw) : [];
-    buf.push(entry);
-    sessionStorage.setItem(DEBUG_BUFFER_KEY, JSON.stringify(buf.slice(-50)));
-  } catch {
-    // sessionStorage unavailable or full — debug telemetry is best-effort.
-  }
+  const buffered = readStorageJson(DEBUG_BUFFER_KEY, parseBreadcrumbs) ?? [];
+  buffered.push(entry);
+  writeStorageJson(DEBUG_BUFFER_KEY, buffered.slice(-DEBUG_BUFFER_MAX));
 }
 
 export function drainDebugBuffer(): DebugBreadcrumb[] {
-  try {
-    const raw = sessionStorage.getItem(DEBUG_BUFFER_KEY);
-    sessionStorage.removeItem(DEBUG_BUFFER_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  const buffered = readStorageJson(DEBUG_BUFFER_KEY, parseBreadcrumbs) ?? [];
+  removeStorageItem(DEBUG_BUFFER_KEY);
+  return buffered;
 }

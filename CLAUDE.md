@@ -211,6 +211,7 @@ All four player positions (three opponents + the local player) use a consistent 
 
 - **Zustand store** in `apps/client/src/store/game-store.ts`
 - Session persistence uses `sessionStorage` (per-tab, survives page refresh)
+- **All `sessionStorage` access goes through `apps/client/src/store/session-storage.ts`** (`readStorageJson` / `writeStorageJson` / `removeStorageItem`) — never call `sessionStorage` directly from a new call site. That module owns the whole failure policy: the property access itself is guarded (a browser with storage disabled throws a `SecurityError` before `getItem` is ever reached), writes swallow `QuotaExceededError`, and reads return `null` for missing, unparseable, or wrong-shaped values. `readStorageJson` takes a **required** validator callback rather than a bare `<T>` cast — that's what keeps a corrupted entry from reading back as a shape-correct object with `undefined` fields, and it's deliberately not optional so the three call sites (session token, viewed round, debug breadcrumb buffer) can't drift apart again the way they had before #352.
 - Server is authoritative - client state is derived from socket events
 - No optimistic updates - all state changes are server-confirmed
 
