@@ -138,7 +138,7 @@ One non-obvious constraint, from `configurePassport()` in
 
 Casing and surrounding whitespace do not matter: entries are trimmed and
 lowercased at parse time, and the address from Google is lowercased too, so
-` Bob@Gmail.com` and `bob@gmail.com` are equivalent.
+`Bob@Gmail.com` and `bob@gmail.com` are equivalent.
 
 Note also that an **empty** `ALLOWED_EMAILS` disables the allowlist entirely
 (`allowedEmails.length > 0 &&` short-circuits), letting any Google account in.
