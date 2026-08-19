@@ -1,3 +1,4 @@
+import type { ClientGameState } from '@spades/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 // The client tests run in vitest's default node environment, which has no Web
@@ -88,6 +89,36 @@ describe('viewed round persistence', () => {
 
   it('returns null on a malformed entry rather than throwing', () => {
     storage.setItem('spades_viewed_round', 'not json');
+    expect(loadViewedRound('ABC123')).toBeNull();
+  });
+});
+
+// The See Cards decision has three side effects (reveal, notify the server,
+// persist for reconnect recovery). Persistence lives in the store action rather
+// than only in use-game's wrapper so that any reveal path commits it — a
+// store-level caller that skipped it would silently recreate the bug this
+// suite's sibling server tests cover.
+describe('revealCards', () => {
+  it('persists the round it revealed in', () => {
+    const store = useGameStore.getState();
+    store.setSession('ABC123', 'token-abc', 0);
+    store.setGameState({
+      currentRound: { roundNumber: 5 },
+    } as unknown as ClientGameState);
+
+    useGameStore.getState().revealCards();
+
+    expect(useGameStore.getState().cardsRevealed).toBe(true);
+    expect(loadViewedRound('ABC123')).toBe(5);
+  });
+
+  it('is a no-op for persistence before a round exists', () => {
+    const store = useGameStore.getState();
+    store.setSession('ABC123', 'token-abc', 0);
+
+    useGameStore.getState().revealCards();
+
+    expect(useGameStore.getState().cardsRevealed).toBe(true);
     expect(loadViewedRound('ABC123')).toBeNull();
   });
 });

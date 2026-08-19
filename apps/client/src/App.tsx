@@ -12,13 +12,18 @@ import { useGame } from './hooks/use-game';
 import { preload } from './services/audio';
 import { leaveGameSession, useGameStore } from './store/game-store';
 
-// Back to a clean lobby. `leaveGameSession` drops the saved session so the
-// fresh page doesn't reconnect straight back into the game we just left, and
-// navigating to '/' (rather than reloading in place) avoids re-prefilling the
-// old room code from a /room/:id URL.
-function returnToLobby() {
+// Leave the current game and land on the join screen. `leaveGameSession` drops
+// the saved session so the fresh page doesn't reconnect straight back into the
+// game we just left (sessionStorage survives the navigation).
+//
+// `to` exists because the two callers want opposite things from the join form.
+// "Play Again" leaves a *finished* game, so '/' avoids re-prefilling a dead room
+// code from a /room/:id URL. A kicked-for-idle player leaves a game that is
+// still running — their seat is open and waiting, and the prefilled code is
+// their fast path back in through the Replace flow, so that caller keeps it.
+function leaveToLobby(to = '/') {
   leaveGameSession();
-  window.location.replace('/');
+  window.location.replace(to);
 }
 
 function StatusScreen({
@@ -146,7 +151,7 @@ function AppInner() {
             time limit. Your seat has been opened for another player.
           </div>
           <button
-            onClick={returnToLobby}
+            onClick={() => leaveToLobby(roomId ? `/room/${roomId}` : '/')}
             style={{
               padding: '10px 24px',
               fontSize: '16px',
@@ -309,7 +314,7 @@ function AppInner() {
             myTeam={myTeam}
             teamNames={gameEnded.teamNames}
             gameSummary={gameSummary}
-            onNewGame={returnToLobby}
+            onNewGame={() => leaveToLobby()}
           />
         )}
       </>

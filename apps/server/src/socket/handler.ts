@@ -537,19 +537,44 @@ function handleBid(
   });
 }
 
+// How long after a socket's handshake a sessionless event is treated as the
+// buffered-flush race rather than a dead session. socket.io replays packets
+// buffered while offline from `onconnect()`, i.e. within the same tick as the
+// handshake and well before any human could click, so this is generous.
+const BUFFERED_FLUSH_WINDOW_MS = 5000;
+
 function handleSeeCards(socket: TypedSocket): void {
   const session = roomManager.getSessionBySocketId(socket.id);
   if (!session) {
-    // Expected during a reconnect: socket.io flushes packets buffered while
-    // offline before the 'connect' listener emits player:reconnect, so a
-    // See Cards click made around the disconnect lands here with no session
-    // attached yet. The player's own client already revealed the hand, and
-    // player:reconnect re-asserts the decision via `viewedRound`, so this
-    // recovers on its own — no client-facing error, which would surface as a
+    // Two different things arrive here, and only one self-heals.
+    //
+    // Just after the handshake it's the buffered-packet race: socket.io flushes
+    // packets buffered while offline before the 'connect' listener emits
+    // player:reconnect, so a See Cards click made around the disconnect lands
+    // with no session attached yet. player:reconnect re-asserts the decision
+    // via `viewedRound` moments later, so an error here would be a bogus
     // "Session not found" toast in the middle of an otherwise clean reconnect.
+    //
+    // Later than that, the session is genuinely gone — grace-period expiry, a
+    // server restart, or the reconnect emit never firing at all. Nothing
+    // recovers it, and the client has already revealed the hand locally, so
+    // staying silent would leave the player to discover the dead session when
+    // a later bid fails. Those callers still get the error.
+    const withinFlushWindow =
+      Date.now() - socket.handshake.issued < BUFFERED_FLUSH_WINDOW_MS;
     console.warn(
-      `[seat] see-cards with no session (pre-reconnect flush?) socket=${socket.id}`
+      `[seat] see-cards with no session socket=${socket.id} age=${Date.now() - socket.handshake.issued}ms ${
+        withinFlushWindow
+          ? '(pre-reconnect flush, suppressed)'
+          : '(dead session, reported)'
+      }`
     );
+    if (!withinFlushWindow) {
+      socket.emit('error', {
+        code: 'SESSION_NOT_FOUND',
+        message: 'Session not found',
+      });
+    }
     return;
   }
 
@@ -843,13 +868,29 @@ function handleReconnect(
   // progress, and only ever sets the flag: a client can't clear a decision the
   // server has already recorded, so the worst a bad payload can do is forfeit
   // the claimant's own Blind Nil.
-  const roundNumber = room.game.getState().currentRound?.roundNumber;
-  const viewedRoundApplied =
+  const preState = room.game.getState();
+  const roundNumber = preState.currentRound?.roundNumber;
+  const alreadyViewed =
+    preState.players.find((p) => p.id === session.playerId)?.hasViewedCards ??
+    false;
+  // Skip the dispatch when the server already has the decision (every
+  // same-round reconnect after a See Cards or a bid) so `(applied)` in the log
+  // below means "this claim changed something", and check the result so it
+  // can't claim an applied flag the state machine rejected.
+  let viewedRoundApplied = false;
+  if (
+    !alreadyViewed &&
     Number.isInteger(viewedRound) &&
     roundNumber !== undefined &&
-    viewedRound === roundNumber;
-  if (viewedRoundApplied) {
-    room.game.viewCards(session.playerId);
+    viewedRound === roundNumber
+  ) {
+    const result = room.game.viewCards(session.playerId);
+    viewedRoundApplied = result.valid;
+    if (!result.valid) {
+      console.warn(
+        `[reconnect] viewedRound dispatch invalid player=${session.playerId.slice(0, 8)}… room=${roomId} error=${result.error ?? 'unknown'}`
+      );
+    }
   }
 
   // Same decision as the seat-replacement path: only auto-reveal when the

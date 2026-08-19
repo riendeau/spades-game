@@ -259,7 +259,21 @@ export const useGameStore = create<GameStore>((set) => ({
 
   setMyPosition: (position) => set({ myPosition: position }),
 
-  revealCards: () => set({ cardsRevealed: true }),
+  // Persisting the round alongside the flag is deliberate: this is the one
+  // action that commits the See Cards decision, so every caller — the user's
+  // click via use-game's revealCards, and the server-driven autoReveal paths —
+  // records what we'd need to re-assert it on the next reconnect. Keeping the
+  // persist here (rather than only in the hook) means a future reveal path
+  // can't silently skip it and recreate the lost-decision bug. The autoReveal
+  // callers write a round the server already knows about, which is harmless.
+  revealCards: () =>
+    set((state) => {
+      const roundNumber = state.gameState?.currentRound?.roundNumber;
+      if (state.roomId && roundNumber !== undefined) {
+        saveViewedRound(state.roomId, roundNumber);
+      }
+      return { cardsRevealed: true };
+    }),
 
   setAvailableSeats: (roomId, seats) =>
     set({ availableSeats: seats, seatSelectRoomId: roomId }),

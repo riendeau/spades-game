@@ -30,13 +30,24 @@ async function blipConnection(page: Page): Promise<void> {
   await reconnected;
 }
 
-async function reloadAndReconnect(page: Page): Promise<void> {
-  // Same deterministic signal as blipConnection. Armed before the reload
-  // (console listeners survive navigation) so a fast reconnect can't land in
-  // the gap — no reconnect has happened on this page yet, so there's no stale
-  // message for it to match.
+/**
+ * Reloads the page and waits for a console message proving the reconnect ran.
+ *
+ * The listener must be armed *before* reload() — console listeners survive
+ * navigation, so a fast reconnect can't land in the gap. No reconnect has
+ * happened earlier in these tests, so there's no stale message to match.
+ *
+ * `predicate` defaults to the use-game reconnect:success log (the deterministic
+ * "the handler under test has run" signal, same as blipConnection); pass
+ * another to wait on a different point in the same sequence.
+ */
+async function reloadAndReconnect(
+  page: Page,
+  predicate: (text: string) => boolean = (text) =>
+    text.includes('[game] reconnect:success')
+): Promise<void> {
   const reconnected = page.waitForEvent('console', {
-    predicate: (msg) => msg.text().includes('[game] reconnect:success'),
+    predicate: (msg) => predicate(msg.text()),
     timeout: 15000,
   });
   await page.reload();
@@ -105,14 +116,12 @@ test.describe('Reconnect card reveal', () => {
     await bidder.getByRole('button', { name: 'See Cards' }).click();
     await expect(bidder.getByText('Select your bid:')).toBeVisible();
 
-    const emitted = bidder.waitForEvent('console', {
-      predicate: (msg) =>
-        msg.text().includes('[game] emitting player:reconnect') &&
-        /viewedRound=\d+/.test(msg.text()),
-      timeout: 15000,
-    });
-    await bidder.reload();
-    await emitted;
+    await reloadAndReconnect(
+      bidder,
+      (text) =>
+        text.includes('[game] emitting player:reconnect') &&
+        /viewedRound=\d+/.test(text)
+    );
 
     await expect(bidder.getByText('Select your bid:')).toBeVisible({
       timeout: 15000,

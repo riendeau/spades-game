@@ -8,7 +8,6 @@ import {
   loadSession,
   clearSession,
   leaveGameSession,
-  saveViewedRound,
   loadViewedRound,
 } from '../store/game-store';
 
@@ -384,18 +383,11 @@ export function useGame() {
 
   // Reveal locally AND notify the server so it can auto-reveal on a future
   // Replace into this seat if the player disconnects after clicking See
-  // Cards but before bidding.
+  // Cards but before bidding. The store action persists the round for the
+  // reconnect re-assertion; the emit is the only piece that belongs up here.
   const revealCards = useCallback(() => {
-    const store = useGameStore.getState();
-    store.revealCards();
+    useGameStore.getState().revealCards();
     socket?.emit('game:see-cards');
-    // Remember the decision locally too. The emit above is fire-and-forget and
-    // can be lost (see the viewedRound note in shared/types/events.ts); this is
-    // what we re-assert on the next reconnect to recover it.
-    const roundNumber = store.gameState?.currentRound?.roundNumber;
-    if (store.roomId && roundNumber !== undefined) {
-      saveViewedRound(store.roomId, roundNumber);
-    }
   }, [socket]);
 
   return {
