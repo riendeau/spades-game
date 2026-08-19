@@ -34,9 +34,12 @@ const DEV_USER: User = {
 export { DEV_USER };
 
 export function configurePassport(): void {
+  // Lowercased to match the address from the Google profile, which is itself
+  // lowercased below. Without this an entry like `Bob@Gmail.com` never matches
+  // and the user is silently locked out.
   const allowedEmails = (process.env.ALLOWED_EMAILS ?? '')
     .split(',')
-    .map((e) => e.trim())
+    .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
   passport.use(
