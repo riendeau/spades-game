@@ -53,6 +53,14 @@ Deploy at `yourdomain.com/spades`
    - `SERVE_CLIENT` = `true`
    - `BASE_PATH` = `/` (or `/spades` if using path deployment)
    - `NODE_ENV` = `production`
+   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — from the Google OAuth client
+   - `SESSION_SECRET` — 32+ random characters, signs the session cookie
+   - `ALLOWED_EMAILS` — see [Managing Authorized Users](#managing-authorized-users)
+   - `ANTHROPIC_API_KEY` — optional; without it the team-name feature is inert
+
+   These are all declared `sync: false` in `render.yaml`, meaning Render expects
+   them from the dashboard and they are deliberately not in git. `DATABASE_URL`
+   is the exception — Render populates it from the linked `spades-db` resource.
 
 6. **Deploy**: Click "Create Web Service"
 
@@ -96,6 +104,74 @@ location /spades {
 ProxyPass /spades https://spades-game.onrender.com/spades
 ProxyPassReverse /spades https://spades-game.onrender.com/spades
 ```
+
+## Managing Authorized Users
+
+Access is gated in **two independent places**, and a new player must be added to
+both. Neither is a code change — both are dashboard settings, so there is no
+commit and no PR involved.
+
+### 1. Google Cloud Console — test users
+
+Only required while the OAuth app's publishing status is **Testing**. Go to
+[console.cloud.google.com](https://console.cloud.google.com/) → your project →
+**APIs & Services** → **OAuth consent screen** → **Audience**.
+
+- **Publishing status: Testing** → under **Test users**, click **+ Add users**,
+  enter the address, **Save**. Google caps this list at 100 users.
+- **Publishing status: In production** → nothing to do here. Any Google account
+  can reach the consent screen, and `ALLOWED_EMAILS` is the only gate.
+
+### 2. Render — the `ALLOWED_EMAILS` allowlist
+
+[dashboard.render.com](https://dashboard.render.com/) → the **spades-game**
+service → **Environment** → edit `ALLOWED_EMAILS`, append `,new@example.com`
+to the existing comma-separated list → **Save**.
+
+One non-obvious constraint, from `configurePassport()` in
+`apps/server/src/auth/passport-config.ts`:
+
+- **A restart is required.** `allowedEmails` is parsed once, when
+  `configurePassport()` runs at boot, not per login request. Saving an
+  environment variable in Render triggers a redeploy, which satisfies this —
+  but the change is not live until that redeploy finishes.
+
+Casing and surrounding whitespace do not matter: entries are trimmed and
+lowercased at parse time, and the address from Google is lowercased too, so
+`Bob@Gmail.com` and `bob@gmail.com` are equivalent.
+
+Note also that an **empty** `ALLOWED_EMAILS` disables the allowlist entirely
+(`allowedEmails.length > 0 &&` short-circuits), letting any Google account in.
+Clearing the variable is not a way to lock the app down.
+
+### Verifying, and reading a failure
+
+Once the redeploy is green, have the new player sign in. Where it breaks tells
+you which half is wrong:
+
+| Symptom                                                                           | Cause                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Google's own "app hasn't completed verification" / "you don't have access" screen | Step 1 — not on the test-user list                |
+| Google sign-in succeeds, then bounces back to the login gate                      | Step 2 — missing from `ALLOWED_EMAILS`, or a typo |
+| Everyone is locked out after an edit                                              | Malformed list, or the redeploy hasn't finished   |
+
+Server-side, a rejected address fails the strategy with `{ message: 'not_allowed' }`
+before any database write, so a blocked user never gets a `users` row.
+
+### Removing a user
+
+Delete the address from `ALLOWED_EMAILS` (and from the Google test-user list if
+in Testing) and let the redeploy land. Their existing session cookie stays valid
+until it expires — the allowlist is only consulted during the OAuth verify
+callback, not on `deserializeUser`. Delete their row from the `users` table to
+force a re-login; the `game_results` player columns are
+`ON DELETE SET NULL`, so past games survive.
+
+### Local development
+
+None of this applies locally. When `NODE_ENV !== 'production'` the server injects
+`DEV_USER` into every request and skips the Socket.io auth check entirely, so
+`pnpm dev` needs no Google credentials, no database, and no allowlist.
 
 ## Local Production Testing
 
