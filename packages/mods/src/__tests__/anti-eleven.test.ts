@@ -121,6 +121,34 @@ describe('antiElevenMod', () => {
       vi.restoreAllMocks();
     });
 
+    it('resets chance to 0% when disablement fires', () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0); // below any positive chance
+      const ctx = makeBidContext([makeBid(3), makeBid(4), makeBid(1)], {
+        disablementChance: 0.8,
+      });
+      const result = onCalculateDisabledBids(ctx);
+      vi.restoreAllMocks();
+
+      expect(result.disabledBids).toContain(3);
+      expect(
+        (result.modState as { disablementChance: number }).disablementChance
+      ).toBe(0);
+    });
+
+    it('leaves chance untouched when disablement does not fire', () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.99); // above the 0.5 chance
+      const ctx = makeBidContext([makeBid(3), makeBid(4), makeBid(1)], {
+        disablementChance: 0.5,
+      });
+      const result = onCalculateDisabledBids(ctx);
+      vi.restoreAllMocks();
+
+      expect(result.disabledBids).toEqual([]);
+      expect(
+        (result.modState as { disablementChance: number }).disablementChance
+      ).toBe(0.5);
+    });
+
     it('does not disable when chance is 0%', () => {
       const ctx = makeBidContext([makeBid(3), makeBid(4), makeBid(1)], {
         disablementChance: 0,
@@ -136,7 +164,6 @@ describe('antiElevenMod', () => {
       const result = onRoundEnd(
         makeRoundEndContext(summary, {
           disablementChance: 0,
-          disablementOccurredThisRound: false,
         })
       );
       expect(
@@ -149,7 +176,6 @@ describe('antiElevenMod', () => {
       const result = onRoundEnd(
         makeRoundEndContext(summary, {
           disablementChance: 0.2,
-          disablementOccurredThisRound: false,
         })
       );
       expect(
@@ -168,7 +194,6 @@ describe('antiElevenMod', () => {
       const result = onRoundEnd(
         makeRoundEndContext(summary, {
           disablementChance: 0.3,
-          disablementOccurredThisRound: false,
         })
       );
       // Chance should stay at 0.3, not increase to 0.4
@@ -188,7 +213,6 @@ describe('antiElevenMod', () => {
       const result = onRoundEnd(
         makeRoundEndContext(summary, {
           disablementChance: 0.5,
-          disablementOccurredThisRound: false,
         })
       );
       expect(
@@ -196,30 +220,66 @@ describe('antiElevenMod', () => {
       ).toBe(0.5);
     });
 
-    it('resets chance to 0% after disablement occurred on an 11-round', () => {
-      const summary = makeRoundSummary({ team1Bid: 5, team2Bid: 6 });
-      const result = onRoundEnd(
-        makeRoundEndContext(summary, {
-          disablementChance: 0.8,
-          disablementOccurredThisRound: true,
-        })
-      );
-      expect(
-        (result.modState as { disablementChance: number }).disablementChance
-      ).toBe(0);
-    });
-
     it('caps chance at 100%', () => {
       const summary = makeRoundSummary({ team1Bid: 5, team2Bid: 6 });
       const result = onRoundEnd(
         makeRoundEndContext(summary, {
           disablementChance: 0.95,
-          disablementOccurredThisRound: false,
         })
       );
       expect(
         (result.modState as { disablementChance: number }).disablementChance
       ).toBe(1.0);
+    });
+  });
+
+  // Regression: the reset used to live in onRoundEnd behind a `totalBid === 11`
+  // check, which a round the mod fired on can never satisfy — so the chance was
+  // never actually reset and could fire again the very next round.
+  describe('firing then round end', () => {
+    it('spends the chance on firing and does not restore it at round end', () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      // Chance has built up to 80% over several natural-11 rounds.
+      const bidResult = onCalculateDisabledBids(
+        makeBidContext([makeBid(3), makeBid(4), makeBid(1)], {
+          disablementChance: 0.8,
+        })
+      );
+      vi.restoreAllMocks();
+      expect(bidResult.disabledBids).toContain(3);
+
+      // The 4th player is forced off 3 and bids 4 instead, so the table
+      // totals 12 — this round can't be a natural 11 by construction.
+      const summary = makeRoundSummary({ team1Bid: 4, team2Bid: 8 });
+      const roundResult = onRoundEnd(
+        makeRoundEndContext(summary, bidResult.modState)
+      );
+
+      expect(
+        (roundResult.modState as { disablementChance: number })
+          .disablementChance
+      ).toBe(0);
+    });
+
+    it('re-rolls from the reset chance on the following round', () => {
+      const summary = makeRoundSummary({ team1Bid: 4, team2Bid: 8 });
+      const afterRound = onRoundEnd(
+        makeRoundEndContext(summary, {
+          disablementChance: 0,
+          shouldDisableThisTurn: true,
+          disabledBid: 3,
+        })
+      );
+
+      // Turn state cleared, so the next 4th bidder makes a fresh decision...
+      const next = onCalculateDisabledBids(
+        makeBidContext(
+          [makeBid(3), makeBid(4), makeBid(1)],
+          afterRound.modState
+        )
+      );
+      // ...which at 0% can never disable anything.
+      expect(next.disabledBids).toEqual([]);
     });
   });
 });
