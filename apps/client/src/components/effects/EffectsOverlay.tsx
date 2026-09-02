@@ -27,13 +27,13 @@ export function EffectsOverlay({
     }
   }, [remaining, onAllComplete]);
 
+  // Team names are generated at game start and fall back to 'Team 1'/'Team 2'
+  // server-side, so this matches how RoundSummaryModal/GameEndModal render them.
   function getTeamName(teamId?: string): string {
-    if (!teamId) return 'Team';
-    const players = gameState.players.filter((p) => p.team === teamId);
-    if (players.length === 2) {
-      return `${players[0].nickname} & ${players[1].nickname}`;
-    }
-    return players[0]?.nickname ?? 'Team';
+    if (teamId !== 'team1' && teamId !== 'team2') return 'Team';
+    return (
+      gameState.teamNames?.[teamId] ?? `Team ${teamId === 'team1' ? '1' : '2'}`
+    );
   }
 
   return (
