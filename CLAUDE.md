@@ -202,6 +202,29 @@ All four player positions (three opponents + the local player) use a consistent 
 - **`GameTable`** uses `height: 100vh` + `overflow: hidden`, so it fills the viewport exactly regardless of orientation.
 - **`WaitingRoom`** uses a 2×2 seat grid on mobile and the compass layout (North/W+E/South) on desktop. The header (Room Code + Share Link) is a single compact row on both.
 
+### Favicon & App Icons
+
+`apps/client/public/` holds `favicon.svg` (the source of truth — a white spade on the
+felt-green radial gradient used by the lobby background), `favicon.ico` (16/32/48,
+PNG-compressed entries) for browsers that don't accept an SVG icon, and
+`apple-touch-icon.png` (180x180) for iOS home-screen installs. They're linked from
+`apps/client/index.html` alongside a `theme-color` meta.
+
+- **Hrefs must stay absolute** (`/favicon.svg`, not `./favicon.svg`): Vite rewrites
+  absolute references to public files in `index.html` to the configured `base`, so the
+  same markup works under `BASE_PATH=/spades/`. A relative href would not be rewritten.
+- **Regenerating the raster sizes**: there is no ImageMagick/rsvg on this machine, and
+  `sips` can't read SVG. Use the Playwright chromium in `e2e/` — `page.setContent()` the
+  SVG at the target viewport size and `locator('svg').screenshot({ omitBackground: true })`.
+  The script must live inside `e2e/` (or import `@playwright/test` by absolute path);
+  running it from `e2e/` as cwd is not enough, since Node resolves bare specifiers from
+  the _script's_ location.
+- **The `.ico` is assembled by hand** (a 6-byte header + 16 bytes per entry, then the PNG
+  bytes verbatim) — no packaging dependency was added for a one-off asset. Re-verify with
+  `file favicon.ico`, which lists each embedded size.
+- `.svg` is not in the `lint-staged` globs and prettier has no parser for it, so the icon
+  source is left formatted as written.
+
 ### Champions Graphic (end-of-game)
 
 `ChampionsGraphic` (`apps/client/src/components/game/ChampionsGraphic.tsx`) renders the end-game "Spades Champions" image shown inline in `GameEndModal`. It draws a fixed template photo (`apps/client/src/assets/champions.webp`, 929×895 — a paper-plate photo cropped tight to the plate's bounding box and saved as lossy WebP-with-alpha, ~72KB vs ~1.3MB as PNG) onto a `<canvas>` at native resolution (scaled down with `maxWidth: 100%`), then overlays four dynamic text fields — date, winner name, loser name, score (`winner > loser`) — at coordinates calibrated to the template's handwritten slots (the `FIELDS` constant). Cropping the asset means `FIELDS` coordinates are in the cropped pixel space; if the asset is ever re-cropped, shift every coordinate by the crop offset.
