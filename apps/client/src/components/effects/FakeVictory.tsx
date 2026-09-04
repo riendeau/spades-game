@@ -123,37 +123,48 @@ export function FakeVictory({
         </div>
       ))}
 
-      {/* Victory banner */}
+      {/* Victory banner. The centering lives on this flex wrapper, not on the
+          animated element: banner-entrance animates `transform`, which would
+          override a `translate(-50%, -50%)` on the same node. */}
       <div
         style={{
           position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          animation: `banner-entrance ${DURATION}ms ease-out forwards`,
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 16px',
           zIndex: 1,
         }}
       >
         <div
           style={{
-            background: teamColor,
-            padding: '24px 48px',
-            borderRadius: 12,
-            boxShadow: `0 0 40px ${teamColor}, 0 8px 32px rgba(0,0,0,0.4)`,
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
+            animation: `banner-entrance ${DURATION}ms ease-out forwards`,
+            maxWidth: '100%',
           }}
         >
           <div
             style={{
-              fontSize: 48,
-              fontWeight: 900,
-              color: '#fff',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-              letterSpacing: 2,
+              background: teamColor,
+              padding: '24px clamp(20px, 6vw, 48px)',
+              borderRadius: 12,
+              boxShadow: `0 0 40px ${teamColor}, 0 8px 32px rgba(0,0,0,0.4)`,
+              textAlign: 'center',
             }}
           >
-            {teamName} WINS!
+            <div
+              style={{
+                fontSize: 'clamp(26px, 7vw, 48px)',
+                fontWeight: 900,
+                color: '#fff',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                letterSpacing: 2,
+                lineHeight: 1.1,
+                overflowWrap: 'break-word',
+              }}
+            >
+              {teamName} WINS!
+            </div>
           </div>
         </div>
       </div>

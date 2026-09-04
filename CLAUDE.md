@@ -195,6 +195,15 @@ All four player positions (three opponents + the local player) use a consistent 
 - **Bid/Won line**: always shown under every player name — displays `—` for bid until a bid is placed
 - **Local player badge**: rendered between the trick area and hand section (south table position), styled identically to `OpponentArea` badges. Padding should match `OpponentArea`'s `12px` desktop / `6px` mobile to keep visual consistency.
 
+### Round Effects (`components/effects/`)
+
+Score-triggered celebrations declared in `packages/mods/src/rules/score-effects.ts` (e.g. `fake-victory` at exactly 245, `bowling-strike`) and rendered by `EffectsOverlay`. They fire rarely enough that a regression can sit unnoticed for months — `fake-victory` went a very long time between sightings.
+
+- **Preview them without playing to the trigger score**: in dev, `__triggerEffect('fake-victory', 'team2')` on the console (registered in `App.tsx`) pushes the effect straight into the store. Combined with the E2E `fourPlayerBidding` fixture this is the practical way to screenshot one — a throwaway spec that calls it via `page.evaluate` and screenshots at desktop/portrait/landscape takes ~25s.
+- **Never put a centering `transform` on an animated element.** `FakeVictory`'s banner had `transform: translate(-50%, -50%)` alongside an animation whose keyframes animate `transform`; the animation wins for its whole duration, so the banner sat with its corner — not its center — at the viewport midpoint. Centering belongs on a wrapper (flex, or `inset: 0`), with the animated node as its child. Any effect combining positioning with a keyframe animation has this hazard.
+- **`gameState.teamNames` is effectively always populated once a game starts** — `generateTeamNamesForRoom` (`handler.ts`) calls `setTeamNames()` on both paths, substituting the literal `'Team 1'`/`'Team 2'` when `generateTeamNames` returns null (which is always locally, with no `ANTHROPIC_API_KEY`). So a "fall back to the players' nicknames when there's no team name" branch reads as sensible but is dead code; render `teamNames?.[teamId] ?? 'Team N'` like `RoundSummaryModal` and `GameEndModal` do.
+- **Generated names are much longer than nicknames.** Anything sized for a nickname (fixed large `fontSize`, `whiteSpace: nowrap`) will overflow a phone once a real team name lands — `clamp()` the font and padding and let the text wrap.
+
 ### Mobile Responsiveness
 
 - **`useIsMobile` hook** (`apps/client/src/hooks/use-is-mobile.ts`): Returns `true` when `width < 768` **OR** `height < 500`. The height check is critical — landscape-orientation phones have wide viewports (>768px) but short ones (~375px), so a width-only check misses them entirely.
