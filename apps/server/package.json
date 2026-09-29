@@ -20,7 +20,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.23.0",
-    "socket.io": "^4.7.4",
+    "socket.io": "^4.8.4",
     "uuid": "^14.0.2"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/pg": "^8.23.1",
     "nodemon": "^3.1.14",
-    "socket.io-client": "^4.8.3",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "^5.0.2"
