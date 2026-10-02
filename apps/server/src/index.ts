@@ -85,6 +85,17 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
       },
 });
 
+// Static assets are mounted ahead of the session + passport middleware so a
+// file request never touches Postgres. Mounted after them, every asset cost a
+// session load, a user lookup and a session touch — and the client preloads
+// all 52 card SVGs on every page load, so each page view fired ~150 queries
+// at the shared pool. Nothing in the built client needs a session to serve.
+// The SPA fallback stays at the bottom: its catch-all would shadow /api and
+// /auth if registered here.
+if (servingClient) {
+  app.use(BASE_PATH, express.static(clientDistPath));
+}
+
 // --- Session middleware (shared with Socket.io) ---
 // In dev without DATABASE_URL, use the default in-memory store so pnpm dev
 // works without a local PostgreSQL instance.
@@ -99,6 +110,12 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET ?? 'dev-secret-do-not-use-in-prod',
   resave: false,
   saveUninitialized: false,
+  // Re-issue the cookie on every response so its 30-day maxAge slides with
+  // activity. Without this the store's expiry slides (touch) but the browser's
+  // cookie does not, so every player is signed out exactly 30 days after
+  // logging in — mid-game if unlucky, surfacing as a 401 on /api and a Google
+  // sign-in screen on the next page load.
+  rolling: true,
   cookie: {
     secure: isProd,
     httpOnly: true,
@@ -143,6 +160,14 @@ app.use('/auth', authRouter);
 // --- Protect /api/* routes ---
 app.use('/api', (req, res, next) => {
   if (req.user) return next();
+  // Logged because a 401 is otherwise invisible server-side. `cookie` says
+  // whether the browser sent a session cookie at all (absent = expired or
+  // never signed in); `session` whether it resolved to a logged-in session.
+  const hasCookie = req.headers.cookie?.includes('connect.sid=') ?? false;
+  const hasSession = 'passport' in (req.session ?? {});
+  console.warn(
+    `[auth] 401 ${req.method} ${req.originalUrl} cookie=${hasCookie} session=${hasSession}`
+  );
   res.status(401).json({ error: 'Unauthorized' });
 });
 
@@ -310,7 +335,7 @@ setupSocketHandlers(io);
 
 // Serve the built client if it exists
 if (servingClient) {
-  app.use(BASE_PATH, express.static(clientDistPath));
+  // express.static is mounted earlier, ahead of the session middleware.
 
   // SPA fallback: serve index.html for any non-API, non-file request under BASE_PATH
   app.get(`${BASE_PATH}*path`, pageLimiter, (_req, res) => {
