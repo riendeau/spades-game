@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Card, Position } from '@spades/shared';
 
-const MODEL_HAIKU = 'claude-haiku-4-5';
+const MODEL_HAIKU = 'claude-haiku-5-5';
 const MODEL_SONNET = 'claude-sonnet-5';
 
 /**
@@ -9,6 +9,8 @@ const MODEL_SONNET = 'claude-sonnet-5';
  * recap isn't always the same style. Each style supplies a persona/task intro,
  * a format+length outro, and its own token budget (verse forms need fewer
  * tokens than prose). The game data block is shared and inserted between them.
+ * Budgets were sized on Haiku 4.5 and scaled ~30% for Haiku 5.5's tokenizer,
+ * which counts the same text as more tokens.
  */
 interface SummaryStyle {
   name: string;
@@ -24,7 +26,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are a witty sports commentator writing a recap of a Spades card game and mildly resentful at having to engage with such low-quality play. Write 1-2 short paragraphs summarizing the game. PG-13 tone — call out dramatic moments (comebacks, blowouts, nil fails, bag penalties). Playfully mock the losers (and the winners too if they deserve it).',
     outro:
       'Write the summary directly — no title, no heading. Keep it under 150 words.',
-    maxTokens: 400,
+    maxTokens: 520,
   },
   {
     name: 'haiku',
@@ -32,7 +34,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are a haiku poet recapping a Spades card game. Capture the arc of the match — who triumphed, who faltered, and the turns of fortune (comebacks, blowouts, failed nils, bag penalties) — in spare, evocative imagery.',
     outro:
       'Write two or three haiku in traditional 5-7-5 form, one stanza each, separated by a blank line. Output only the haiku — no title, no commentary.',
-    maxTokens: 200,
+    maxTokens: 260,
   },
   {
     name: 'noir-detective',
@@ -40,7 +42,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are a hard-boiled noir detective narrating a Spades card game like a case that went sideways. World-weary, clipped, metaphor-soaked. Note the dramatic turns — comebacks, blowouts, failed nils, the slow rot of bag penalties — and who had it coming. PG-13.',
     outro:
       'Write 1-2 short paragraphs in first person. Output the narration directly — no title, no heading. Keep it under 150 words.',
-    maxTokens: 400,
+    maxTokens: 520,
   },
   {
     name: 'shakespearean',
@@ -48,7 +50,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are a Shakespearean bard recounting a Spades card game as high drama, both tragedy and farce. Use Elizabethan diction and dramatic flourish (the occasional "thou", "forsooth", "alas"). Mark the great reversals — comebacks, routs, fallen nils, the creeping curse of bags. PG-13.',
     outro:
       'Write a short dramatic passage; blank verse is welcome. Output it directly — no title, no heading. Keep it under 150 words.',
-    maxTokens: 400,
+    maxTokens: 520,
   },
   {
     name: 'nature-documentary',
@@ -56,7 +58,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are a hushed nature-documentary narrator (think David Attenborough) observing a Spades card game as though it were wildlife on the savanna. The players are creatures in their habitat, the bids are hunts, the bag penalties a slow affliction. Awe and gentle irony. PG-13.',
     outro:
       'Write 1-2 short paragraphs. Output the narration directly — no title, no heading. Keep it under 150 words.',
-    maxTokens: 400,
+    maxTokens: 520,
   },
   {
     name: 'epic-saga',
@@ -64,7 +66,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are a bard chronicling a Spades card game as an epic fantasy saga — heroes, doomed gambits, and hard-won glory. Render the comebacks, routs, failed nils, and bag-curses as the stuff of legend. PG-13.',
     outro:
       'Write a short heroic passage. Output it directly — no title, no heading. Keep it under 150 words.',
-    maxTokens: 400,
+    maxTokens: 520,
   },
   {
     name: 'group-chat',
@@ -72,7 +74,7 @@ const SUMMARY_STYLES: SummaryStyle[] = [
       'You are recapping a Spades card game as a passive-aggressive group chat thread between the four players the morning after. Petty grievances, backhanded "congrats", "no worries!" that clearly means worries, someone leaving people on read. Reference the actual turning points — comebacks, blowouts, failed nils, bag penalties — as the things they\'re subtweeting about. PG-13.',
     outro:
       'Write 4-7 short chat messages, each prefixed with the sender\'s name and a colon (e.g. "Alice: ..."), one per line. Output only the messages — no title, no commentary.',
-    maxTokens: 350,
+    maxTokens: 460,
   },
 ];
 
@@ -85,6 +87,27 @@ function getClient(): Anthropic | null {
   }
   return client;
 }
+
+/**
+ * Haiku 5.5 thinks by default, so text is not guaranteed to be content[0] —
+ * a response can open with `thinking` blocks. We disable thinking on the Haiku
+ * calls below, but select by type anyway so a leading block can never turn a
+ * good response into a silent null.
+ */
+function firstText(response: Anthropic.Message): string {
+  const block = response.content.find((b) => b.type === 'text');
+  return block?.type === 'text' ? block.text : '';
+}
+
+/**
+ * Shared by both Haiku calls. Haiku 5.5 runs adaptive thinking when `thinking`
+ * is omitted (4.5 ran thinking-off), and thinking tokens count against
+ * max_tokens. These are short creative outputs with small caps, and team names
+ * race TeamNameRevealModal's 10s fallback, so thinking buys nothing but
+ * latency and truncation risk. Disabling is valid at the default `medium`
+ * effort; it would 400 at `xhigh`/`max`.
+ */
+const HAIKU_NO_THINKING = { type: 'disabled' as const };
 
 function sanitizeNickname(name: string): string {
   // Strip control characters (U+0000–U+001F, U+007F)
@@ -111,7 +134,9 @@ export async function generateTeamNames(players: {
   try {
     const response = await anthropic.messages.create({
       model: MODEL_HAIKU,
-      max_tokens: 150,
+      thinking: HAIKU_NO_THINKING,
+      // 150 -> 200 for Haiku 5.5's ~30% larger token counts.
+      max_tokens: 200,
       messages: [
         {
           role: 'user',
@@ -129,8 +154,7 @@ Team names: 2-4 words max. Button text: 2-4 words max.`,
       ],
     });
 
-    const raw =
-      response.content[0].type === 'text' ? response.content[0].text : '';
+    const raw = firstText(response);
     // Strip markdown code fences the model sometimes wraps around JSON
     const text = raw
       .replace(/^```(?:json)?\s*\n?/i, '')
@@ -209,6 +233,7 @@ export async function generateGameSummary(data: {
   try {
     const response = await anthropic.messages.create({
       model: MODEL_HAIKU,
+      thinking: HAIKU_NO_THINKING,
       max_tokens: style.maxTokens,
       messages: [
         {
@@ -231,9 +256,7 @@ ${style.outro}`,
       ],
     });
 
-    const text =
-      response.content[0].type === 'text' ? response.content[0].text : '';
-    return text.trim() || null;
+    return firstText(response).trim() || null;
   } catch (err) {
     console.warn('[ai] Failed to generate game summary:', err);
     return null;

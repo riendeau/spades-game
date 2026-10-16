@@ -57,6 +57,35 @@ describe('generateTeamNames', () => {
     expect(mockCreate).toHaveBeenCalledOnce();
   });
 
+  it('reads the text block even when a thinking block comes first', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        { type: 'thinking', thinking: '', signature: 'sig' },
+        {
+          type: 'text',
+          text: '{"team1":"Aces","team2":"Chumps","startButton":"Deal!"}',
+        },
+      ],
+    });
+
+    const result = await generateTeamNames({
+      team1: ['Alice', 'Bob'],
+      team2: ['Charlie', 'Dana'],
+    });
+    expect(result).toEqual({
+      team1: 'Aces',
+      team2: 'Chumps',
+      startButton: 'Deal!',
+    });
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'claude-haiku-5-5',
+        thinking: { type: 'disabled' },
+      })
+    );
+  });
+
   it('returns null on API error', async () => {
     process.env.ANTHROPIC_API_KEY = 'test-key';
     mockCreate.mockRejectedValueOnce(new Error('API rate limited'));
@@ -325,6 +354,34 @@ describe('generateGameSummary', () => {
     const result = await generateGameSummary(sampleData);
     expect(result).toBe(summaryText);
     expect(mockCreate).toHaveBeenCalledOnce();
+  });
+
+  it('reads the text block even when a thinking block comes first', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        { type: 'thinking', thinking: '', signature: 'sig' },
+        { type: 'text', text: 'A recap.' },
+      ],
+    });
+
+    const result = await generateGameSummary(sampleData);
+    expect(result).toBe('A recap.');
+  });
+
+  it('calls Haiku 5.5 with thinking disabled', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    mockCreate.mockResolvedValueOnce({
+      content: [{ type: 'text', text: 'A recap.' }],
+    });
+
+    await generateGameSummary(sampleData);
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'claude-haiku-5-5',
+        thinking: { type: 'disabled' },
+      })
+    );
   });
 
   it('returns null on API error', async () => {
