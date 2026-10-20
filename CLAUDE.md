@@ -384,6 +384,15 @@ Completed games are recorded in the `game_results` table. Player identity is bri
 
 **Client:** `/stats` route renders `StatsPage` with summary cards and partner history. Linked from the lobby via "Your Stats". The "Recent Games" card is a shared component (`components/stats/RecentGamesTable.tsx`) used by both `StatsPage` (all rows the API returns — the server caps `recentGames` at 5) and `WaitingRoom` (the newest 3, via `useRecentGames(limit)`, which fetches only `/api/stats` rather than the three endpoints `useStats()` hits). It renders `null` when there are no games, so callers don't need their own empty check. `compact` shrinks the paddings/font for the narrow waiting-room card.
 
+### In-Person (IRL) Games
+
+Games played with real cards can be added to the stats from a photo of the paper scoresheet. The full workflow is the project skill `.claude/skills/import-irl-game/SKILL.md`. The tool is `pnpm --filter @spades/server irl-game-sql <abs path to game.json>` (`apps/server/src/scripts/irl-game-sql.ts`). It validates a transcribed game, replays it through the shared `calculateRoundScore`/`updateTeamScore`, compares the result with the running totals written on the paper, and prints a transactional SQL script. The user runs that script against prod with `psql`, since Claude has no prod credentials.
+
+- **They are ordinary rows.** In-person games carry `room_id = 'IRL-<YYYYMMDD>'` and nothing else distinguishes them. They count in win/loss, partner and bid stats exactly like app games. Filtering them out would need a new column.
+- **The generated SQL checks itself.** It refuses to run twice for the same `room_id`, aborts unless each email matches exactly one user, and re-scores the inserted rows in SQL before `COMMIT`. On any failure the whole transaction rolls back. The `irl-game-sql script` block in `game-results.integration.test.ts` runs it against real Postgres in CI. That block lives in the existing integration spec on purpose: a second spec file would run in parallel and race its `TRUNCATE`.
+- **Players are matched by email.** Prod `display_name` holds first names only, so a "John …" pattern matches nobody. Keep the game JSON, which has friends' emails, out of the repo, since the repo is public.
+- **Paper sheets can be wrong.** The 2026-10-16 sheet credited 14 tricks in one round. When the replay disagrees with the paper, the script exits 1, and `--allow-paper-mismatch` overrides that once the user has chosen a correction. Ambiguous handwriting can usually be settled by the arithmetic instead: the ones digit of a running total is the team's bag count.
+
 ## Dependency Management
 
 ### Toolchain Versions (as of 2026-04)

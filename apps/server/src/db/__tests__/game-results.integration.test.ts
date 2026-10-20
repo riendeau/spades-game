@@ -17,6 +17,7 @@
 //   DATABASE_URL=postgres://spades:spades@localhost:5432/spades_test \
 //     pnpm --filter @spades/server test
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
+import { buildSql, parseGame, scoreGame } from '../../scripts/irl-game-sql.js';
 import { pool } from '../client.js';
 import {
   insertGameResult,
@@ -455,6 +456,93 @@ describe.skipIf(!DATABASE_URL)('db integration (real Postgres)', () => {
       const stats = await getNilStats('00000000-0000-0000-0000-000000000000');
       expect(stats.totalAttempts).toBe(0);
       expect(stats.successRate).toBe(0);
+    });
+  });
+
+  // The generated in-person-game script is run by hand against prod with psql,
+  // so this is the only place its SQL executes before it touches real data.
+  describe('irl-game-sql script', () => {
+    const irlGame = () =>
+      parseGame({
+        roomId: 'IRL-TEST',
+        playedAt: '2026-10-17T20:40:00-04:00',
+        team1: ['A', 'C'],
+        team2: ['B', 'D'],
+        players: {
+          A: 'alice@example.com',
+          B: 'bob@example.com',
+          C: 'charlie@example.com',
+          D: 'diana@example.com',
+        },
+        rounds: [
+          { play: { A: [3, 6], C: ['nil', 0], B: [5, 7], D: ['nil', 0] } },
+          { play: { A: ['blind', 0], C: [5, 7], B: [2, 3], D: [2, 3] } },
+        ],
+      });
+
+    it('records the game and attributes it to each seat', async () => {
+      const game = irlGame();
+      await pool.query(buildSql(game, scoreGame(game)));
+
+      const { rows } = await pool.query<{
+        team1_score: number;
+        team2_score: number;
+        completed_at: Date;
+      }>(
+        `SELECT team1_score, team2_score, completed_at FROM game_results
+         WHERE room_id = 'IRL-TEST'
+           AND team1_player1_id = $1 AND team1_player2_id = $2
+           AND team2_player1_id = $3 AND team2_player2_id = $4`,
+        [alice, charlie, bob, diana]
+      );
+      // 133 + (200 blind nil + 52) = 385; 152 + 42 = 194
+      expect(rows).toHaveLength(1);
+      expect(rows[0].team1_score).toBe(385);
+      expect(rows[0].team2_score).toBe(194);
+      expect(rows[0].completed_at.toISOString()).toBe(
+        '2026-10-18T00:40:00.000Z'
+      );
+
+      const blind = await getNilStats(alice);
+      expect(blind.blindNilSucceeded).toBe(1);
+    });
+
+    it('refuses to record the same game twice', async () => {
+      const game = irlGame();
+      const sql = buildSql(game, scoreGame(game));
+      await pool.query(sql);
+
+      // A dedicated client: the failed script leaves its transaction aborted,
+      // which must be rolled back before the connection goes back to the pool.
+      const client = await pool.connect();
+      try {
+        await expect(client.query(sql)).rejects.toThrow(
+          'game IRL-TEST already recorded'
+        );
+      } finally {
+        await client.query('ROLLBACK');
+        client.release();
+      }
+      const { rows } = await pool.query(
+        `SELECT 1 FROM game_results WHERE room_id = 'IRL-TEST'`
+      );
+      expect(rows).toHaveLength(1);
+    });
+
+    it('aborts without writing when an email matches no user', async () => {
+      const game = irlGame();
+      game.players.D = 'nobody@example.com';
+      const client = await pool.connect();
+      try {
+        await expect(
+          client.query(buildSql(game, scoreGame(game)))
+        ).rejects.toThrow('player D matched 0 users');
+      } finally {
+        await client.query('ROLLBACK');
+        client.release();
+      }
+      const { rows } = await pool.query('SELECT 1 FROM game_results');
+      expect(rows).toHaveLength(0);
     });
   });
 });
