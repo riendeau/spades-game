@@ -11,7 +11,7 @@
     "irl-game-sql": "tsx src/scripts/irl-game-sql.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.133.0",
+    "@anthropic-ai/sdk": "^0.135.0",
     "@spades/mods": "workspace:*",
     "@spades/shared": "workspace:*",
     "connect-pg-simple": "^10.0.0",
