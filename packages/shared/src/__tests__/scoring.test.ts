@@ -221,5 +221,25 @@ describe('Scoring', () => {
       };
       expect(checkGameEnd(scores, 500)).toBe('team2');
     });
+
+    it('should return null if both over winning score and tied', () => {
+      const scores = {
+        team1: {
+          teamId: 'team1' as const,
+          score: 510,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
+        team2: {
+          teamId: 'team2' as const,
+          score: 510,
+          bags: 0,
+          roundBid: 0,
+          roundTricks: 0,
+        },
+      };
+      expect(checkGameEnd(scores, 500)).toBeNull();
+    });
   });
 });
