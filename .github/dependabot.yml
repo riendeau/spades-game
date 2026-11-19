@@ -47,10 +47,11 @@ updates:
       # of the runtime lets tsc green-light Node APIs that don't exist at
       # runtime. A Node major upgrade is a coordinated change across
       # engines.node (package.json), .nvmrc, node-version (ci.yml), and
-      # NODE_VERSION (render.yaml), and we only move to even-numbered LTS
-      # lines. Minor/patch updates within the current major still flow.
-      # (A scheduled routine performs the Node 26 upgrade once 26 is Active
-      # LTS, ~Nov 2026, and removes this ignore as part of that PR.)
+      # NODE_VERSION (render.yaml), and we only move to a line once it is
+      # Active LTS. @types/node for a new major is published when that line
+      # is still "Current" (~6 months before LTS), so this ignore must stay
+      # permanently — it is not specific to any one upgrade. Minor/patch
+      # updates within the current major still flow.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
 

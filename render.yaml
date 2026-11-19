@@ -12,7 +12,7 @@ services:
     startCommand: pnpm start
     envVars:
       - key: NODE_VERSION
-        value: 24
+        value: 26
       - key: SERVE_CLIENT
         value: true
       - key: BASE_PATH
